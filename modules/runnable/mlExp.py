@@ -1,7 +1,7 @@
 #传统机器学习实验1
 #本实验随机抽取所有大类恶意样本各100个和相同数量的良性样本作为实验数据，良性样本来自windows系统文件夹中
 
-#传统机器学习方法实验2
+#传统机器学习方法实验1.5
 #本实验以大类作为实验的基础，以某些大类的数据作为训练集来测试其他大类的分类效率，即单类缺省状态
 #缺省的类分别为backdoor,trojan,net-worm,virus,email
 
@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import SVC
 import numpy as np
+from sklearn.metrics import confusion_matrix
 
 # 实验1所使用的数据路径
 # TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_data.npy"
@@ -24,49 +25,58 @@ import numpy as np
 # -----------------------------------------------------------------------------------------
 
 # 实验2使用的数据路径
-TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/backdoor/train_data.npy"
-TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/backdoor/train_label.npy"
-TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/backdoor/test_data.npy"
-TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/backdoor/test_label.npy"
-# -----------------------------------------------------------------------------------------
-# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/email/train_data.npy"
-# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/email/train_label.npy"
-# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/email/test_data.npy"
-# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/email/test_label.npy"
-# -------------------------------------------------------------------------------------------
-# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/trojan/train_data.npy"
-# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/trojan/train_label.npy"
-# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/trojan/test_data.npy"
-# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/trojan/test_label.npy"
-# # -------------------------------------------------------------------------------------------
-# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/net-worm/train_data.npy"
-# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/net-worm/train_label.npy"
-# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/net-worm/test_data.npy"
-# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/net-worm/test_label.npy"
-# # -------------------------------------------------------------------------------------------
-# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/virus/train_data.npy"
-# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/virus/train_label.npy"
-# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/virus/test_data.npy"
-# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/virus/test_label.npy"
-# # -------------------------------------------------------------------------------------------
+class_path = "email"
+TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_data.npy" % class_path
+TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_label.npy"  % class_path
+TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_data.npy"  % class_path
+TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_label.npy"  % class_path
+
+def drawHeatmap(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
+    fig, ax = plt.subplots()
+    im = ax.imshow(data, **kwargs)
+
+    cbar = ax.figure.colorbar(im, ax=ax)
+    cbar.ax.set_ylabel(cbar_label, rotation=-90, va="bottom")
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(col_labels)))
+    ax.set_yticks(np.arange(len(row_labels)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(col_labels)
+    ax.set_yticklabels(row_labels)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(row_labels)):
+        for j in range(len(col_labels)):
+            text = ax.text(j, i, formatter%data[i][j],
+                           ha="center", va="center", color="k")
+
+    ax.set_title(title)
+    fig.tight_layout()
+    plt.show()
+
 if __name__ == '__main__':
     train_data_ = np.load(TRAIN_DATA_SAVE)
     train_label = np.load(TRAIN_LABEL_SAVE)
     test_data_ = np.load(TEST_DATA_SAVE)
     test_label = np.load(TEST_LABEL_SAVE)
 
-    # pca = PCA(n_components=2)
-    # pca.fit(train_data_)
-    # train_data = pca.transform(train_data_)
-    # test_data = pca.transform(test_data_)
+    pca = PCA(n_components=2)
+    pca.fit(train_data_)
+    train_data = pca.transform(train_data_)
+    test_data = pca.transform(test_data_)
 
     # tsne = TSNE(n_components=2)
     # data = np.concatenate((train_data_,test_data_))
     # data = tsne.fit_transform(data)
 
-    mds = MDS(n_components=2)
-    data = np.concatenate((train_data_,test_data_))
-    data = mds.fit_transform(data)
+    # mds = MDS(n_components=2)
+    # data = np.concatenate((train_data_,test_data_))
+    # data = mds.fit_transform(data)
 
     # isomap = Isomap(n_components=2)
     # data = np.concatenate((train_data_,test_data_))
@@ -76,8 +86,8 @@ if __name__ == '__main__':
     # data = np.concatenate((train_data_,test_data_))
     # data = lle.fit_transform(data)
 
-    train_data = data[:len(train_data_)]
-    test_data = data[len(train_data):]
+    # train_data = data[:len(train_data_)]
+    # test_data = data[len(train_data):]
 
     knn = KNN(n_neighbors=1)
     svm = SVC(gamma='auto')
@@ -134,5 +144,19 @@ if __name__ == '__main__':
     plt.show()
     #
     # print(pca.explained_variance_ratio_)
+    svm_mat = confusion_matrix(test_label, svm_predict)
+    knn_mat = confusion_matrix(test_label, knn_predict)
 
+    #混淆矩阵归一化
+    svm_sum = np.sum(svm_mat, axis=1, keepdims=True)
+    knn_sum = np.sum(knn_mat, axis=1, keepdims=True)
+    svm_mat = svm_mat/svm_sum
+    knn_mat = knn_mat/knn_sum
 
+    print(svm_mat)
+    print("-------------------")
+    print(knn_mat)
+
+    labels = ["benign", "malware"]
+    drawHeatmap(svm_mat, "svm's normalized confusion matrix", labels, labels, "acc", formatter="%.4f", cmap="YlOrRd")
+    drawHeatmap(knn_mat, "knn's normalized confusion matrix", labels, labels, "acc", formatter="%.4f", cmap="YlOrRd")
