@@ -11,10 +11,11 @@ from sklearn.metrics import confusion_matrix
 
 class_path = "virus"
 sub_class = "VB"
-TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassFewShot/%s/%s_train_data.npy" % (class_path, sub_class)
-TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassFewShot/%s/%s_train_label.npy" % (class_path, sub_class)
-TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassFewShot/%s/%s_test_data.npy" % (class_path, sub_class)
-TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassFewShot/%s/%s_test_label.npy" % (class_path, sub_class)
+channel = 1
+TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClass%sShot/%s/%s_train_data.npy" % (channel, class_path, sub_class)
+TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClass%sShot/%s/%s_train_label.npy" % (channel, class_path, sub_class)
+TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClass%sShot/%s/%s_test_data.npy" % (channel, class_path, sub_class)
+TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClass%sShot/%s/%s_test_label.npy" % (channel, class_path, sub_class)
 
 def drawHeatmap(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
@@ -68,7 +69,7 @@ def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatt
 
     ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
     ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-    ax.grid(which="minor", color="k", linestyle='-', linewidth=3)
+    ax.grid(which="minor", color="k", linestyle='-', linewidth=1)
     ax.tick_params(which="minor", bottom=False, left=False)
 
     ax.set_title(title)
@@ -116,4 +117,4 @@ if __name__ == '__main__':
 
     labels = ["benign", "malware"]
     drawHeatmap(svm_mat, "%s: svm's normalized confusion matrix, acc=%.3f"%(class_path+"-"+sub_class,svm_acc), labels, labels, "acc", formatter="%.4f", cmap="YlOrRd")
-    drawHeatmap(knn_mat, "%s: knn's normalized confusion matrix, acc=%.3f"%(class_path+"-"+sub_class,knn_acc), labels, labels, "acc", formatter="%.4f", cmap="YlOrRd")
+    drawHeatmapWithGrid(knn_mat, "%s: knn's normalized confusion matrix, acc=%.3f"%(class_path+"-"+sub_class,knn_acc), labels, labels, "acc", formatter="%.4f", cmap="YlOrRd")

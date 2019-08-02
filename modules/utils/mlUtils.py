@@ -296,6 +296,16 @@ def collect_few_shot_data(save_path, super_class, sub_class=None, channel=5,
                           test_num=200,
                           benign_split=True,
                           seed=1):
+    '''
+    制作小样本学习的数据集并存储到对应位置
+    :param save_path: 存储路径
+    :param super_class: 小样本数据超类
+    :param sub_class: 小样本数据子类。指定为None代表不指定特别的子类
+    :param channel: 单类别的小样本数目
+    :param test_num: 测试集大小
+    :param benign_split: 测试集与训练集的良性样本是否分开
+    :param seed: 随机排列的种子
+    '''
     benign_paths = rd.sample(BENIGN_PATHS, 2)
     datas,labels = get_malwares(each_num=channel+test_num, super_targets=[super_class], sub_targets=[sub_class])
 
@@ -408,12 +418,13 @@ if __name__ == "__main__":
     #                     raw=True,
     #                     benign_split=True)
     #对应mlExp3
-    collect_few_shot_data(save_path="D:/Few-Shot-Project/data/ExtClassFewShot/virus/",
+    collect_few_shot_data(save_path="D:/Few-Shot-Project/data/ExtClass1Shot/virus/",
                           super_class="virus",
                           sub_class=["VB"],
-                          channel=5,
+                          channel=1,
+                          benign_split=True,
                           test_num=250,
-                          seed=41)
+                          seed=54)
     #用于产生所有的良性文件路径
     # benign = get_benign_exe_abspath()
     # All = []

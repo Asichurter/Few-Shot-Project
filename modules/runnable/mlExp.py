@@ -18,18 +18,18 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 # 实验1所使用的数据路径
-# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_data.npy"
-# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_label.npy"
-# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/test_data.npy"
-# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/test_label.npy"
+TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_data.npy"
+TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_label.npy"
+TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/test_data.npy"
+TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/test_label.npy"
 # -----------------------------------------------------------------------------------------
 
 # 实验2使用的数据路径
-class_path = "email"
-TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_data.npy" % class_path
-TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_label.npy"  % class_path
-TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_data.npy"  % class_path
-TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_label.npy"  % class_path
+# class_path = "email"
+# TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_data.npy" % class_path
+# TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/train_label.npy"  % class_path
+# TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_data.npy"  % class_path
+# TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassOneDefault/%s/test_label.npy"  % class_path
 
 def drawHeatmap(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
