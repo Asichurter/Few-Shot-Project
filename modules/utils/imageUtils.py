@@ -7,6 +7,7 @@ import random
 import shutil
 #import pandas as pd
 import warnings
+import sklearn
 
 HOME = r'C:/Users/10904/Desktop/'
 EXES = ['exe', 'dll', 'ocx', 'sys', 'com']
@@ -271,6 +272,43 @@ def validate(model, dataloader, Criteria, return_predict=False):
     else:
         return val_c / val_a, val_loss, np.array(real_label), np.array(predict_label)
 
+def classfy_validate(model, dataloader, Criteria, classes, return_predict=False):
+    '''
+    使用指定的dataloader验证模型\n
+    model:训练的模型\n
+    dataloader:验证的数据加载器\n
+    criteria:损失函数\n
+    '''
+    val_a = 0
+    val_c = 0
+    val_loss = 0.
+    real_label = []
+    predict_label = []
+    # 将模型调整为测试状态
+    model.eval()
+    for data, label in dataloader:
+        data = data.cuda()
+        out = model(data)
+
+        # 同训练阶段一样
+        labels = sklearn.preprocessing.label_binarize(label, [i for i in range(classes)])
+        labels = t.FloatTensor(labels).cuda()
+
+        loss = Criteria(out, labels)
+        val_loss += loss.data.item()
+        pre_label = t.LongTensor(np.argmax(out, axis=1))
+
+        val_a += pre_label.shape[0]
+        val_c += (pre_label == label).sum().item()
+
+        real_label += label.int().tolist()
+        predict_label += pre_label.int().tolist()
+
+    if not return_predict:
+        return val_c / val_a, val_loss
+    else:
+        return val_c / val_a, val_loss, np.array(real_label), np.array(predict_label)
+
 if __name__ == "__main__":
     next_times = 0
     return_times = 0
@@ -330,15 +368,18 @@ if __name__ == "__main__":
     #                        mode='dir',padding=False,num_constrain=3000)
 
     # 生成整体测试数据集，训练和测试用良性数据集之间是分开的
-    # create_benign(dest="D:/peimages/New/whole_exp/validate/benign/",
+    # create_benign(dest="D:/peimages/New/classsify_exp/validate/benign/",
     #               num=1000,
     #               using=[3])
-    # create_malware_images(dest="D:/peimages/New/whole_exp/train/malware/",
-    #                       num_per_class=200,
-    #                       using=["aworm","trojan0","backdoor1","dos","email",
-    #                              "exploit","net-worm","packed","rootkit",
-    #                              "virus"])
-    split_datas(src="D:/peimages/New/whole_exp/train/malware/",
-                dest="D:/peimages/New/whole_exp/validate/malware/",
-                ratio=0.5,
+    # create_malware_images(dest="D:/peimages/New/class_default_exp/virus_default/train/malware/",
+    #                       num_per_class=100,
+    #                       using=["aworm","backdoor1","dos","email",
+    #                              "exploit","net-worm","trojan0","packed","rootkit"])"virus"
+    # create_malware_images(dest="D:/peimages/New/classsify_exp/train/virus/",
+    #                       num_per_class=1200,
+    #                       using=["virus"])
+    split_datas(src="D:/peimages/New/classsify_exp/train/virus/",
+                dest="D:/peimages/New/classsify_exp/validate/virus/",
+                ratio=1000,
                 mode="x")
+

@@ -37,6 +37,43 @@ class DirDataset(Dataset):
     def __len__(self):
         return len(self.Datas)
 
+#目录下有多个文件夹，每个文件夹是一个单独的种类
+class ClassifyDataset:
+    def __init__(self, path, classes, benign=True, transforms=None):
+        assert len(os.listdir(path))==classes, "给定种类数目:%d和路径下的文件夹数目:%d 不一致！"%(len(os.listdir(path)), classes)
+        data = []
+        label = []
+        i = 1
+        for Dir in os.listdir(path):
+            if benign and Dir=="benign":
+                l = 0
+            else:
+                l = i
+                i += 1
+            col_path = path+Dir+"/"
+            columns = os.listdir(col_path)
+            data += [os.path.join(col_path, column) for column in columns]
+            label += [l]*len(columns)
+        self.Data = data
+        self.Label = label
+        # 假设图像是单通道的
+        # 归一化到[-1,1]之间
+        if transforms:
+            self.Transform = transforms
+        else:
+            self.Transform = T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
+
+    def __getitem__(self, index):
+        path = self.Data[index]
+        image = Image.open(path)
+        if self.Transform is not None:
+            image = self.Transform(image)
+        return image, self.Label[index]
+
+    def __len__(self):
+        return len(self.Data)
+
+
 # torchvision自带的resnet适用的数据集
 # 需要将图像转为224x224，同时还需要将单通道转为3通道
 class PretrainedResnetDataset(DirDataset):
