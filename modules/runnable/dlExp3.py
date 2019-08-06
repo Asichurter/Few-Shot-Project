@@ -1,8 +1,8 @@
-# 本实验是为了验证Resnet对恶意代码识别具有可行性
-# 采用的数据中，训练和测试的良性数据同样会被分离
+# 本实验是为了测试Resnet恶意代码分类的性能
+# 训练集和测试集中的良性样本是分开的
 
 import numpy as np
-from modules.utils.imageUtils import validate
+from modules.utils.imageUtils import classfy_validate
 import torch as t
 from modules.model.MalResnet import ResNet
 from modules.model.datasets import ClassifyDataset
@@ -68,9 +68,9 @@ train_loss_history = []
 val_loss_history = []
 
 # 训练集数据集
-dataset = ClassifyDataset(train_set_path)
+dataset = ClassifyDataset(train_set_path, 6)
 # 验证集数据集
-val_set = ClassifyDataset(val_set_path)
+val_set = ClassifyDataset(val_set_path, 6)
 
 # 训练集数据加载器
 train_loader = DataLoader(dataset, batch_size=48, shuffle=True)
@@ -105,8 +105,9 @@ for i in range(MAX_ITER):
         datas = datas.cuda()
 
         # 创建可以输入到损失函数的float类型标签batch
-        labels = [[1, 0] if L == 0 else [0, 1] for L in l]
-        labels = t.FloatTensor(labels).cuda()
+        # labels = label_binarize(l, [i for i in range(6)])
+        labels = t.LongTensor(l).cuda()
+        l = l.cuda()
 
         out = resnet(datas).squeeze()
         loss = criteria(out, labels).cuda()
@@ -117,7 +118,7 @@ for i in range(MAX_ITER):
         Loss += loss.data.item()
         # 进行与实际标签的比较时，由于标签是LongTensor类型，因此转化
         # 选用值高的一个作为预测结果
-        predict = t.LongTensor([0 if x[0] >= x[1] else 1 for x in out])
+        predict = t.argmax(out, dim=1)
         a += predict.shape[0]
         c += (predict == l).sum().item()
     print('train loss: ', Loss)
@@ -125,7 +126,7 @@ for i in range(MAX_ITER):
     print('train acc: ', c / a)
     train_acc_history.append(c / a)
 
-    val_acc, val_loss = validate(resnet, val_loader, criteria)
+    val_acc, val_loss = classfy_validate(resnet, val_loader, criteria, 6)
     print('val loss: ', val_loss)
     val_loss_history.append(val_loss)
     print('val acc: ', val_acc)
@@ -165,7 +166,7 @@ los_np = np.array(val_loss_history)
 np.save(save_path + 'acc.npy', acc_np)
 np.save(save_path + 'loss.npy', los_np)
 
-Acc,Loss,real,pred = validate(resnet, val_loader, criteria, return_predict=True)
+Acc,Loss,real,pred = classfy_validate(resnet, val_loader, criteria, 6, return_predict=True)
 conf_mat = confusion_matrix(real, pred)
 
 sum_up = np.sum(conf_mat, axis=1, keepdims=True)

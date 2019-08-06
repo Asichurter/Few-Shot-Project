@@ -291,12 +291,13 @@ def classfy_validate(model, dataloader, Criteria, classes, return_predict=False)
         out = model(data)
 
         # 同训练阶段一样
-        labels = sklearn.preprocessing.label_binarize(label, [i for i in range(classes)])
-        labels = t.FloatTensor(labels).cuda()
+        # labels = sklearn.preprocessing.label_binarize(label, [i for i in range(classes)])
+        labels = t.LongTensor(label).cuda()
+        label = label.cuda()
 
         loss = Criteria(out, labels)
         val_loss += loss.data.item()
-        pre_label = t.LongTensor(np.argmax(out, axis=1))
+        pre_label = t.argmax(out, dim=1)
 
         val_a += pre_label.shape[0]
         val_c += (pre_label == label).sum().item()

@@ -44,7 +44,8 @@ def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatt
     fig.tight_layout()
     plt.show()
 
-a = [[1,2,3],[3,2,1]]
+a = t.Tensor([[1,2,3],[3,2,1]])
+
 
 
 
