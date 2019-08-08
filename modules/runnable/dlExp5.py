@@ -1,26 +1,26 @@
-# 本实验是为了测试Resnet恶意代码分类的性能
-# 训练集和测试集中的良性样本是分开的
+# 本实验是为了验证Resnet在某类缺省的情况下，利用5-shot的小样本对其进行重新训练后的改善效果
+# 良性测试集仍然是分开的
 
 import numpy as np
-from modules.utils.imageUtils import classfy_validate
+from modules.utils.imageUtils import validate
 import torch as t
-from modules.model.MalResnet import ResNet
-from modules.model.datasets import ClassifyDataset
+from torch.nn import BCELoss
+from modules.model.datasets import DirDataset
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-from torch.nn import CrossEntropyLoss
 
-early_stop = False
-early_stop_window = 3
-model_save_path = 'D:/peimages/New/classsify_exp/'
-save_path = 'D:/Few-Shot-Project/doc/dl_classify_exp/'
-train_set_path = 'D:/peimages/New/classsify_exp/train/'
-val_set_path = 'D:/peimages/New/classsify_exp/validate/'
+default_class = "backdoor_default"
+model_load_path = 'D:/peimages/New/class_default_exp/%s_default/%s_best_loss_model.h5' % (default_class,default_class)
+model_save_path = "D:/peimages/New/class_default_retrain_exp/%s_default/" % default_class
+save_path = 'D:/Few-Shot-Project/doc/dl_default_retrain_fewshot_exp/%s_default/' % default_class
+train_set_path = 'D:/peimages/New/class_default_retrain_exp/%s_default/train/' % default_class
+val_set_path = 'D:/peimages/New/class_default_retrain_exp/%s_default/validate/' % default_class
+
 
 # 最大迭代次数
-MAX_ITER = 30
+MAX_ITER = 100
 
 def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
@@ -68,29 +68,44 @@ train_loss_history = []
 val_loss_history = []
 
 # 训练集数据集
-dataset = ClassifyDataset(train_set_path, 6)
+dataset = DirDataset(train_set_path)
 # 验证集数据集
-val_set = ClassifyDataset(val_set_path, 6)
+val_set = DirDataset(val_set_path)
 
 # 训练集数据加载器
 train_loader = DataLoader(dataset, batch_size=48, shuffle=True)
 # 验证集数据加载器
 val_loader = DataLoader(val_set, batch_size=16, shuffle=False)
 
-resnet = ResNet(1, 6)
+resnet = t.load(model_load_path)
 # resnet,pars = get_pretrained_resnet()
 resnet = resnet.cuda()
 
 # opt = t.optim.SGD(pars, lr=1e-2, momentum=0.9, weight_decay=0.2, nesterov=True)
 # 根据resnet的论文，使用1e-4的权重衰竭
-opt = t.optim.Adam(resnet.parameters(), lr=1e-3, weight_decay=1e-4)
+opt = t.optim.Adam(resnet.parameters(), lr=1e-4, weight_decay=1e-4)
 # 使用二元交叉熵为损失函数（可以替换为交叉熵损失函数）
-criteria = CrossEntropyLoss()
+criteria = t.nn.BCELoss()
 # 学习率调整器，使用的是按照指标的变化进行调整的调整器
 scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=3, verbose=True, min_lr=1e-5)
 
 num = 0
 best_val_loss = 0.
+
+#训练前先验证一次
+# -----------------------------------------------------------------------------------------------
+Acc,Loss,real,pred = validate(resnet, val_loader, criteria, return_predict=True)
+conf_mat = confusion_matrix(real, pred)
+
+sum_up = np.sum(conf_mat, axis=1, keepdims=True)
+conf_mat = conf_mat/sum_up
+
+tags = ["benign", "malware"]
+
+drawHeatmapWithGrid(conf_mat, "Before training \n%s default: Resnet's confusion matrix acc=%.3f loss=%.3f"%(default_class,Acc,Loss),
+                    tags, tags, "relative acc", formatter="%.4f", cmap="GnBu")
+# -----------------------------------------------------------------------------------------------
+
 print('training...')
 for i in range(MAX_ITER):
     print(i, ' th')
@@ -105,9 +120,8 @@ for i in range(MAX_ITER):
         datas = datas.cuda()
 
         # 创建可以输入到损失函数的float类型标签batch
-        # labels = label_binarize(l, [i for i in range(6)])
-        labels = t.LongTensor(l).cuda()
-        l = l.cuda()
+        labels = [[1, 0] if L == 0 else [0, 1] for L in l]
+        labels = t.FloatTensor(labels).cuda()
 
         out = resnet(datas).squeeze()
         loss = criteria(out, labels).cuda()
@@ -118,7 +132,7 @@ for i in range(MAX_ITER):
         Loss += loss.data.item()
         # 进行与实际标签的比较时，由于标签是LongTensor类型，因此转化
         # 选用值高的一个作为预测结果
-        predict = t.argmax(out, dim=1)
+        predict = t.LongTensor([0 if x[0] >= x[1] else 1 for x in out])
         a += predict.shape[0]
         c += (predict == l).sum().item()
     print('train loss: ', Loss)
@@ -126,54 +140,55 @@ for i in range(MAX_ITER):
     print('train acc: ', c / a)
     train_acc_history.append(c / a)
 
-    val_acc, val_loss = classfy_validate(resnet, val_loader, criteria, 6)
+    val_acc, val_loss = validate(resnet, val_loader, criteria)
     print('val loss: ', val_loss)
     val_loss_history.append(val_loss)
-    print('val acc: ', val_acc)
+    print('val accL: ', val_acc)
     val_acc_history.append(val_acc)
 
     if len(val_loss_history) == 1 or val_loss < best_val_loss:
         best_val_loss = val_loss
-        t.save(resnet, model_save_path + 'best_loss_model.h5')
+        t.save(resnet, model_save_path + ('%s_best_loss_model.h5'%default_class))
         print('save model at epoch %d' % i)
 
     num += 1
     # 使用学习率调节器来随验证损失来调整学习率
     scheduler.step(val_loss)
-
-
+    if num%10 == 0:
+        choice  = input("%d epoches have done, continue?")
+        if choice == "n" or choice == "no":
+            break
 
 # 根据历史值画出准确率和损失值曲线
 x = [i for i in range(num)]
 
-plt.title('Classifying Accuracy')
+plt.title('%s default: Accuracy'%default_class)
 plt.plot(x, val_acc_history, linestyle='-', color='green', label='validate')
 plt.plot(x, train_acc_history, linestyle='-', color='red', label='train')
 plt.legend()
-plt.savefig(save_path + 'acc.png')
+plt.savefig(save_path + ('%s_default_acc.png'%default_class))
 plt.show()
 
-plt.title('Classifying Loss')
+plt.title('%s default: Loss'%default_class)
 plt.plot(x, val_loss_history, linestyle='--', color='green', label='validate')
 plt.plot(x, train_loss_history, linestyle='--', color='red', label='train')
 plt.legend()
-plt.savefig(save_path + 'loss.png')
+plt.savefig(save_path + ('%s_default_loss.png'%default_class))
 plt.show()
 
 acc_np = np.array(val_acc_history)
 los_np = np.array(val_loss_history)
 
-np.save(save_path + 'acc.npy', acc_np)
-np.save(save_path + 'loss.npy', los_np)
+np.save(save_path + ('%s_default_acc.npy'%default_class), acc_np)
+np.save(save_path + ('%s_default_loss.npy'%default_class), los_np)
 
-Acc,Loss,real,pred = classfy_validate(resnet, val_loader, criteria, 6, return_predict=True)
+Acc,Loss,real,pred = validate(resnet, val_loader, criteria, return_predict=True)
 conf_mat = confusion_matrix(real, pred)
 
 sum_up = np.sum(conf_mat, axis=1, keepdims=True)
 conf_mat = conf_mat/sum_up
 
-tags = ["benign", "aworm", "backdoor_default", "email", "trojan", "virus"]
+tags = ["benign", "malware"]
 
-drawHeatmapWithGrid(conf_mat, "Classfying: Resnet's confusion matrix acc=%.3f loss=%.3f"%(Acc,Loss),
-                    tags, tags, "relative acc", formatter="%.4f", cmap="YlOrRd")
-
+drawHeatmapWithGrid(conf_mat, "After %d epoch training\n%s default: Resnet's confusion matrix acc=%.3f loss=%.3f"%(num,default_class,Acc,Loss),
+                    tags, tags, "relative acc", formatter="%.4f", cmap="GnBu")

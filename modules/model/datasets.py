@@ -39,21 +39,15 @@ class DirDataset(Dataset):
 
 #目录下有多个文件夹，每个文件夹是一个单独的种类
 class ClassifyDataset:
-    def __init__(self, path, classes, benign=True, transforms=None):
+    def __init__(self, path, classes, transforms=None):
         assert len(os.listdir(path))==classes, "给定种类数目:%d和路径下的文件夹数目:%d 不一致！"%(len(os.listdir(path)), classes)
         data = []
         label = []
-        i = 1
-        for Dir in os.listdir(path):
-            if benign and Dir=="benign":
-                l = 0
-            else:
-                l = i
-                i += 1
+        for i,Dir in enumerate(os.listdir(path)):
             col_path = path+Dir+"/"
             columns = os.listdir(col_path)
             data += [os.path.join(col_path, column) for column in columns]
-            label += [l]*len(columns)
+            label += [i]*len(columns)
         self.Data = data
         self.Label = label
         # 假设图像是单通道的

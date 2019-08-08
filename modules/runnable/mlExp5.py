@@ -1,5 +1,6 @@
-# 本实验是验证传统机器学习在小样本情况下，将恶意代码分类的实验
-# 5-shot和1-shot
+# 本实验是验证传统机器学习在小样本情况下，将恶意代码分为小类的实验
+# 5-shot
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,32 +10,32 @@ from sklearn.metrics import confusion_matrix
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import label_binarize
 
-TRAIN_DATA_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/aworm/all_train_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/all_train_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/all_train_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/net-worm/all_train_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/virus/all_train_data.npy"]
-TRAIN_LABEL_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/aworm/all_train_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/all_train_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/all_train_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/net-worm/all_train_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/virus/all_train_label.npy"]
+TRAIN_DATA_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/trojan/OnLineGames_train_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/PcClient_train_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/LdPinch_train_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/Agent_train_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/aworm/AutoRun_train_data.npy"]
+TRAIN_LABEL_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/trojan/OnLineGames_train_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/PcClient_train_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/LdPinch_train_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/Agent_train_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/aworm/AutoRun_train_label.npy"]
 
-TEST_DATA_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/aworm/all_test_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/all_test_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/all_test_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/net-worm/all_test_data.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/virus/all_test_data.npy"]
-TEST_LABEL_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/aworm/all_test_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/all_test_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/all_test_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/net-worm/all_test_label.npy",
-                    "D:/Few-Shot-Project/data/ExtClass5Shot/virus/all_test_label.npy"]
+TEST_DATA_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/trojan/OnLineGames_test_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/PcClient_test_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/LdPinch_test_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/Agent_test_data.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/aworm/AutoRun_test_data.npy"]
+TEST_LABEL_PATHS = ["D:/Few-Shot-Project/data/ExtClass5Shot/trojan/OnLineGames_test_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/PcClient_test_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/trojan/LdPinch_test_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/backdoor_default/Agent_test_label.npy",
+                    "D:/Few-Shot-Project/data/ExtClass5Shot/aworm/AutoRun_test_label.npy"]
 
-seed = 2
+seed = 22
 
 def drawHeatmap(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10,8))
     im = ax.imshow(data, **kwargs)
 
     cbar = ax.figure.colorbar(im, ax=ax)
@@ -168,13 +169,7 @@ knn_sum = np.sum(knn_cm, axis=1, keepdims=True)
 knn_cm = knn_cm/knn_sum
 svm_cm = svm_cm/svm_sum
 
-tags = ["aworm","backdoor_default","trojan","net-worm","virus"]
+tags = ["trojan.PSW.OnLineGames","backdoor_default.PcClient","trojan.PSW.LdPinch","backdoor_default.Agent","worm.AutoRun"]
 
-drawHeatmap(svm_cm, "svm classify confusion matrix, acc=%.3f" % svm_acc, tags, tags, "relative acc", formatter="%.4f", cmap="YlOrRd")
+drawHeatmap(svm_cm, "svm classify confusion matrix, acc=%.3f" % svm_acc, tags, tags, "relative acc", formatter="%.4f", cmap="GnBu")
 drawHeatmap(knn_cm, "knn classify confusion matrix, acc=%.3f" % knn_acc, tags, tags, "relative acc", formatter="%.4f", cmap="YlOrRd")
-
-
-
-
-
-

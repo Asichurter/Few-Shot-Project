@@ -4,6 +4,8 @@ import os
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import label_binarize
+from scipy.stats import entropy
+import PIL.Image as Image
 
 def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
@@ -44,7 +46,12 @@ def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatt
     fig.tight_layout()
     plt.show()
 
-a = t.Tensor([[1,2,3],[3,2,1]])
+a = np.array([[1,2],[2,3]])
+b = np.array([[1,3],[3,2]])
+
+c = np.ones((256,256), dtype=np.uint8)*255
+img = Image.fromarray(c)
+img.show()
 
 
 

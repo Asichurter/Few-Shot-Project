@@ -8,6 +8,7 @@ import shutil
 #import pandas as pd
 import warnings
 import sklearn
+import random as rd
 
 HOME = r'C:/Users/10904/Desktop/'
 EXES = ['exe', 'dll', 'ocx', 'sys', 'com']
@@ -94,16 +95,15 @@ def convert_to_images(base, destination, mode='file', method='normal',
         if not os.path.isdir(base):
             raise Exception(base + ' is not a director!\n')
         files = os.listdir(base)
-        assert cluster is None or not sample, '限制名字和采样不能同时进行！'
+        files = list(filter(lambda x: cluster in [x.split(".")[-2], x.split(".")[-2]], files)) if cluster is not None else files
+        # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
+        assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d!"%(len(files), num_constrain)
         if sample:
             files = random.sample(files, num_constrain)
         num = 0
         for one in files:
             if num_constrain is not None and num == num_constrain:
                 break
-            child_clusters = [one.split(sep='.')[-2], one.split(sep='.')[-1]]
-            if cluster is not None and cluster not in child_clusters:
-                continue
             print(num)
             im = convert(base + one, method, padding)
             im.save(destination + one + '.jpg', 'JPEG')
@@ -148,6 +148,22 @@ def convert(path, method, padding):
     file.close()
     return im
 
+def make_noise_image(path, num, size=(WIDTH,WIDTH), mode="uniform", type="JPEG", prefix="", constant=0):
+    postfix={"JPEG":"jpg", "PNG":"png"}
+    for i in range(1, num+1):
+        print(i)
+        if mode == "uniform":
+            img = np.random.randint(0,256,size, dtype=np.uint8)
+        elif mode == "gauss":
+            img = np.uint8(np.random.normal(128, 40, size=size))
+        elif mode == "constant":
+            img = np.ones(size, dtype=np.uint8)*constant
+        else:
+            assert False, "选择的生成数据的模式 %s 并不支持！"%mode
+        img = Image.fromarray(img)
+        #print(path+prefix+str(i)+"."+postfix[type])
+        img.save(path+prefix+str(i)+"."+postfix[type], type)
+
 
 def check_continuing_decrease(history, window=3):
     '''
@@ -169,7 +185,6 @@ def create_malware_images(dest=r'D:/peimages/validate/', base=r'D:/pe/', num_per
     dest:目标文件夹\n
     base:恶意代码文件夹\n
     num_per_class:每个类挑选的数量。不足该数量时会取总数量一半\n
-    deprecated:不选取的类，默认为蠕虫，因为该类型的文件夹结构不同于其他类型\n
     '''
     if base[-1] != '/':
         base += '/'
@@ -350,13 +365,13 @@ if __name__ == "__main__":
     #                   num_constrain=1200,
     #                   cluster='OnLineGames',
     #                   sample=False)
-    # convert_to_images(base=r'D:/pe/trojan1/',
-    #                   destination=r'D:/peimages/oneClasses/trojan1.Buzus/remain/malware/',
+    # convert_to_images(base=r'D:/pe/aworm/',
+    #                   destination=r'D:/peimages/New/sub_classify_exp/worm.AutoRun/train/',
     #                   mode='dir',
     #                   padding=False,
-    #                   #num_constrain=1200,
-    #                   cluster='Buzus',
-    #                   sample=False)
+    #                   num_constrain=1200,
+    #                   cluster='AutoRun',
+    #                   sample=True)
 
 
     #为了将D盘的文件生成为良性文件集合
@@ -369,18 +384,20 @@ if __name__ == "__main__":
     #                        mode='dir',padding=False,num_constrain=3000)
 
     # 生成整体测试数据集，训练和测试用良性数据集之间是分开的
-    # create_benign(dest="D:/peimages/New/classsify_exp/validate/benign/",
-    #               num=1000,
-    #               using=[3])
-    # create_malware_images(dest="D:/peimages/New/class_default_exp/virus_default/train/malware/",
+    create_benign(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
+                  num=450,
+                  using=[0])
+    # create_malware_images(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/malware/",
     #                       num_per_class=100,
-    #                       using=["aworm","backdoor1","dos","email",
-    #                              "exploit","net-worm","trojan0","packed","rootkit"])"virus"
-    # create_malware_images(dest="D:/peimages/New/classsify_exp/train/virus/",
-    #                       num_per_class=1200,
-    #                       using=["virus"])
-    split_datas(src="D:/peimages/New/classsify_exp/train/virus/",
-                dest="D:/peimages/New/classsify_exp/validate/virus/",
-                ratio=1000,
-                mode="x")
+    #                       using=["aworm","dos","email","virus",
+    #                              "exploit","net-worm","trojan0","packed","rootkit"])
+    # create_malware_images(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/validate/malware/",
+    #                       num_per_class=900,
+    #                       using=["backdoor1"])
+    # split_datas(src='D:/peimages/New/class_default_retrain_exp/backdoor_default/train/malware/',
+    #             dest='D:/peimages/New/class_default_retrain_exp/backdoor_default/validate/malware/',
+    #             ratio=1000,
+    #             mode="x")
+    # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
+    #                  num=450, prefix="gauss_noise_", mode="gauss")
 

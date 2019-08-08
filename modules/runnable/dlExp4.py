@@ -1,4 +1,4 @@
-# 本实验是为了测试Resnet恶意代码分类的性能
+# 本实验是为了测试Resnet恶意代码分为子类的性能
 # 训练集和测试集中的良性样本是分开的
 
 import numpy as np
@@ -12,15 +12,15 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from torch.nn import CrossEntropyLoss
 
-early_stop = False
-early_stop_window = 3
-model_save_path = 'D:/peimages/New/classsify_exp/'
-save_path = 'D:/Few-Shot-Project/doc/dl_classify_exp/'
-train_set_path = 'D:/peimages/New/classsify_exp/train/'
-val_set_path = 'D:/peimages/New/classsify_exp/validate/'
+train = True
+model_save_path = 'D:/peimages/New/sub_classify_exp/'
+save_path = 'D:/Few-Shot-Project/doc/dl_sub_classify_exp/'
+train_set_path = 'D:/peimages/New/sub_classify_exp/train/'
+val_set_path = 'D:/peimages/New/sub_classify_exp/validate/'
+
 
 # 最大迭代次数
-MAX_ITER = 30
+MAX_ITER = 100
 
 def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
@@ -62,22 +62,22 @@ def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatt
     plt.show()
 
 # 记录历史的训练和验证数据
-train_acc_history = []
-val_acc_history = []
-train_loss_history = []
-val_loss_history = []
+train_acc_history = [] if train else np.load(save_path+"train_acc.npy").tolist()
+val_acc_history = [] if train else np.load(save_path+"train_loss.npy").tolist()
+train_loss_history = [] if train else np.load(save_path+"acc.npy").tolist()
+val_loss_history = [] if train else np.load(save_path+"loss.npy").tolist()
 
 # 训练集数据集
-dataset = ClassifyDataset(train_set_path, 6)
+dataset = ClassifyDataset(train_set_path, 5)
 # 验证集数据集
-val_set = ClassifyDataset(val_set_path, 6)
+val_set = ClassifyDataset(val_set_path, 5)
 
 # 训练集数据加载器
 train_loader = DataLoader(dataset, batch_size=48, shuffle=True)
 # 验证集数据加载器
 val_loader = DataLoader(val_set, batch_size=16, shuffle=False)
 
-resnet = ResNet(1, 6)
+resnet = ResNet(1, 5) if train else t.load(model_save_path + 'best_loss_model.h5')
 # resnet,pars = get_pretrained_resnet()
 resnet = resnet.cuda()
 
@@ -89,10 +89,10 @@ criteria = CrossEntropyLoss()
 # 学习率调整器，使用的是按照指标的变化进行调整的调整器
 scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=3, verbose=True, min_lr=1e-5)
 
-num = 0
-best_val_loss = 0.
+num = len(train_acc_history)
+best_val_loss = 0. if train else min(val_loss_history)
 print('training...')
-for i in range(MAX_ITER):
+for i in range(len(train_acc_history), len(train_acc_history)+MAX_ITER):
     print(i, ' th')
     a = 0
     c = 0
@@ -126,7 +126,7 @@ for i in range(MAX_ITER):
     print('train acc: ', c / a)
     train_acc_history.append(c / a)
 
-    val_acc, val_loss = classfy_validate(resnet, val_loader, criteria, 6)
+    val_acc, val_loss = classfy_validate(resnet, val_loader, criteria, 5)
     print('val loss: ', val_loss)
     val_loss_history.append(val_loss)
     print('val acc: ', val_acc)
@@ -140,6 +140,10 @@ for i in range(MAX_ITER):
     num += 1
     # 使用学习率调节器来随验证损失来调整学习率
     scheduler.step(val_loss)
+    if i%20==0:
+        choice = input("%d epoches have done, continue?"%num)
+        if choice == "n" or choice=="no":
+            break
 
 
 
@@ -165,15 +169,17 @@ los_np = np.array(val_loss_history)
 
 np.save(save_path + 'acc.npy', acc_np)
 np.save(save_path + 'loss.npy', los_np)
+np.save(save_path + "train_acc.npy", np.array(train_acc_history))
+np.save(save_path + "train_loss.npy", np.array(train_loss_history))
 
-Acc,Loss,real,pred = classfy_validate(resnet, val_loader, criteria, 6, return_predict=True)
+Acc,Loss,real,pred = classfy_validate(resnet, val_loader, criteria, 5, return_predict=True)
 conf_mat = confusion_matrix(real, pred)
 
 sum_up = np.sum(conf_mat, axis=1, keepdims=True)
 conf_mat = conf_mat/sum_up
 
-tags = ["benign", "aworm", "backdoor_default", "email", "trojan", "virus"]
+tags = ["backdoor_default.Agent", "backdoor_default.PcClient", "trojan.PSW.LdPinch", "trojan.PSW.OnLineGames", "worm.AutoRun"]
 
-drawHeatmapWithGrid(conf_mat, "Classfying: Resnet's confusion matrix acc=%.3f loss=%.3f"%(Acc,Loss),
-                    tags, tags, "relative acc", formatter="%.4f", cmap="YlOrRd")
+drawHeatmapWithGrid(conf_mat, "Subclass Classfying: Resnet's confusion matrix acc=%.3f loss=%.3f"%(Acc,Loss),
+                    tags, tags, "relative acc", formatter="%.4f", cmap="YlGn")
 
