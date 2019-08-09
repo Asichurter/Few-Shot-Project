@@ -2,6 +2,8 @@ import os
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms as T
+from torch.utils.data import Sampler
+import random as rd
 
 
 # 文件夹数据集
@@ -38,7 +40,7 @@ class DirDataset(Dataset):
         return len(self.Datas)
 
 #目录下有多个文件夹，每个文件夹是一个单独的种类
-class ClassifyDataset:
+class ClassifyDataset(Dataset):
     def __init__(self, path, classes, transforms=None):
         assert len(os.listdir(path))==classes, "给定种类数目:%d和路径下的文件夹数目:%d 不一致！"%(len(os.listdir(path)), classes)
         data = []
@@ -87,6 +89,71 @@ class PretrainedResnetDataset(DirDataset):
 
     def __len__(self):
         return super().__len__()
+
+class FewShotRNDataset(Dataset):
+    # 直接指向support set或者query set路径下
+    def __init__(self, base, transform=None):
+        self.Data = []
+        self.Label = []
+        # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
+        for i,c in enumerate(os.listdir(base)):
+            # assert num_instance <= len(os.listdir(path+c+"/")), "实际类别内样本数目%d小于输入样本数目！" % (num_instance, len(os.listdir(path+c+"/")))
+            for instance in os.listdir(base+c+"/"):
+                self.Data.append(base+c+"/"+instance)
+            self.Label += [i]*len(os.listdir(base+c+"/"))
+
+        self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
+
+    def __getitem__(self, index):
+        img = Image.open(self.Data[index])
+        img = self.Transform(img)
+        label = self.Label[index]
+
+        return img,label
+
+    def __len__(self):
+        return len(self.Data)
+
+class RNSamlper(Sampler):
+    def __init__(self, instances, classes, num_per_class, shuffle):
+        '''
+        用于组成训练时sample set/query set和测试时support set和test set的采样器\n
+        sample和query来自相同的类中，均为采样得到的
+        :param classes: 选到的要采样的类
+        :param num_per_class:
+        :param num_instance:
+        :param shuffle:
+        '''
+        self.classes = classes
+        self.num_per_class = num_per_class
+        self.shuffle = shuffle
+        self.instances = instances
+
+    def __iter__(self):
+        batch = []
+        for c in self.classes:
+            for i in self.instances:
+                batch.append(self.num_per_class*c+i)
+        if self.shuffle:
+            rd.shuffle(batch)
+        return iter(batch)
+
+    def __len__(self):
+        return 1
+
+def get_RN_sampler(classes, train_num, test_num, num_per_class):
+    assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
+    instance_pool = [i for i in range(num_per_class)]
+    instances = rd.sample(instance_pool, train_num+test_num)
+    rd.seed(2)
+    rd.shuffle(instances)
+
+    train_instances= instances[:train_num]
+    test_instances = instances[train_num:]
+
+    return RNSamlper(train_instances,classes,num_per_class,False),\
+           RNSamlper(test_instances,classes,num_per_class,True)
+
 
 
 if __name__ == '__main__':

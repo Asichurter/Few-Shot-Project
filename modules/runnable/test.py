@@ -6,6 +6,10 @@ from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import label_binarize
 from scipy.stats import entropy
 import PIL.Image as Image
+import torch.nn as nn
+import math as m
+from sklearn.preprocessing import label_binarize
+import random as rd
 
 def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatter="%s", **kwargs):
     fig, ax = plt.subplots()
@@ -46,12 +50,12 @@ def drawHeatmapWithGrid(data, title, col_labels, row_labels, cbar_label, formatt
     fig.tight_layout()
     plt.show()
 
-a = np.array([[1,2],[2,3]])
-b = np.array([[1,3],[3,2]])
+support = [1,1,1,1,2,2,2.2,3,3,3,3,4,4,4,4]
+num_instance = 4
 
-c = np.ones((256,256), dtype=np.uint8)*255
-img = Image.fromarray(c)
-img.show()
+
+
+
 
 
 
