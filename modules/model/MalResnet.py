@@ -79,11 +79,17 @@ class ResNet(t.nn.Module):
         self.initialize()
 
     def forward(self, x):
+        print("x: ", x.size())
         x = self.Ahead(x)
+        print("Ahead out: ", x.size())
         x = self.Layer1(x)
+        print("layer1 out: ", x.size())
         x = self.Layer2(x)
+        print("layer2 out: ", x.size())
         x = self.Layer3(x)
+        print("layer3 out: ", x.size())
         x = self.Layer4(x)
+        print("layer4 out: ", x.size())
         # 256/4/2/2/2=8,变成1的话需要长度为8的平均池化
         x = F.avg_pool2d(x, 8)
         # 将样本整理为(批大小，1)的形状
@@ -96,11 +102,14 @@ class ResNet(t.nn.Module):
 
     def initialize(self):
         for name, par in self.named_parameters():
-            print(name, par.shape)
+            # print(name, par.shape)
             if 'bn' not in name and 'bias' not in name:
                 kaiming_normal_(par, mode='fan_in', nonlinearity='relu')
 
 
 if __name__ == '__main__':
-    # x = ResNet(1)
-    a = t.LongTensor([0, 1])
+    x = ResNet(1).cuda()
+    a = t.randn((48,1,256,256)).cuda()
+    a = x(a)
+    # for name,par in x.named_modules():
+    #     print(name, par)

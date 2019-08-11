@@ -120,9 +120,9 @@ class RNSamlper(Sampler):
         用于组成训练时sample set/query set和测试时support set和test set的采样器\n
         sample和query来自相同的类中，均为采样得到的
         :param classes: 选到的要采样的类
-        :param num_per_class:
-        :param num_instance:
-        :param shuffle:
+        :param instances: 选到的要采样的样本下标
+        :param num_per_class: 每个类的最大样本数量
+        :param shuffle: 是否随机打乱顺序
         '''
         self.classes = classes
         self.num_per_class = num_per_class

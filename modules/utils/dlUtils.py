@@ -2,12 +2,14 @@ import torch
 import math
 
 def RN_labelize(support, query, num_instance):
-    support = [support[i] for i in range(0,len(support),num_instance)]
+    support = torch.LongTensor([support[i].item() for i in range(0,len(support),num_instance)])
+    support = support.cuda()
     support = support.repeat(len(query))
-    query = query.reshape(-1,1)
+    query = query.view(-1,1)
     query = query.repeat((1,num_instance)).view(-1)
     assert support.size()[0] == query.size()[0], "扩展后的支持集和查询集的标签长度不一致，无法生成得分向量！"
-    return (query==support).view(-1,num_instance)
+    label = (query==support).view(-1,num_instance)
+    return label.float()
 
 #每个神经网络层的权重的初始化方法，用于传递给module中所有的子模块的函数参数
 def RN_weights_init(m):
@@ -34,7 +36,7 @@ def RN_weights_init(m):
         #权重全部初始化为简单正态分布
         m.weight.data.normal_(0, 0.01)
         #偏置项全部置为1
-        m.bias.data = torch.ones(m.bias.data.size())
+        m.bias.data = torch.ones(m.bias.data.size()).cuda()
 
 
 

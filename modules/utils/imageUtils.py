@@ -365,13 +365,13 @@ if __name__ == "__main__":
     #                   num_constrain=1200,
     #                   cluster='OnLineGames',
     #                   sample=False)
-    # convert_to_images(base=r'D:/pe/aworm/',
-    #                   destination=r'D:/peimages/New/sub_classify_exp/worm.AutoRun/train/',
-    #                   mode='dir',
-    #                   padding=False,
-    #                   num_constrain=1200,
-    #                   cluster='AutoRun',
-    #                   sample=True)
+    convert_to_images(base=r'D:/pe/virus/',
+                      destination=r'D:/peimages/New/RN_5shot_5way_exp/validate/9/',
+                      mode='dir',
+                      padding=False,
+                      num_constrain=30,
+                      cluster='Xorer',
+                      sample=True)
 
 
     #为了将D盘的文件生成为良性文件集合
@@ -384,15 +384,15 @@ if __name__ == "__main__":
     #                        mode='dir',padding=False,num_constrain=3000)
 
     # 生成整体测试数据集，训练和测试用良性数据集之间是分开的
-    create_benign(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
-                  num=450,
-                  using=[0])
+    # create_benign(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
+    #               num=450,
+    #               using=[0])
     # create_malware_images(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/malware/",
     #                       num_per_class=100,
     #                       using=["aworm","dos","email","virus",
     #                              "exploit","net-worm","trojan0","packed","rootkit"])
-    # create_malware_images(dest="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/validate/malware/",
-    #                       num_per_class=900,
+    # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
+    #                       num_per_class=30,
     #                       using=["backdoor1"])
     # split_datas(src='D:/peimages/New/class_default_retrain_exp/backdoor_default/train/malware/',
     #             dest='D:/peimages/New/class_default_retrain_exp/backdoor_default/validate/malware/',
