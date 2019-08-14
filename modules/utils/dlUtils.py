@@ -1,5 +1,7 @@
 import torch
 import math
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier as KNN
 
 def RN_labelize(support, query, num_instance):
     support = torch.LongTensor([support[i].item() for i in range(0,len(support),num_instance)])
@@ -37,6 +39,23 @@ def RN_weights_init(m):
         m.weight.data.normal_(0, 0.01)
         #偏置项全部置为1
         m.bias.data = torch.ones(m.bias.data.size()).cuda()
+
+def RN_baseline_KNN(supports, queries, support_labels, query_labels, k):
+    '''
+    作为RelationNetwork的基准线，将Embed模块的输出使用knn进行分类评估
+    :return: knn分类正确率
+    '''
+    support_labels = np.array([support_labels[i].item() for i in range(0,len(support_labels),k)])
+    query_labels = query_labels.cpu().detach().numpy()
+    supports = supports.cpu().detach().numpy().reshape(supports.shape[0],-1)
+    queries = queries.cpu().detach().numpy().reshape(queries.shape[0],-1)
+
+    knn = KNN(n_neighbors=1)
+    knn.fit(supports, support_labels)
+    predicts = knn.predict(queries)
+    return (predicts==query_labels).sum()/query_labels.shape[0]
+
+
 
 
 

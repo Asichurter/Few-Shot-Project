@@ -10,10 +10,11 @@ from torch.autograd import no_grad
 from torchstat import stat
 import inspect
 from modules.utils.gpu_mem_track import MemTracker
+from modules.utils.dlUtils import RN_baseline_KNN
 
 from modules.model.RelationNet import RN
 from modules.utils.dlUtils import RN_weights_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_sampler
+from modules.model.datasets import FewShotRNDataset, get_RN_sampler, get_RN_modified_sampler
 
 def get_parameter_number(net):
     total_num = sum(p.numel() for p in net.parameters())
@@ -28,7 +29,7 @@ TEST_PATH = "D:/peimages/New/RN_5shot_5way_exp/validate/"
 MODEL_SAVE_PATH = "D:/peimages/New/RN_5shot_5way_exp/"
 
 input_size = 256
-hidder_size = 8
+hidder_size = 64
 
 # 每个类多少个样本，即k-shot
 k = 5
@@ -41,8 +42,8 @@ N = 30
 # 学习率
 lr = 1e-3
 
-TEST_CYCLE = 10
-MAX_ITER = 100
+TEST_CYCLE = 50
+MAX_ITER = 1000
 
 # 训练和测试中类的总数
 train_classes = 10
@@ -81,7 +82,8 @@ for episode in range(MAX_ITER):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TRAIN_CLASSES, n)
     train_dataset = FewShotRNDataset(TRAIN_PATH)
-    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
+    # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
+    sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
     train_sample_dataloader = DataLoader(train_dataset, batch_size=n*k, sampler=sample_sampler)
     train_query_dataloader = DataLoader(train_dataset, batch_size=qk*n, sampler=query_sampler)
@@ -135,7 +137,7 @@ for episode in range(MAX_ITER):
         with no_grad():
             # 每一轮开始的时候先抽取n个实验类
             support_classes = rd.sample(TEST_CLASSES, n)
-            support_sampler, test_sampler = get_RN_sampler(sample_classes, k, qk, N)
+            support_sampler, test_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
             test_dataset = FewShotRNDataset(TEST_PATH)
 
             test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
@@ -153,6 +155,8 @@ for episode in range(MAX_ITER):
 
             test_labels = RN_labelize(support_labels, test_labels, k)
             test_relations = rn(supports, tests).view(-1, n).cuda()
+            m_support,m_query = rn(supports, tests, feature_out=True)
+            test_baseline = RN_baseline_KNN(m_support, m_query, support_labels, query_labels, k)
 
             test_loss = mse(test_relations, test_labels).item()
             test_acc = (t.argmax(test_relations, dim=1)==t.argmax(test_labels, dim=1)).sum().item()/test_labels.size(0)
@@ -162,5 +166,6 @@ for episode in range(MAX_ITER):
 
             print("val acc: ", test_acc)
             print("val loss: ", test_loss)
+            print("knn baseline acc: ", test_baseline)
             input("----- Test Complete ! -----")
 

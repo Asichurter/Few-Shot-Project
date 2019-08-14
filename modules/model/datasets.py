@@ -90,6 +90,13 @@ class PretrainedResnetDataset(DirDataset):
     def __len__(self):
         return super().__len__()
 
+class Rotate:
+    def __init__(self, angle):
+        self.angle = angle
+
+    def __call__(self, x):
+        return x.rotate(self.angle)
+
 class FewShotRNDataset(Dataset):
     # 直接指向support set或者query set路径下
     def __init__(self, base, transform=None):
@@ -101,11 +108,13 @@ class FewShotRNDataset(Dataset):
             for instance in os.listdir(base+c+"/"):
                 self.Data.append(base+c+"/"+instance)
             self.Label += [i]*len(os.listdir(base+c+"/"))
-
         self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
 
     def __getitem__(self, index):
         img = Image.open(self.Data[index])
+        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
+        rotation = rd.choice([0,90,180,270])
+        img = img.rotate(rotation)
         img = self.Transform(img)
         label = self.Label[index]
 
@@ -120,7 +129,6 @@ class RNSamlper(Sampler):
         用于组成训练时sample set/query set和测试时support set和test set的采样器\n
         sample和query来自相同的类中，均为采样得到的
         :param classes: 选到的要采样的类
-        :param instances: 选到的要采样的样本下标
         :param num_per_class: 每个类的最大样本数量
         :param shuffle: 是否随机打乱顺序
         '''
@@ -141,6 +149,37 @@ class RNSamlper(Sampler):
     def __len__(self):
         return 1
 
+class RNModifiedSamlper(Sampler):
+    def __init__(self, classes, num_per_class, shuffle, k, qk=None):
+        '''
+        用于组成训练时sample set/query set和测试时support set和test set的采样器\n
+        sample和query来自相同的类中，sample和query的划分是固定的，不是采样得到的
+        :param classes: 选到的要采样的类
+        :param num_per_class: 每个类的最大样本数量
+        :param shuffle: 是否随机打乱顺序
+        '''
+        self.classes = classes
+        self.num_per_class = num_per_class
+        self.shuffle = shuffle
+        if qk is None:
+            self.Start = 0
+            self.End = k
+        else:
+            self.Start = k
+            self.End = qk+k
+
+    def __iter__(self):
+        batch = []
+        for c in self.classes:
+            for i in range(self.Start, self.End):
+                batch.append(self.num_per_class*c+i)
+        if self.shuffle:
+            rd.shuffle(batch)
+        return iter(batch)
+
+    def __len__(self):
+        return 1
+
 def get_RN_sampler(classes, train_num, test_num, num_per_class):
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
     instance_pool = [i for i in range(num_per_class)]
@@ -153,6 +192,12 @@ def get_RN_sampler(classes, train_num, test_num, num_per_class):
 
     return RNSamlper(train_instances,classes,num_per_class,False),\
            RNSamlper(test_instances,classes,num_per_class,True)
+
+def get_RN_modified_sampler(classes, train_num, test_num, num_per_class):
+    assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
+
+    return RNModifiedSamlper(classes, num_per_class, shuffle=False, k=train_num),\
+            RNModifiedSamlper(classes, num_per_class, shuffle=True, k=train_num, qk=test_num)
 
 
 
