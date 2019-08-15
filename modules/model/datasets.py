@@ -90,21 +90,21 @@ class PretrainedResnetDataset(DirDataset):
     def __len__(self):
         return super().__len__()
 
-class Rotate:
-    def __init__(self, angle):
-        self.angle = angle
-
-    def __call__(self, x):
-        return x.rotate(self.angle)
+# class Rotate:
+#     def __init__(self, angle):
+#         self.angle = angle
+#
+#     def __call__(self, x):
+#         return x.rotate(self.angle)
 
 class FewShotRNDataset(Dataset):
     # 直接指向support set或者query set路径下
-    def __init__(self, base, transform=None):
+    def __init__(self, base, n, transform=None):
         self.Data = []
         self.Label = []
         # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
         for i,c in enumerate(os.listdir(base)):
-            # assert num_instance <= len(os.listdir(path+c+"/")), "实际类别内样本数目%d小于输入样本数目！" % (num_instance, len(os.listdir(path+c+"/")))
+            assert n == len(os.listdir(base+c+"/")), "实际类别内样本数目%d不等同输入样本数目%d！" % (n, len(os.listdir(base+c+"/")))
             for instance in os.listdir(base+c+"/"):
                 self.Data.append(base+c+"/"+instance)
             self.Label += [i]*len(os.listdir(base+c+"/"))
@@ -180,11 +180,11 @@ class RNModifiedSamlper(Sampler):
     def __len__(self):
         return 1
 
-def get_RN_sampler(classes, train_num, test_num, num_per_class):
+def get_RN_sampler(classes, train_num, test_num, num_per_class, seed):
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
     instance_pool = [i for i in range(num_per_class)]
     instances = rd.sample(instance_pool, train_num+test_num)
-    rd.seed(2)
+    rd.seed(seed)
     rd.shuffle(instances)
 
     train_instances= instances[:train_num]

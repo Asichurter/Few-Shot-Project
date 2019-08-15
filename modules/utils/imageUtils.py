@@ -365,12 +365,12 @@ if __name__ == "__main__":
     #                   num_constrain=1200,
     #                   cluster='OnLineGames',
     #                   sample=False)
-    convert_to_images(base=r'D:/pe/virus/',
-                      destination=r'D:/peimages/New/RN_5shot_5way_exp/validate/9/',
+    convert_to_images(base=r'D:/pe/trojan5/',
+                      destination=r'D:/peimages/New/RN_5shot_5way_exp/train/29/',
                       mode='dir',
                       padding=False,
-                      num_constrain=30,
-                      cluster='Xorer',
+                      num_constrain=20,
+                      cluster='Pixoliz',
                       sample=True)
 
 
