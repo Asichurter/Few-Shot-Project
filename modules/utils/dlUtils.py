@@ -2,16 +2,24 @@ import torch
 import math
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier as KNN
+from torch.nn.init import kaiming_normal_, xavier_normal_
 
-def RN_labelize(support, query, num_instance):
+def RN_labelize(support, query, num_instance, type="float", expand=True):
     support = torch.LongTensor([support[i].item() for i in range(0,len(support),num_instance)])
     support = support.cuda()
     support = support.repeat(len(query))
     query = query.view(-1,1)
     query = query.repeat((1,num_instance)).view(-1)
     assert support.size()[0] == query.size()[0], "扩展后的支持集和查询集的标签长度不一致，无法生成得分向量！"
-    label = (query==support).view(-1,num_instance)
-    return label.float()
+    if not expand:
+        label = torch.argmax((query==support).view(-1,num_instance), dim=1)
+    else:
+        label = (query==support).view(-1,num_instance)
+    if type=="float":
+        return label.float()
+    else:
+        return label.long()
+
 
 #每个神经网络层的权重的初始化方法，用于传递给module中所有的子模块的函数参数
 def RN_weights_init(m):
@@ -40,6 +48,16 @@ def RN_weights_init(m):
         #偏置项全部置为1
         m.bias.data = torch.ones(m.bias.data.size()).cuda()
 
+def net_init(m):
+    classname = m.__class__.__name__
+    if classname.find("Conv") != -1:
+        for par in m.parameters():
+            kaiming_normal_(par, nonlinearity="relu")
+    # elif classname.find("Linear") != -1:
+    #     for par in m.parameters():
+    #         xavier_normal_(par)
+
+
 def RN_baseline_KNN(supports, queries, support_labels, query_labels, k):
     '''
     作为RelationNetwork的基准线，将Embed模块的输出使用knn进行分类评估
@@ -54,6 +72,13 @@ def RN_baseline_KNN(supports, queries, support_labels, query_labels, k):
     knn.fit(supports, support_labels)
     predicts = knn.predict(queries)
     return (predicts==query_labels).sum()/query_labels.shape[0]
+
+def RN_repeat_query_instance(instances, n):
+    result = torch.FloatTensor([]).cuda()
+    for tensor in torch.unbind(instances):
+        repeat_ones = tensor.repeat((n,1,1,1))
+        result = torch.cat((result, repeat_ones), dim=0)
+    return result
 
 
 

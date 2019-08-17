@@ -95,7 +95,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
         if not os.path.isdir(base):
             raise Exception(base + ' is not a director!\n')
         files = os.listdir(base)
-        files = list(filter(lambda x: cluster in [x.split(".")[-2], x.split(".")[-2]], files)) if cluster is not None else files
+        files = list(filter(lambda x: cluster in [x.split(".")[-2], x.split(".")[-3]], files)) if cluster is not None else files
         # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
         assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d!"%(len(files), num_constrain)
         if sample:
@@ -365,12 +365,12 @@ if __name__ == "__main__":
     #                   num_constrain=1200,
     #                   cluster='OnLineGames',
     #                   sample=False)
-    convert_to_images(base=r'D:/pe/trojan5/',
-                      destination=r'D:/peimages/New/RN_5shot_5way_exp/train/29/',
+    convert_to_images(base=r'D:/pe/trojan2/',
+                      destination=r'D:/peimages/New/RN_5shot_5way_exp/train/59/',
                       mode='dir',
                       padding=False,
                       num_constrain=20,
-                      cluster='Pixoliz',
+                      cluster='Pozad',
                       sample=True)
 
 
