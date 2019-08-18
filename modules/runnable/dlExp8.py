@@ -15,8 +15,8 @@ from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
 
-TRAIN_PATH = "D:/peimages/New/RN_5shot_5way_exp/train/"
-TEST_PATH = "D:/peimages/New/RN_5shot_5way_exp/validate/"
+TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
+TEST_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 MODEL_SAVE_PATH = "D:/peimages/New/RN_5shot_5way_exp/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
@@ -34,14 +34,15 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 1
+version = 2
 
 TEST_CYCLE = 50
 MAX_ITER = 10000
+TEST_EPISODE = 50
 
 # 训练和测试中类的总数
-train_classes = 60
-test_classes = 5
+train_classes = 300
+test_classes = 111
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -123,39 +124,42 @@ for episode in range(MAX_ITER):
         net.eval()
         print("test stage at %d episode"%episode)
         with no_grad():
-            # 每一轮开始的时候先抽取n个实验类
-            # support_classes = rd.sample(TEST_CLASSES, n)
-            support_classes = [0,1,2,3,4]
-            # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-            support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
-            # print(list(support_sampler.__iter__()))
-            test_dataset = FewShotRNDataset(TEST_PATH, N)
+            test_acc = 0.
+            test_loss = 0.
+            for j in range(TEST_EPISODE):
+                print("test %d"%j)
+                # 每一轮开始的时候先抽取n个实验类
+                support_classes = rd.sample(TEST_CLASSES, n)
+                # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
+                support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
+                # print(list(support_sampler.__iter__()))
+                test_dataset = FewShotRNDataset(TEST_PATH, N)
 
-            test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
-                                                 sampler=support_sampler)
-            test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
-                                                sampler=test_sampler)
+                test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
+                                                     sampler=support_sampler)
+                test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
+                                                    sampler=test_sampler)
 
-            supports, support_labels = test_support_dataloader.__iter__().next()
-            tests, test_labels = test_test_dataloader.__iter__().next()
+                supports, support_labels = test_support_dataloader.__iter__().next()
+                tests, test_labels = test_test_dataloader.__iter__().next()
 
-            supports = supports.cuda()
-            support_labels = support_labels.cuda()
-            tests = tests.cuda()
-            test_labels = test_labels.cuda()
+                supports = supports.cuda()
+                support_labels = support_labels.cuda()
+                tests = tests.cuda()
+                test_labels = test_labels.cuda()
 
-            test_labels = RN_labelize(support_labels, test_labels, k, type="long", expand=False)
-            test_relations = net(supports, tests)
+                test_labels = RN_labelize(support_labels, test_labels, k, type="long", expand=False)
+                test_relations = net(supports, tests)
 
-            test_loss = nll(test_relations, test_labels).item()
-            test_acc = (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+                test_loss += nll(test_relations, test_labels).item()
+                test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
 
-            test_acc_his.append(test_acc)
-            test_loss_his.append(test_loss)
+            test_acc_his.append(test_acc/TEST_EPISODE)
+            test_loss_his.append(test_loss/TEST_EPISODE)
 
             print("****************************************")
-            print("val acc: ", test_acc)
-            print("val loss: ", test_loss)
+            print("val acc: ", test_acc/TEST_EPISODE)
+            print("val loss: ", test_loss/TEST_EPISODE)
             print("****************************************")
             # input("----- Test Complete ! -----")
 

@@ -26,8 +26,8 @@ def get_parameter_number(net):
 # frame = inspect.currentframe()
 # tracker = MemTracker(frame)
 
-TRAIN_PATH = "D:/peimages/New/RN_5shot_5way_exp/train/"
-TEST_PATH = "D:/peimages/New/RN_5shot_5way_exp/validate/"
+TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
+TEST_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 MODEL_SAVE_PATH = "D:/peimages/New/RN_5shot_5way_exp/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_relation_net_exp/"
 
@@ -45,14 +45,15 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 7
+version = 8
 
 TEST_CYCLE = 50
 MAX_ITER = 10000
+TEST_EPISODE = 30
 
 # 训练和测试中类的总数
-train_classes = 60
-test_classes = 5
+train_classes = 150
+test_classes = 111
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -65,11 +66,11 @@ rn = rn.cuda()
 
 #print(list(rn.Relation.fc1.named_parameters()))
 
-# rn.Embed.apply(RN_weights_init)
-# rn.Relation.apply(RN_weights_init)
+rn.Embed.apply(RN_weights_init)
+rn.Relation.apply(RN_weights_init)
 #
-rn.Embed.apply(net_init)
-rn.Relation.apply(net_init)
+# rn.Embed.apply(net_init)
+# rn.Relation.apply(net_init)
 
 # embed_opt = Adam(rn.Embed.parameters(), lr=lr, weight_decay=1e-4)
 # relation_opt = Adam(rn.Relation.parameters(), lr=lr, weight_decay=1e-4)
@@ -155,45 +156,49 @@ for episode in range(MAX_ITER):
         rn.eval()
         print("test stage at %d episode"%episode)
         with no_grad():
-            # 每一轮开始的时候先抽取n个实验类
-            # support_classes = rd.sample(TEST_CLASSES, n)
-            support_classes = [0,1,2,3,4]
-            # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-            support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
-            # print(list(support_sampler.__iter__()))
-            test_dataset = FewShotRNDataset(TEST_PATH, N)
+            test_acc = 0.
+            test_loss = 0.
+            for j in range(TEST_EPISODE):
+                print("%d episode: test %d"%(episode,j))
+                # 每一轮开始的时候先抽取n个实验类
+                support_classes = rd.sample(TEST_CLASSES, n)
+                # support_classes = [0,1,2,3,4]
+                # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
+                support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
+                # print(list(support_sampler.__iter__()))
+                test_dataset = FewShotRNDataset(TEST_PATH, N)
 
-            test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
-                                                 sampler=support_sampler)
-            test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
-                                                sampler=test_sampler)
+                test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
+                                                     sampler=support_sampler)
+                test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
+                                                    sampler=test_sampler)
 
-            supports, support_labels = test_support_dataloader.__iter__().next()
-            tests, test_labels = test_test_dataloader.__iter__().next()
+                supports, support_labels = test_support_dataloader.__iter__().next()
+                tests, test_labels = test_test_dataloader.__iter__().next()
 
-            supports = supports.cuda()
-            support_labels = support_labels.cuda()
-            tests = tests.cuda()
-            test_labels = test_labels.cuda()
+                supports = supports.cuda()
+                support_labels = support_labels.cuda()
+                tests = tests.cuda()
+                test_labels = test_labels.cuda()
 
-            test_labels = RN_labelize(support_labels, test_labels, k)
-            test_relations = rn(supports, tests).view(-1, n).cuda()
-            m_support,m_query = rn(supports, tests, feature_out=True)
-            test_baseline = RN_baseline_KNN(m_support, m_query, support_labels, query_labels, k)
+                test_labels = RN_labelize(support_labels, test_labels, k)
+                test_relations = rn(supports, tests).view(-1, n).cuda()
+                # m_support,m_query = rn(supports, tests, feature_out=True)
+                # test_baseline = RN_baseline_KNN(m_support, m_query, support_labels, query_labels, k)
 
-            # 使用softmax将关系输出转化为概率输出
-            # test_relations = F.softmax(test_relations, dim=1)
+                # 使用softmax将关系输出转化为概率输出
+                # test_relations = F.softmax(test_relations, dim=1)
 
-            test_loss = mse(test_relations, test_labels).item()
-            test_acc = (t.argmax(test_relations, dim=1)==t.argmax(test_labels, dim=1)).sum().item()/test_labels.size(0)
+                test_loss += mse(test_relations, test_labels).item()
+                test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels, dim=1)).sum().item()/test_labels.size(0)
 
-            test_acc_his.append(test_acc)
-            test_loss_his.append(test_loss)
+            test_acc_his.append(test_acc/TEST_EPISODE)
+            test_loss_his.append(test_loss/TEST_EPISODE)
 
             print("****************************************")
-            print("val acc: ", test_acc)
-            print("val loss: ", test_loss)
-            print("knn baseline acc: ", test_baseline)
+            print("val acc: ", test_acc/TEST_EPISODE)
+            print("val loss: ", test_loss/TEST_EPISODE)
+            # print("knn baseline acc: ", test_baseline)
             print("****************************************")
             # input("----- Test Complete ! -----")
 

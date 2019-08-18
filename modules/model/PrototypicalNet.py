@@ -36,13 +36,15 @@ class ProtoNet(nn.Module):
         self.layer3 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2, bias=False),
             nn.BatchNorm2d(64, affine=True),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2))
         # 第四层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数的卷积层
         # 经过这层以后，尺寸除以2
         self.layer4 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2, bias=False),
             nn.BatchNorm2d(64, affine=True),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2))
 
     def forward(self, *x):
         # 每一层都是以上一层的输出为输入，得到新的输出、
@@ -66,7 +68,7 @@ class ProtoNet(nn.Module):
         support = t.sum(support, dim=1).div(self.k).squeeze(1)
 
         # 将原型向量与查询集打包
-        support = support.repeat((query_size,1,1,1)).view(query_size,self.n,-1)
+        support = support.repeat((query_size,1,1)).view(query_size,self.n,-1)
 
         query = query.repeat(self.n,1,1,1,1).transpose(0,1).contiguous().view(query_size,self.n, -1)
 

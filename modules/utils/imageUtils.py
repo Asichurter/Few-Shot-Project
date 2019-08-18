@@ -97,7 +97,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
         files = os.listdir(base)
         files = list(filter(lambda x: cluster in [x.split(".")[-2], x.split(".")[-3]], files)) if cluster is not None else files
         # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
-        assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d!"%(len(files), num_constrain)
+        assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d! Cluter: %s"%(len(files), num_constrain, cluster)
         if sample:
             files = random.sample(files, num_constrain)
         num = 0
@@ -207,7 +207,7 @@ def create_malware_images(dest=r'D:/peimages/validate/', base=r'D:/pe/', num_per
 
 
 def split_datas(src=r'D:/peimages/test for cnn/no padding/malware/', dest=r'D:/peimages/validate/malware/',
-                ratio=0.2, mode='x'):
+                ratio=0.2, mode='x', is_dir=False):
     '''
     将生成的样本按比例随机抽样分割，并且移动到指定文件夹下，用于训练集和验证集的制作
     src:源文件夹
@@ -227,7 +227,10 @@ def split_datas(src=r'D:/peimages/test for cnn/no padding/malware/', dest=r'D:/p
             if mode == 'x':
                 shutil.move(path, dest)
             else:
-                shutil.copy(src=path, dst=dest)
+                if is_dir:
+                    shutil.copytree(src=path, dst=dest+item)
+                else:
+                    shutil.copy(src=path, dst=dest)
             print(num)
 
 
@@ -248,6 +251,28 @@ def create_benign(dest, num,
     for file in files:
         if file in delete_files:
             os.remove(dest + file)
+
+def make_few_shot_datas(num_per_class, dest):
+    num = 0
+    all_names = []
+    for c in os.listdir(MALWARE_BASE):
+        path = MALWARE_BASE+c+"/"
+        names = list(map(lambda x: ".".join(x.split(".")[:-1]),os.listdir(path)))
+        names_set = set(names)
+        for name in names_set:
+            print(c+"/"+name)
+            if names.count(name) >= num_per_class and name not in all_names:
+                print(num)
+                all_names.append(name)
+                os.mkdir(dest+str(num))
+                convert_to_images(base=path,
+                                  destination=dest+str(num)+"/",
+                                  mode='dir',
+                                  padding=False,
+                                  num_constrain=num_per_class,
+                                  cluster=name.split(".")[-1],
+                                  sample=True)
+                num += 1
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -365,13 +390,14 @@ if __name__ == "__main__":
     #                   num_constrain=1200,
     #                   cluster='OnLineGames',
     #                   sample=False)
-    convert_to_images(base=r'D:/pe/trojan2/',
-                      destination=r'D:/peimages/New/RN_5shot_5way_exp/train/59/',
-                      mode='dir',
-                      padding=False,
-                      num_constrain=20,
-                      cluster='Pozad',
-                      sample=True)
+    # convert_to_images(base=r'D:/pe/backdoor2/',
+    #     #                   destination=r'D:/peimages/New/RN_5shot_5way_exp/validate/9/',
+    #     #                   mode='dir',
+    #     #                   padding=False,
+    #     #                   num_constrain=20,
+    #     #                   cluster='Afcore',
+    #     #                   sample=True)
+    # make_few_shot_datas(20, "D:/peimages/New/ProtoNet_5shot_5way_exp/train/")
 
 
     #为了将D盘的文件生成为良性文件集合
@@ -394,10 +420,11 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src='D:/peimages/New/class_default_retrain_exp/backdoor_default/train/malware/',
-    #             dest='D:/peimages/New/class_default_retrain_exp/backdoor_default/validate/malware/',
-    #             ratio=1000,
-    #             mode="x")
+    split_datas(src='D:/peimages/New/ProtoNet_5shot_5way_exp/train/',
+                dest='D:/peimages/New/ProtoNet_5shot_5way_exp/validate/',
+                ratio=111,
+                mode="x",
+                is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
 

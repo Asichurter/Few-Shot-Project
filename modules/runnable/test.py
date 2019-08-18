@@ -57,6 +57,16 @@ labels = t.LongTensor([0,1])
 loss = nn.NLLLoss()
 loss_val = loss(out, labels)
 
+nums = [1,2,3,4,5,1,2,3,2,3,4,1,1,1]
+nums_set = set(nums)
+nums_dict = {}
+for num in nums_set:
+    nums_dict[num] = nums.count(num)
+
+
+
+
+
 
 
 
