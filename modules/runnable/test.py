@@ -54,14 +54,13 @@ support = t.Tensor([[[1,1],[2,2]],[[1,1],[2,2]]])
 out = F.log_softmax(t.sum((query-support)**2, dim=2),dim=1)
 labels = t.LongTensor([0,1])
 
-loss = nn.NLLLoss()
-loss_val = loss(out, labels)
+loss = nn.CrossEntropyLoss()
 
-nums = [1,2,3,4,5,1,2,3,2,3,4,1,1,1]
-nums_set = set(nums)
-nums_dict = {}
-for num in nums_set:
-    nums_dict[num] = nums.count(num)
+out = t.Tensor([[1.3,10,0.4],[0.1,0.2,0.9]])
+label=t.LongTensor([1,2])
+loss_val = loss(out, label)
+
+
 
 
 

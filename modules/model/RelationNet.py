@@ -65,36 +65,20 @@ class RelationNetwork(nn.Module):
         super(RelationNetwork, self).__init__()
 # 第一层是128输入（因为两个深度为64的矩阵相加），64个3x3过滤器，周围补0，批正则化，relu为激活函数，2x2maxpool的卷积层
         self.layer1 = nn.Sequential(
-                        nn.Conv2d(128,64,kernel_size=3,padding=1, bias=False),
+                        nn.Conv2d(128,64,kernel_size=3,padding=1, stride=2, bias=False),
                         nn.BatchNorm2d(64, affine=True),
                         nn.ReLU(inplace=True),
                         nn.MaxPool2d(2))
 # 第二层是64输入，64个3x3过滤器，周围补0，批正则化，relu为激活函数，2x2maxpool的卷积层
         self.layer2 = nn.Sequential(
-                        nn.Conv2d(64,64,kernel_size=3,padding=1, bias=False),
+                        nn.Conv2d(64,64,kernel_size=3,padding=1, stride=2, bias=False),
                         nn.BatchNorm2d(64, affine=True),
                         nn.ReLU(inplace=True),
                         nn.MaxPool2d(2))
-        # self.layer3 = nn.Sequential(
-        #                 nn.Conv2d(512,512,kernel_size=3,padding=1, bias=False),
-        #                 nn.BatchNorm2d(512, affine=True),
-        #                 nn.ReLU(inplace=True),
-        #                 nn.MaxPool2d(2))
-        # #TODO:在关系模块中添加了几个额外的卷积层
-        # self.layer3 = nn.Sequential(
-        #     nn.Conv2d(64, 64, kernel_size=3, padding=1),
-        #     nn.BatchNorm2d(64, momentum=1, affine=True),
-        #     nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(2))
-        # self.layer4 = nn.Sequential(
-        #     nn.Conv2d(64, 64, kernel_size=3, padding=1),
-        #     nn.BatchNorm2d(64, momentum=1, affine=True),
-        #     nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(2))
         # 第三层是一个将矩阵展平的线性全连接层，输入64维度，输出隐藏层维度10维度
-        self.fc1 = nn.Linear(input_size,hidden_size)
+        self.fc1 = nn.Linear(input_size,1)
         # 第四层是一个结束层，将10个隐藏层维度转化为1个维度的值，得到关系值
-        self.fc2 = nn.Linear(hidden_size,1)
+        # self.fc2 = nn.Linear(hidden_size,1)
 
     # 关系网络的前馈方法
     def forward(self,x, tracker=None):
@@ -104,10 +88,11 @@ class RelationNetwork(nn.Module):
 
         out = out.view(out.size(0),-1)
         out = self.fc1(out)
-        out = F.relu(out)
+        out = F.sigmoid(out)
+        # out = F.relu(out)
 
         # TODO:论文中使用sigmoid来将值映射到[0,1]区间内，但是也可以考虑将sigmoid换为softmax，然后将损失函数换为交叉熵
-        out = t.sigmoid(self.fc2(out))
+        # out = t.sigmoid(self.fc2(out))
         #print(out.size())
         # out = t.sigmoid(out)
         return out
@@ -119,7 +104,8 @@ class RN(nn.Module):
         self.N = n
         self.Embed = EmbeddingNet()
         self.EmbedOutSize = int(input_size/2/2/2/2/2)
-        self.LinearInputSize = int(64*(self.EmbedOutSize/2/2)*(self.EmbedOutSize/2/2))
+        # self.LinearInputSize = int(64*(self.EmbedOutSize/2/2)*(self.EmbedOutSize/2/2))
+        self.LinearInputSize = 64
         # print(self.EmbedOutSize, self.LinearInputSize)
         self.Relation = RelationNetwork(self.LinearInputSize, linear_hidden_size)
         self.QK = qk
