@@ -1,8 +1,10 @@
+# 本实验用于测试Siamese网络
+
 import torch as t
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
@@ -32,13 +34,13 @@ qk = 15
 # 一个类总共多少个样本
 N = 20
 # 学习率
-lr = 1e-4
+lr = 1e-3
 
 version = 1
 
 TEST_CYCLE = 50
 MAX_ITER = 10000
-TEST_EPISODE = 30
+TEST_EPISODE = 20
 
 # 训练和测试中类的总数
 train_classes = 30
@@ -48,15 +50,16 @@ TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
 
 net = SiameseNet(input_size=input_size, k=k, n=n)
-net.load_state_dict(t.load(MODEL_LOAD_PATH))
+# net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
 # net.Relation.apply(RN_weights_init)
 
-# net.apply(RN_weights_init)
+net.apply(RN_weights_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
+# opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
 scheduler = StepLR(opt, step_size=1000, gamma=0.5)
 entro = nn.CrossEntropyLoss().cuda()
 

@@ -44,36 +44,39 @@ TEST_CLASSES = [i for i in range(test_classes)]
 
 TEST_CLASSES = [i for i in range(test_classes)]
 
-weighs = {'conv':['Embed.layer1.0.weight','Embed.layer2.0.weight','Embed.layer3.0.weight','Embed.layer4.0.weight',
-                  'Relation.layer1.0.weight','Relation.layer2.0.weight'],
-          'linear':['Relation.fc1.weight','Relation.fc2.weight']}
+weighs = {'conv': ['Embed.layer1.0.weight', 'Embed.layer2.0.weight', 'Embed.layer3.0.weight', 'Embed.layer4.0.weight',
+                   'Relation.layer1.0.weight', 'Relation.layer2.0.weight'],
+          'linear': ['Relation.fc1.weight', 'Relation.fc2.weight']}
 
-def visualize_filters(tensors,shape):
+
+def visualize_filters(tensors, shape):
     # fig2 = plt.figure(constrained_layout=True, figsize=(shape[0],shape[1]))
     # spec2 = gridspec.GridSpec(ncols=shape[0], nrows=shape[1], figure=fig2)
-    a = np.random.randint(0,256,(3,3))
-    fig = plt.figure(figsize=(8,8))
-    for i,tensor in enumerate(tensors):
+    a = np.random.randint(0, 256, (3, 3))
+    fig = plt.figure(figsize=(8, 8))
+    for i, tensor in enumerate(tensors):
         # ax = fig2.add_subplot(spec2[int(i/shape[1]), i%shape[1]])
-        plt.subplot(8,8,i+1)
-        plt.title("%d"%i)
+        plt.subplot(8, 8, i + 1)
+        plt.title("%d" % i)
         plt.axis("off")
         plt.imshow(tensor.detach().numpy(), cmap="gray")
     plt.show()
+
 
 def inner_class_divergence(tensors, metric="Man"):
     num = len(tensors)
     total_div = 0.
     count = 0
-    for i in range(0,num-1):
-        for j in range(i+1,num):
+    for i in range(0, num - 1):
+        for j in range(i + 1, num):
             count += 1
             if metric == "Man":
-                div = t.abs(tensors[i]-tensors[j]).sum()
+                div = t.abs(tensors[i] - tensors[j]).sum()
             if metric == "Euc":
-                div = t.sqrt(((tensors[i] - tensors[j])**2).sum())
+                div = t.sqrt(((tensors[i] - tensors[j]) ** 2).sum())
             total_div += div
     return total_div / count
+
 
 def outer_class_divergence(tensors_x, tensors_y, metric="Man"):
     total_div = 0
@@ -88,15 +91,16 @@ def outer_class_divergence(tensors_x, tensors_y, metric="Man"):
             total_div += div
     return total_div / count
 
+
 def div_hist(inputs, labels, class_labels, ylabel, title, format='%s', ylim=None, xlabel=None):
     num = len(inputs)  # 多少种类输入
     x = np.arange(len(labels))  # the label locations
-    width = 0.2*num  # the width of the bars
+    width = 0.2 * num  # the width of the bars
 
     fig, ax = plt.subplots()
     rects = []
     for i in range(num):
-        rects.append(ax.bar(x - (num*width/2) + (i+0.5)*width, inputs[i], width, label=class_labels[i]))
+        rects.append(ax.bar(x - (num * width / 2) + (i + 0.5) * width, inputs[i], width, label=class_labels[i]))
     # rects1 = ax.bar(x - width / 2, men_means, width, label='Men')
     # rects2 = ax.bar(x + width / 2, women_means, width, label='Women')
 
@@ -116,7 +120,7 @@ def div_hist(inputs, labels, class_labels, ylabel, title, format='%s', ylim=None
         """Attach a text label above each bar in *rects*, displaying its height."""
         for rect in rects:
             height = rect.get_height()
-            ax.annotate(format%height,
+            ax.annotate(format % height,
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 3),  # 3 points vertical offset
                         textcoords="offset points",
@@ -153,18 +157,16 @@ if __name__ == "__main__":
     # plt.imshow(a, cmap="gray")
     # plt.show()
 
-    TEST_EPISODE = 10
-
+    TEST_EPISODE = 20
+    entro = nn.CrossEntropyLoss().cuda()
     with no_grad():
         embed.eval()
-        train_inners = []
-        train_outers = []
-        test_inners = []
-        test_outers = []
         same_class_train = []
         same_class_test = []
         dif_class_train = []
         dif_class_test = []
+        acc_total = 0.
+        loss_total = 0.
         for i in range(TEST_EPISODE):
             print(i)
             sample_classes = rd.sample(TRAIN_CLASSES, n)
@@ -183,8 +185,6 @@ if __name__ == "__main__":
             sample_labels = sample_labels.cuda()
             queries = queries.cuda()
             query_labels = query_labels.cuda()
-
-
 
             # 每一轮开始的时候先抽取n个实验类
             support_classes = rd.sample(TEST_CLASSES, n)
@@ -207,44 +207,70 @@ if __name__ == "__main__":
             tests = tests.cuda()
             test_labels = test_labels.cuda()
 
+            labels = RN_labelize(support_labels, test_labels, k, type="long", expand=False)
+            support_embed = embed(supports)
+            test_embed = embed(tests)
 
-            test_class_1_inputs = supports[10:15]
-            test_class_2_inputs = supports[20:25]
+            test_size = test_embed.size(0)
 
-            test_class_1 = embed(test_class_1_inputs)
-            test_class_2 = embed(test_class_2_inputs)
+            support_embed = support_embed.view(n, k, -1).repeat(test_size, 1, 1, 1)
+            test_embed = test_embed.view(test_size, -1).repeat(n * k, 1, 1).transpose(0, 1).view(test_size, n, k, -1)
 
-            test_inner_1 = inner_class_divergence(test_class_1).item()
-            test_inner_2 = inner_class_divergence(test_class_2).item()
-            test_outer = outer_class_divergence(test_class_1,test_class_2).item()
+            out = F.softmax(t.abs(support_embed - test_embed).sum(dim=2).sum(dim=2).neg(), dim=1)
+            loss = entro(out, labels).item()
 
-            train_class_1_inputs = samples[10:15]
-            train_class_2_inputs = samples[20:25]
+            acc = (t.argmax(out, dim=1) == labels).sum().item() / labels.size(0)
 
-            train_class_1 = embed(train_class_1_inputs)
-            train_class_2 = embed(train_class_2_inputs)
+            acc_total += acc
+            loss_total += loss
+            print("acc:", acc)
+            print("loss:", loss)
 
-            train_inner_1 = inner_class_divergence(train_class_1).item()
-            train_inner_2 = inner_class_divergence(train_class_2).item()
-            train_outer = outer_class_divergence(train_class_1,train_class_2).item()
+            same_train_dis = 0.
+            for i in range(0,n):
+                same_train_support = samples[i*k:(i+1)*k]
+                same_train_query = queries[i*qk:(i+1)*qk]
+                same_train_dis += outer_class_divergence(same_train_support,same_train_query)
 
-            same_class_train_support = samples[:n]
-            same_class_train_query = queries[:qk]
+            dif_train_dis = 0.
+            count = 0
+            for i in range(0,n-1):
+                for j in range(i+1,n):
+                    count += 1
+                    dif_train_support = samples[i*k:(i+1)*k]
+                    dif_train_query = queries[j*qk:(j+1)*qk]
+                    dif_train_dis += outer_class_divergence(dif_train_support,dif_train_query)
 
-            test_inners.append((test_inner_1+test_inner_2)/2)
-            test_outers.append(test_outer)
-            train_inners.append((train_inner_1+train_inner_2)/2)
-            train_outers.append(train_outer)
+            same_test_dis = 0.
+            for i in range(0,n):
+                same_test_support = supports[i*k:(i+1)*k]
+                same_test_query = tests[i*qk:(i+1)*qk]
+                same_test_dis += outer_class_divergence(same_test_support,same_test_query)
+
+            dif_test_dis = 0.
+            for i in range(0,n-1):
+                for j in range(i+1,n):
+                    dif_test_support = supports[i*k:(i+1)*k]
+                    dif_test_query = tests[j*qk:(j+1)*qk]
+                    dif_test_dis += outer_class_divergence(dif_test_support,dif_test_query)
+
+            same_class_train.append(same_train_dis.item()/n)
+            dif_class_train.append(dif_train_dis.item()/count)
+            same_class_test.append(same_test_dis.item()/n)
+            dif_class_test.append(dif_test_dis.item()/count)
+
 
         # div_hist((train_inners,train_outer,test_inners,test_outers,),[str(i+1) for i in range(TEST_EPISODE)],
         #          ("train inner divergence",'train outer divergence',"test inner divergence",'test outer divergence'),
         #          'divergence', 'Embed Module Output element-wise divergence', format="%d", ylim=(0,3000), xlabel="Stage")
 
-        div_hist((np.mean(train_inners), np.mean(train_outers), np.mean(test_inners), np.mean(test_outers)),
+        div_hist((np.mean(same_class_train), np.mean(dif_class_train), np.mean(same_class_test), np.mean(dif_class_test)),
                  [''],
-                 ("train inner divergence",'train outer divergence',"test inner divergence",'test outer divergence'),
-                 'mean divergence', 'Embed Module Output element-wise mean divergence for %d stages'%TEST_EPISODE,
-                 format="%d", ylim=(0,3000))
+                 ("same class in training", 'different class in training', "same class in testing", 'different class in testing'),
+                 'mean divergence', 'Embed Module Output element-wise mean divergence for %d stages\nacc=%.3f' % (TEST_EPISODE,acc_total/TEST_EPISODE),
+                 format="%d", ylim=(0,60000))
+        print("avg acc:",acc_total/TEST_EPISODE)
+        print("avg loss:",loss_total/TEST_EPISODE)
 
         #
 

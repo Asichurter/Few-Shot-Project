@@ -13,10 +13,12 @@ from torch.autograd import no_grad
 from modules.utils.dlUtils import RN_baseline_KNN
 import torch.nn.functional as F
 import PIL.Image as Image
+import sklearn
 
 from modules.model.RelationNet import RN, EmbeddingNet
-from modules.utils.dlUtils import RN_weights_init, RN_labelize, net_init
+from modules.utils.dlUtils import RN_weights_init, RN_labelize, net_init, cos_sim
 from modules.model.datasets import FewShotRNDataset, get_RN_sampler, get_RN_modified_sampler
+from modules.runnable.validate_model import inner_class_divergence, outer_class_divergence
 
 PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
@@ -50,23 +52,13 @@ weighs = {'conv':['Embed.layer1.0.weight','Embed.layer2.0.weight','Embed.layer3.
                   'Relation.layer1.0.weight','Relation.layer2.0.weight'],
           'linear':['Relation.fc1.weight','Relation.fc2.weight']}
 
-rn = RN(input_size,hidder_size,k,n,qk)
-#
-# a = t.randn((25,1,256,256))
-# b = t.randn((75,1,256,256))
-#
-# c = rn(a,b)
-
-rn.load_state_dict(t.load(MODEL_SAVE_PATH))
-rn = rn.cuda()
-
 embed = EmbeddingNet()
-embed.load_state_dict(rn.Embed.state_dict())
+embed.load_state_dict(t.load(MODEL_SAVE_PATH_MY))
 embed = embed.cuda()
 
-t.save(embed.state_dict(), MODEL_SAVE_PATH_MY)
+# t.save(embed.state_dict(), MODEL_SAVE_PATH_MY)
 
-TEST_EPISODE = 10
+TEST_EPISODE = 100
 
 entro = nn.CrossEntropyLoss().cuda()
 
@@ -75,22 +67,22 @@ with no_grad():
     loss_total = 0.
     for i in range(TEST_EPISODE):
         print(i)
-        sample_classes = rd.sample(TRAIN_CLASSES, n)
-        train_dataset = FewShotRNDataset(TRAIN_PATH, N)
-        # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
-        sample_sampler, query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
-
-        train_sample_dataloader = DataLoader(train_dataset, batch_size=n * k, sampler=sample_sampler)
-        train_query_dataloader = DataLoader(train_dataset, batch_size=qk * n, sampler=query_sampler)
-
-        samples, sample_labels = train_sample_dataloader.__iter__().next()
-        queries, query_labels = train_query_dataloader.__iter__().next()
-
-        # tracker.track()
-        samples = samples.cuda()
-        sample_labels = sample_labels.cuda()
-        queries = queries.cuda()
-        query_labels = query_labels.cuda()
+        # sample_classes = rd.sample(TRAIN_CLASSES, n)
+        # train_dataset = FewShotRNDataset(TRAIN_PATH, N)
+        # # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
+        # sample_sampler, query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+        #
+        # train_sample_dataloader = DataLoader(train_dataset, batch_size=n * k, sampler=sample_sampler)
+        # train_query_dataloader = DataLoader(train_dataset, batch_size=qk * n, sampler=query_sampler)
+        #
+        # samples, sample_labels = train_sample_dataloader.__iter__().next()
+        # queries, query_labels = train_query_dataloader.__iter__().next()
+        #
+        # # tracker.track()
+        # samples = samples.cuda()
+        # sample_labels = sample_labels.cuda()
+        # queries = queries.cuda()
+        # query_labels = query_labels.cuda()
 
 
 
@@ -121,15 +113,29 @@ with no_grad():
 
         test_size = test_embed.size(0)
 
+        # shape: [qk,n,k,d]
         support_embed = support_embed.view(n,k,-1).repeat(test_size,1,1,1)
         test_embed = test_embed.view(test_size,-1).repeat(n*k,1,1).transpose(0,1).view(test_size,n,k,-1)
 
-        out = F.softmax(t.abs(support_embed-test_embed).sum(dim=2).sum(dim=2).neg(),dim=1)
+        # L1距离
+        # out = F.softmax(t.abs(support_embed-test_embed).sum(dim=2).sum(dim=2).neg(),dim=1)
+        # cos相似度
+        cos = cos_sim(support_embed, test_embed, dim=3).sum(dim=2).div(n)
+        out = F.softmax(cos, dim=1)
         loss = entro(out, labels).item()
 
         acc = (t.argmax(out, dim=1)==labels).sum().item()/labels.size(0)
 
         acc_total += acc
         loss_total += loss
+        print("acc:", acc)
+        print("loss:", loss)
+
+        inner = 0.
+        outer = 0.
+        a = 0
+
+        #inner += inner_class_divergence()
+
     print("average acc: ", acc_total/TEST_EPISODE)
     print("average loss: ", loss_total/TEST_EPISODE)

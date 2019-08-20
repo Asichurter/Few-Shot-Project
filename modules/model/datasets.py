@@ -197,7 +197,7 @@ def get_RN_modified_sampler(classes, train_num, test_num, num_per_class):
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
 
     return RNModifiedSamlper(classes, num_per_class, shuffle=False, k=train_num),\
-            RNModifiedSamlper(classes, num_per_class, shuffle=True, k=train_num, qk=test_num)
+            RNModifiedSamlper(classes, num_per_class, shuffle=False, k=train_num, qk=test_num)
 
 
 

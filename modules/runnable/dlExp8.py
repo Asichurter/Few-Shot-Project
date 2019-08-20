@@ -1,8 +1,10 @@
+# 本实验用于测试原型网络
+
 import torch as t
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
@@ -34,15 +36,15 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 2
+version = 5
 
 TEST_CYCLE = 50
-MAX_ITER = 10000
-TEST_EPISODE = 50
+MAX_ITER = 5000
+TEST_EPISODE = 20
 
 # 训练和测试中类的总数
-train_classes = 300
-test_classes = 111
+train_classes = 30
+test_classes = 30
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -55,8 +57,9 @@ net = net.cuda()
 
 net.apply(RN_weights_init)
 
-opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
-scheduler = StepLR(opt, step_size=1000, gamma=0.5)
+# opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
+opt = SGD(net.parameters(), lr=lr, weight_decay=1e-3, momentum=0.9)
+scheduler = StepLR(opt, step_size=(MAX_ITER/10), gamma=0.5)
 nll = NLLLoss().cuda()
 
 train_acc_his = []
@@ -66,7 +69,6 @@ test_loss_his = []
 
 best_acc = 0.
 for episode in range(MAX_ITER):
-
     net.train()
     net.zero_grad()
     print("%d th episode"%episode)

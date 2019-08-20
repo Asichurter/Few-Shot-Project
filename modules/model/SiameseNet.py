@@ -7,9 +7,9 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
         self.k = k
         self.n = n
-        linear_input_size = int(((input_size/4/2/2/2)**2)*64)
+        # linear_input_size = int(((input_size/4/2/2/2)**2)*64)
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.Conv2d(1, 64, kernel_size=7, padding=3, stride=2, bias=False),
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
@@ -28,6 +28,16 @@ class SiameseNet(nn.Module):
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
+        # self.layer5 = nn.Sequential(
+        #     nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=False),
+        #     nn.BatchNorm2d(64, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2))
+        # self.layer6 = nn.Sequential(
+        #     nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=False),
+        #     nn.BatchNorm2d(64, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2))
         # self.fc = nn.Linear(linear_input_size, 1)
 
     def forward(self, *x):
@@ -38,6 +48,8 @@ class SiameseNet(nn.Module):
         support_out = self.layer2(support_out)
         support_out = self.layer3(support_out)
         support_out = self.layer4(support_out)
+        # support_out = self.layer5(support_out)
+        # support_out = self.layer6(support_out)
         support_out = support_out.view(n,k,-1)
         # 还是按照之前的实现，求出类别向量代表整个类
         # 可以考虑替换该实现
@@ -51,6 +63,8 @@ class SiameseNet(nn.Module):
         query_out = self.layer2(query_out)
         query_out = self.layer3(query_out)
         query_out = self.layer4(query_out)
+        # query_out = self.layer5(query_out)
+        # query_out = self.layer6(query_out)
         query_out = query_out.view(query_size,-1)
 
         # support_out = support_out.repeat(query_size,1,1)

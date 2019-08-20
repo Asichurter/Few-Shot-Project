@@ -80,6 +80,13 @@ def RN_repeat_query_instance(instances, n):
         result = torch.cat((result, repeat_ones), dim=0)
     return result
 
+def cos_sim(x,y,dim):
+    x_length = torch.sqrt((x**2).sum(dim=dim))
+    y_length = torch.sqrt((y**2).sum(dim=dim))
+    dot = torch.mul(x,y).sum(dim=dim)
+    cos = dot/(x_length*y_length)*0.5 + 0.5
+    return cos
+
 
 
 
