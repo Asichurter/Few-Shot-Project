@@ -19,6 +19,7 @@ TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
 TEST_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 MODEL_SAVE_PATH = "D:/peimages/New/RN_5shot_5way_exp/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_siamese_5shot_5way_exp/"
+MODEL_LOAD_PATH = "D:/peimages/New/RN_5shot_5way_exp/embed_5shot_5way_v8.0.h5"
 
 input_size = 256
 
@@ -31,7 +32,7 @@ qk = 15
 # 一个类总共多少个样本
 N = 20
 # 学习率
-lr = 1e-3
+lr = 1e-4
 
 version = 1
 
@@ -47,12 +48,13 @@ TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
 
 net = SiameseNet(input_size=input_size, k=k, n=n)
+net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
 # net.Relation.apply(RN_weights_init)
 
-net.apply(RN_weights_init)
+# net.apply(RN_weights_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 scheduler = StepLR(opt, step_size=1000, gamma=0.5)
@@ -90,7 +92,7 @@ for episode in range(MAX_ITER):
 
     labels = RN_labelize(sample_labels, query_labels, k, type="long", expand=False)
 
-    outs = net(samples, queries).squeeze(2)
+    outs = net(samples, queries)
 
     # outs = F.softmax(outs, dim=1)
 
@@ -148,7 +150,7 @@ for episode in range(MAX_ITER):
                 test_labels = test_labels.cuda()
 
                 test_labels = RN_labelize(support_labels, test_labels, k, type="long", expand=False)
-                test_relations = net(supports, tests).squeeze(2)
+                test_relations = net(supports, tests)
 
                 test_loss += entro(test_relations, test_labels).item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)

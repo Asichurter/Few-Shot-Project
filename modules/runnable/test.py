@@ -60,6 +60,7 @@ out = t.Tensor([[1.3,10,0.4],[0.1,0.2,0.9]])
 label=t.LongTensor([1,2])
 loss_val = loss(out, label)
 
+dat = t.Tensor([[[0.],[0.]],[[1.],[1.]],[[3.],[3.]],[[4.],[4.]]])
 
 
 
