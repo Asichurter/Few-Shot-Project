@@ -4,17 +4,17 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from torch.nn.init import kaiming_normal_, xavier_normal_
 
-def RN_labelize(support, query, num_instance, type="float", expand=True):
-    support = torch.LongTensor([support[i].item() for i in range(0,len(support),num_instance)])
+def RN_labelize(support, query, k, n, type="float", expand=True):
+    support = torch.LongTensor([support[i].item() for i in range(0,len(support),k)])
     support = support.cuda()
     support = support.repeat(len(query))
     query = query.view(-1,1)
-    query = query.repeat((1,num_instance)).view(-1)
+    query = query.repeat((1,n)).view(-1)
     assert support.size()[0] == query.size()[0], "扩展后的支持集和查询集的标签长度不一致，无法生成得分向量！"
     if not expand:
-        label = torch.argmax((query==support).view(-1,num_instance), dim=1)
+        label = torch.argmax((query==support).view(-1,n), dim=1)
     else:
-        label = (query==support).view(-1,num_instance)
+        label = (query==support).view(-1,k)
     if type=="float":
         return label.float()
     else:

@@ -45,11 +45,11 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 11
+version = 12
 
 TEST_CYCLE = 50
 MAX_ITER = 10000
-TEST_EPISODE = 30
+TEST_EPISODE = 20
 
 # 训练和测试中类的总数
 train_classes = 60

@@ -91,6 +91,23 @@ def outer_class_divergence(tensors_x, tensors_y, metric="Man"):
             total_div += div
     return total_div / count
 
+def support_query_divergence(supports, queries, n, k, qk):
+    same_dis = 0.
+    for i in range(0, n):
+        same_support = supports[i * k:(i + 1) * k]
+        same_query = queries[i * qk:(i + 1) * qk]
+        same_dis += outer_class_divergence(same_support, same_query)
+
+    dif_dis = 0.
+    cnt = 0
+    for i in range(0, n - 1):
+        for j in range(i + 1, n):
+            cnt += 1
+            dif_support = supports[i * k:(i + 1) * k]
+            dif_query = queries[j * qk:(j + 1) * qk]
+            dif_dis += outer_class_divergence(dif_support, dif_query)
+    return same_dis/n,dif_dis/cnt
+
 
 def div_hist(inputs, labels, class_labels, ylabel, title, format='%s', ylim=None, xlabel=None):
     num = len(inputs)  # 多少种类输入
@@ -226,38 +243,14 @@ if __name__ == "__main__":
             print("acc:", acc)
             print("loss:", loss)
 
-            same_train_dis = 0.
-            for i in range(0,n):
-                same_train_support = samples[i*k:(i+1)*k]
-                same_train_query = queries[i*qk:(i+1)*qk]
-                same_train_dis += outer_class_divergence(same_train_support,same_train_query)
+            same_train_dis,dif_train_dis = support_query_divergence(samples,queries,n,k,qk)
 
-            dif_train_dis = 0.
-            count = 0
-            for i in range(0,n-1):
-                for j in range(i+1,n):
-                    count += 1
-                    dif_train_support = samples[i*k:(i+1)*k]
-                    dif_train_query = queries[j*qk:(j+1)*qk]
-                    dif_train_dis += outer_class_divergence(dif_train_support,dif_train_query)
+            same_test_dis,dif_test_dis = support_query_divergence(supports,tests,n,k,qk)
 
-            same_test_dis = 0.
-            for i in range(0,n):
-                same_test_support = supports[i*k:(i+1)*k]
-                same_test_query = tests[i*qk:(i+1)*qk]
-                same_test_dis += outer_class_divergence(same_test_support,same_test_query)
-
-            dif_test_dis = 0.
-            for i in range(0,n-1):
-                for j in range(i+1,n):
-                    dif_test_support = supports[i*k:(i+1)*k]
-                    dif_test_query = tests[j*qk:(j+1)*qk]
-                    dif_test_dis += outer_class_divergence(dif_test_support,dif_test_query)
-
-            same_class_train.append(same_train_dis.item()/n)
-            dif_class_train.append(dif_train_dis.item()/count)
-            same_class_test.append(same_test_dis.item()/n)
-            dif_class_test.append(dif_test_dis.item()/count)
+            same_class_train.append(same_train_dis.item())
+            dif_class_train.append(dif_train_dis.item())
+            same_class_test.append(same_test_dis.item())
+            dif_class_test.append(dif_test_dis.item())
 
 
         # div_hist((train_inners,train_outer,test_inners,test_outers,),[str(i+1) for i in range(TEST_EPISODE)],

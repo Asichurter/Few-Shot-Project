@@ -123,6 +123,71 @@ class FewShotRNDataset(Dataset):
     def __len__(self):
         return len(self.Data)
 
+class FewShotClassDataset(Dataset):
+    def __init__(self, base, n, N, transform=None):
+        self.Data = []
+        self.Label = []
+        SubClassCounter = []
+        self.N = N
+        class_index = 0
+        for i,c in enumerate(os.listdir(base)):
+            sub_class_num = len(os.listdir(base+c+"/"))
+            assert sub_class_num >= n, str(base+c+"/")+"大类中的子类数量%d少于n=%d"%(sub_class_num,n)
+            SubClassCounter.append(sub_class_num)
+            for j,sub_c in enumerate(os.listdir(base+c+"/")):
+                assert len(os.listdir(base+c+"/"+sub_c))==n, \
+                    str(base+c+"/"+sub_c)+"中的样本数量%d不为指定的N=%d"%(len(os.listdir(base+c+"/"+sub_c)),N)
+                for instance in os.listdir(base+c+"/"+sub_c):
+                    self.Data.append(base+c+"/"+sub_c+"/"+instance)
+                    self.Label.append(class_index)
+                class_index += 1
+        self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
+        self.SubClassCounter = SubClassCounter
+
+    def __getitem__(self, index):
+        img = Image.open(self.Data[index])
+        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
+        rotation = rd.choice([0,90,180,270])
+        img = img.rotate(rotation)
+        img = self.Transform(img)
+        label = self.Label[index]
+        return img,label
+
+    def __len__(self):
+        return len(self.Data)
+
+class ClassSampler(Sampler):
+    def __init__(self, cla, sub_classes, counter, num_per_class, shuffle, k, qk=None):
+        # TODO:从指定的大类和子类中获取起始下标
+        start = 0
+        for i in range(cla):
+            # 加上指定的大类之前的大类的子类数目x每个子类的样本数量=指定大类的起始下标
+            start += counter[i]*num_per_class
+        assert max(sub_classes)<=counter[cla], \
+            "指定的子类中存在%d比当前大类存在子类数目%d下标更大的值！"%(max(sub_classes),counter[cla])
+        self.sub_classes = sub_classes
+        self.num_per_class = num_per_class
+        self.shuffle = shuffle
+        self.class_start_index = start
+        if qk is None:
+            self.Start = 0
+            self.End = k
+        else:
+            self.Start = k
+            self.End = qk + k
+
+    def __iter__(self):
+        batch = []
+        for c in self.sub_classes:
+            for i in range(self.Start, self.End):
+                batch.append(self.class_start_index+self.num_per_class * c + i)
+        if self.shuffle:
+            rd.shuffle(batch)
+        return iter(batch)
+
+    def __len__(self):
+        return 1
+
 class RNSamlper(Sampler):
     def __init__(self, instances, classes, num_per_class, shuffle):
         '''
@@ -197,7 +262,16 @@ def get_RN_modified_sampler(classes, train_num, test_num, num_per_class):
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
 
     return RNModifiedSamlper(classes, num_per_class, shuffle=False, k=train_num),\
-            RNModifiedSamlper(classes, num_per_class, shuffle=False, k=train_num, qk=test_num)
+            RNModifiedSamlper(classes, num_per_class, shuffle=True, k=train_num, qk=test_num)
+
+def get_class_sampler(dataset, class_num, n, k, qk, num_per_class):
+    task = rd.randint(0,class_num-1)
+    counter = dataset.SubClassCounter
+    sampled_sub_classes = rd.sample([i for i in range(counter[task])], n)
+
+    return ClassSampler(task, sampled_sub_classes, counter, num_per_class, False, k),\
+            ClassSampler(task, sampled_sub_classes, counter, num_per_class, True, k, qk=qk)
+
 
 
 

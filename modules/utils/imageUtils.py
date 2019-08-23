@@ -274,6 +274,36 @@ def make_few_shot_datas(num_per_class, dest):
                                   sample=True)
                 num += 1
 
+def make_few_shot_datas_by_class(num_per_class, dest):
+    class_num = 0
+    sub_class_num = 0
+    all_names = []
+    currernt_class = ""
+    for c in os.listdir(MALWARE_BASE):
+        if c[:-1] != currernt_class:
+            currernt_class = c[:-1]
+            os.mkdir(dest+str(class_num))
+            class_num += 1
+            current_path = dest + str(class_num) + "/"
+            sub_class_num = 0
+        path = MALWARE_BASE+c+"/"
+        names = list(map(lambda x: ".".join(x.split(".")[:-1]),os.listdir(path)))
+        names_set = set(names)
+        for name in names_set:
+            print(c+"/"+name)
+            if names.count(name) >= num_per_class and name not in all_names:
+                print(num)
+                all_names.append(name)
+                os.mkdir(dest+str(num))
+                convert_to_images(base=path,
+                                  destination=dest+str(num)+"/",
+                                  mode='dir',
+                                  padding=False,
+                                  num_constrain=num_per_class,
+                                  cluster=name.split(".")[-1],
+                                  sample=True)
+                num += 1
+
 
 def validate(model, dataloader, Criteria, return_predict=False):
     '''
@@ -420,11 +450,11 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    split_datas(src='D:/peimages/New/ProtoNet_5shot_5way_exp/train/',
-                dest='D:/peimages/New/ProtoNet_5shot_5way_exp/validate/',
-                ratio=111,
-                mode="x",
-                is_dir=True)
+    # split_datas(src='D:/peimages/New/ProtoNet_5shot_5way_exp/validate/',
+    #             dest='D:/peimages/New/ProtoNet_5shot_5way_exp/test/',
+    #             ratio=30,
+    #             mode="x",
+    #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
 
