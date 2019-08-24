@@ -2,6 +2,9 @@ import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import kaiming_normal_
+import numpy as np
+
+from sklearn.manifold import MDS
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channel, out_channel, kernel_size=3, stride=1):
@@ -111,4 +114,34 @@ class ResidualNet(nn.Module):
             relations = self.fc2(relations)
             relations = relations.view(query_size,n)
             return t.sigmoid(relations)
+
+    def proto_embed_MDS(self, support, query):
+        assert self.metric == "Proto"
+
+        n = self.pars['n']
+        k = self.pars['k']
+
+        support = self.Layer1(support)
+        support = self.Layer2(support)
+        support = support.view(support.size(0),-1)
+        
+        query = self.Layer1(query)
+        query = self.Layer2(query)
+        query = query.view(query.size(0),-1)
+
+        support_size = support.size(0)
+
+        merge = t.cat((support,query), dim=0).cpu().detach().numpy()
+
+        mds = MDS(n_components=2, verbose=True)
+        merge_transformed = mds.fit_transform(merge)
+
+        support = merge_transformed[:support_size]
+        query = merge_transformed[support_size:]
+
+        support_center = support.reshape((n,k,-1)).sum(axis=1)
+        support_center = support_center/k
+        support_center = support_center.reshape((n, -1))
+
+        return support,query,support_center
 

@@ -12,13 +12,15 @@ from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
 import torch.nn.functional as F
 
+from sklearn.manifold import MDS
+
 from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
 
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v8.0.h5"
-# MODEL_LOAD_PATH = "D:/peimages/New/RN_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v7.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v9.0.h5"
 
 input_size = 256
 
@@ -35,9 +37,9 @@ lr = 1e-3
 
 version = 1
 
-TEST_EPISODE = 20
+TEST_EPISODE = 10
 VALIDATE_EPISODE = 20
-FINETUNING_EPISODE = 20
+FINETUNING_EPISODE = 10
 
 test_classes = 81
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -69,36 +71,36 @@ def validate(model, loss, classes):
             tests = tests.cuda()
             test_labels = test_labels.cuda()
 
-            test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
-            # test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
+            # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
+            test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
             test_relations = net(supports, tests)
 
             test_loss += loss(test_relations, test_labels).item()
-            # test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
-            test_acc += (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
+            test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+            # test_acc += (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
 
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric="Relation",hidden_size=8)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto')
 net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 opt = SGD(net.parameters(), lr=lr)
-# entro = nn.NLLLoss().cuda()
-entro = nn.MSELoss().cuda()
+entro = nn.NLLLoss().cuda()
+# entro = nn.MSELoss().cuda()
 # entro = nn.CrossEntropyLoss().cuda()
 
 # net.Layer1.requires_grad_(False)
 # net.Layer2.requires_grad_(False)
 
-for name,par in net.named_parameters():
-    if name.find("fc") == -1:
-        par.requires_grad_(False)
-        print("---%s---"%name)
-    else:
-        par.requires_grad_(True)
-        print("***%s***" % name)
+# for name,par in net.named_parameters():
+#     if name.find("fc") == -1:
+#         par.requires_grad_(False)
+#         print("---%s---"%name)
+#     else:
+#         par.requires_grad_(True)
+#         print("***%s***" % name)
 
 before_acc_total = 0.
 before_loss_total = 0.
@@ -138,8 +140,8 @@ for episode in range(TEST_EPISODE):
     # queries = queries.cuda()
     # query_labels = query_labels.cuda()
 
-    # labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
-    labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
+    labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
+    # labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
 
     for i in range(FINETUNING_EPISODE):
         # fine-tuning
@@ -177,4 +179,6 @@ print("average acc before:", before_acc_total/TEST_EPISODE)
 print("average loss before:", before_loss_total/TEST_EPISODE)
 print("average acc after:", after_acc_total/TEST_EPISODE)
 print("average loss after:", after_loss_total/TEST_EPISODE)
+print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
+print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
 

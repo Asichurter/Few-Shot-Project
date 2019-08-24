@@ -9,7 +9,7 @@ from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 import torch.nn.functional as F
 
 from modules.model.ResidualNet import ResidualNet
@@ -34,8 +34,8 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 8
-metric = "Relation"
+version = 9
+metric = "Proto"
 
 TEST_CYCLE = 50
 MAX_ITER = 60000
@@ -43,13 +43,13 @@ TEST_EPISODE = 20
 
 # 训练和测试中类的总数
 total_train_classes = 300
-train_classes = 100
+train_classes = 300
 test_classes = 81
 
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,hidden_size=8)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric)
 # net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
@@ -60,9 +60,10 @@ net.apply(net_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=5e-4, momentum=0.9)
-scheduler = StepLR(opt, step_size=1000, gamma=0.5)
-# entro = nn.NLLLoss().cuda()
-entro = nn.MSELoss().cuda()
+scheduler = StepLR(opt, step_size=2000, gamma=0.5)
+# scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=100, verbose=True, min_lr=1e-6)
+entro = nn.NLLLoss().cuda()
+# entro = nn.MSELoss().cuda()
 # entro = nn.CrossEntropyLoss().cuda()
 
 train_acc_his = []
@@ -72,9 +73,10 @@ test_loss_his = []
 
 best_acc = 0.
 print(net)
+input_iter = 0
 for episode in range(MAX_ITER):
 
-    if (episode+1)%10000 == 0:
+    if (episode+1)%5000 == 0:
         choice = input("%d episodes have finished, continue?"%episode)
         if choice == "n" or choice == "no":
             break
@@ -101,8 +103,8 @@ for episode in range(MAX_ITER):
     query_labels = query_labels.cuda()
     # tracker.track()
 
-    # labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
-    labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
+    labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
+    # labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
 
     outs = net(samples, queries)
 
@@ -114,10 +116,11 @@ for episode in range(MAX_ITER):
 
     # 使用了梯度剪裁
     t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+
     opt.step()
 
-    # acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
-    acc = (t.argmax(outs, dim=1)==t.argmax(labels,dim=1)).sum().item()/labels.size(0)
+    acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
+    # acc = (t.argmax(outs, dim=1)==t.argmax(labels,dim=1)).sum().item()/labels.size(0)
     loss_val = loss.item()
 
     print("train acc: ", acc)
@@ -157,13 +160,13 @@ for episode in range(MAX_ITER):
                 tests = tests.cuda()
                 test_labels = test_labels.cuda()
 
-                test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
-                # test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
+                # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
+                test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
                 test_loss += entro(test_relations, test_labels).item()
-                # test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
-                test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
+                test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+                # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)
@@ -193,7 +196,6 @@ plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
 plt.title('%d-shot %d-way Residual-%s Net Loss'%(k,n,metric))
-plt.ylim(0,0.5)
 plt.plot(train_x, [train_loss_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
