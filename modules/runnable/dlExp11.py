@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
+from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
 TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
@@ -34,7 +34,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 9
+version = 12
 metric = "Proto"
 
 TEST_CYCLE = 50
@@ -46,17 +46,20 @@ total_train_classes = 300
 train_classes = 300
 test_classes = 81
 
+inner_var_alpha = 0.01
+outer_var_alpha = 0.01
+
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
 # net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
-# net.Relation.apply(RN_weights_init)
+net.apply(RN_weights_init)
 
-net.apply(net_init)
+# net.apply(net_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=5e-4, momentum=0.9)
@@ -88,8 +91,8 @@ for episode in range(MAX_ITER):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TRAIN_CLASSES, n)
     train_dataset = FewShotRNDataset(TRAIN_PATH, N)
-    # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
-    sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
+    # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
     train_sample_dataloader = DataLoader(train_dataset, batch_size=n*k, sampler=sample_sampler)
     train_query_dataloader = DataLoader(train_dataset, batch_size=qk*n, sampler=query_sampler)
@@ -110,7 +113,7 @@ for episode in range(MAX_ITER):
 
     # outs = F.softmax(outs, dim=1)
 
-    loss = entro(outs, labels)
+    loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
 
     loss.backward()
 
@@ -143,7 +146,8 @@ for episode in range(MAX_ITER):
                 # 每一轮开始的时候先抽取n个实验类
                 support_classes = rd.sample(TEST_CLASSES, n)
                 # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-                support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
+                # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
+                support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N, episode*2)
                 # print(list(support_sampler.__iter__()))
                 test_dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
@@ -164,7 +168,7 @@ for episode in range(MAX_ITER):
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
-                test_loss += entro(test_relations, test_labels).item()
+                test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
                 # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 

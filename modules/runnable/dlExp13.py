@@ -14,11 +14,11 @@ import torch.nn.functional as F
 
 from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
+from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
+VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v9.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v12.0.h5"
 
 input_size = 256
 
@@ -39,17 +39,19 @@ TEST_EPISODE = 10
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
+seed = 2019
+
 test_classes = 81
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto')
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=6)
 net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 sample_classes = rd.sample(TEST_CLASSES, n)
-sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, seed=seed)
 
 train_sample_dataloader = DataLoader(dataset, batch_size=n*k, sampler=sample_sampler)
 train_query_dataloader = DataLoader(dataset, batch_size=qk*n, sampler=query_sampler)
@@ -65,7 +67,7 @@ query_labels = query_labels.cuda()
 sample_labels = sample_labels.cpu().numpy()[::k]
 query_labels = query_labels.cpu().numpy()
 
-samples_trans,queries_trans,center_trans = net.proto_embed_MDS(samples,queries)
+samples_trans,queries_trans,center_trans = net.proto_embed_reduction(samples,queries, metric="tSNE")
 
 colors = ["red","blue","orange","green","purple"]
 for i in range(n):

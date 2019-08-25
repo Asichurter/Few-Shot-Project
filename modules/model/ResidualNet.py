@@ -4,10 +4,10 @@ import torch.nn.functional as F
 from torch.nn.init import kaiming_normal_
 import numpy as np
 
-from sklearn.manifold import MDS
+from sklearn.manifold import MDS, t_sne
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1):
+    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, pool=2):
         super(ResidualBlock, self).__init__()
         # self.Layer1 = nn.Sequential(
         #     nn.Conv2d(in_channel,out_channel,kernel_size,stride,padding=int((kernel_size-1)/2), bias=False),
@@ -40,6 +40,8 @@ class ResidualNet(nn.Module):
         pars['qk'] = qk
         pars['channel'] = channel
         self.pars = pars
+        self.forward_inner_var = None
+        self.forward_outer_var = None
         self.Layer1 = nn.Sequential(
             nn.Conv2d(1,channel,kernel_size=7,stride=2,padding=3,bias=False),
             nn.BatchNorm2d(channel),
@@ -84,7 +86,11 @@ class ResidualNet(nn.Module):
             query = query.view(qk,-1).repeat(k*n,1,1).transpose(0,1).contiguous().view(query_size,n,k,-1)
         elif self.metric=="Proto":
             # shape: [n,k,d]->[qk,n,d]
-            support = support.view(n,k,-1).sum(dim=1).div(k).squeeze(1).repeat(query_size,1,1)
+            support = support.view(n,k,-1)
+            self.forward_inner_var = support.var(dim=1).sum()
+            support = support.sum(dim=1).div(k).squeeze(1)
+            self.forward_outer_var = support.var(dim=0).sum()
+            support = support.repeat(query_size,1,1)
             # shape: [qk,d]->[qk,n,d]
             query = query.view(query_size,-1).repeat(n,1,1).transpose(0,1)
         elif self.metric == "Relation":
@@ -115,7 +121,7 @@ class ResidualNet(nn.Module):
             relations = relations.view(query_size,n)
             return t.sigmoid(relations)
 
-    def proto_embed_MDS(self, support, query):
+    def proto_embed_reduction(self, support, query, metric="MDS"):
         assert self.metric == "Proto"
 
         n = self.pars['n']
@@ -133,8 +139,13 @@ class ResidualNet(nn.Module):
 
         merge = t.cat((support,query), dim=0).cpu().detach().numpy()
 
-        mds = MDS(n_components=2, verbose=True)
-        merge_transformed = mds.fit_transform(merge)
+        if metric == "MDS":
+            reducer = MDS(n_components=2, verbose=True)
+        elif metric == "tSNE":
+            reducer = t_sne.TSNE(n_components=2)
+        else:
+            assert False, "无效的metric"
+        merge_transformed = reducer.fit_transform(merge)
 
         support = merge_transformed[:support_size]
         query = merge_transformed[support_size:]

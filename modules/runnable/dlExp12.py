@@ -16,11 +16,11 @@ from sklearn.manifold import MDS
 
 from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
+from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v9.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v12.0.h5"
 
 input_size = 256
 
@@ -37,7 +37,7 @@ lr = 1e-3
 
 version = 1
 
-TEST_EPISODE = 10
+TEST_EPISODE = 20
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
@@ -46,7 +46,7 @@ TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
-def validate(model, loss, classes):
+def validate(model, loss, classes, seed=0):
     model.eval()
     # print("test stage at %d episode" % episode)
     with no_grad():
@@ -56,7 +56,8 @@ def validate(model, loss, classes):
             #print("test %d" % j)
             support_classes = classes
             # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-            support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
+            support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N, seed)
+            # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
 
             test_support_dataloader = DataLoader(dataset, batch_size=n * k,
                                                  sampler=support_sampler)
@@ -81,11 +82,12 @@ def validate(model, loss, classes):
 
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto')
-net.load_state_dict(t.load(MODEL_LOAD_PATH))
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=6)
+states = t.load(MODEL_LOAD_PATH)
+net.load_state_dict(states)
 net = net.cuda()
 
-# opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
+# opt = Adam(net.parameters(), lr=lr)
 opt = SGD(net.parameters(), lr=lr)
 entro = nn.NLLLoss().cuda()
 # entro = nn.MSELoss().cuda()
@@ -111,6 +113,7 @@ acc_gain_all = 0.
 loss_gain_all = 0.
 print(net)
 for episode in range(TEST_EPISODE):
+    net.load_state_dict(states)
     net.train()
     net.zero_grad()
     print("%d th episode"%episode)
@@ -118,7 +121,7 @@ for episode in range(TEST_EPISODE):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TEST_CLASSES, n)
 
-    before_acc,before_loss = validate(net, entro, sample_classes)
+    before_acc,before_loss = validate(net, entro, sample_classes, episode)
     print("before:")
     print("acc: ", before_acc)
     print("loss: ", before_loss)
@@ -126,8 +129,8 @@ for episode in range(TEST_EPISODE):
     before_acc_total += before_acc
     before_loss_total += before_loss
 
-    # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
-    sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
+    # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
     train_sample_dataloader = DataLoader(dataset, batch_size=n*k, sampler=sample_sampler)
     # train_query_dataloader = DataLoader(dataset, batch_size=qk*n, sampler=query_sampler)
@@ -143,6 +146,8 @@ for episode in range(TEST_EPISODE):
     labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
     # labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
 
+
+
     for i in range(FINETUNING_EPISODE):
         # fine-tuning
         net.train()
@@ -155,7 +160,7 @@ for episode in range(TEST_EPISODE):
 
         opt.step()
 
-    after_acc,after_loss = validate(net, entro, sample_classes)
+    after_acc,after_loss = validate(net, entro, sample_classes, episode)
     after_acc_total += after_acc
     after_loss_total += after_loss
 
