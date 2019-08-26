@@ -20,7 +20,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v12.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"+"Residual_20000_epoch1_model_5shot_5way_v12.0.h5"
 
 input_size = 256
 
@@ -37,7 +37,7 @@ lr = 1e-3
 
 version = 1
 
-TEST_EPISODE = 20
+TEST_EPISODE = 100
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 

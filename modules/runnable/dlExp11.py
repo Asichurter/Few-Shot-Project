@@ -18,8 +18,10 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 
 TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
+# MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"+"Residual_20000_epoch1_model_5shot_5way_v12.0.h5"
+MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/expect/"
 
 input_size = 256
 
@@ -38,7 +40,7 @@ version = 12
 metric = "Proto"
 
 TEST_CYCLE = 50
-MAX_ITER = 60000
+MAX_ITER = 20000
 TEST_EPISODE = 20
 
 # 训练和测试中类的总数
@@ -49,15 +51,17 @@ test_classes = 81
 inner_var_alpha = 0.01
 outer_var_alpha = 0.01
 
+init_best_acc = 0.8
+
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
 net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
-# net.load_state_dict(t.load(MODEL_LOAD_PATH))
+net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
-net.apply(RN_weights_init)
+# net.apply(RN_weights_init)
 
 # net.apply(net_init)
 
@@ -74,15 +78,15 @@ train_loss_his = []
 test_acc_his = []
 test_loss_his = []
 
-best_acc = 0.
+best_acc = init_best_acc
+best_epoch = -1
 print(net)
-input_iter = 0
 for episode in range(MAX_ITER):
 
-    if (episode+1)%5000 == 0:
-        choice = input("%d episodes have finished, continue?"%episode)
-        if choice == "n" or choice == "no":
-            break
+    # if (episode+1)%5000 == 0:
+    #     choice = input("%d episodes have finished, continue?"%episode)
+    #     if choice == "n" or choice == "no":
+    #         break
 
     net.train()
     net.zero_grad()
@@ -134,7 +138,7 @@ for episode in range(MAX_ITER):
 
     scheduler.step()
 
-    if episode % TEST_CYCLE == 0:
+    if (episode+1) % TEST_CYCLE == 0 or episode==0:
         # input("----- Time to test -----")
         net.eval()
         print("test stage at %d episode"%episode)
@@ -178,11 +182,15 @@ for episode in range(MAX_ITER):
             print("****************************************")
             print("val acc: ", test_acc/TEST_EPISODE)
             print("val loss: ", test_loss/TEST_EPISODE)
+            if (episode+1)%5000 == 0:
+                t.save(net.state_dict(),
+                       MODEL_SAVE_PATH + "Residual_%d_epoch_model_%dshot_%dway_v%d.0.h5" % (episode+1, k, n, version))
             if test_acc/TEST_EPISODE > best_acc:
                 t.save(net.state_dict(),
                        MODEL_SAVE_PATH + "Residual_best_acc_model_%dshot_%dway_v%d.0.h5" % (k, n, version))
                 print("model save at %d episode" % episode)
                 best_acc = test_acc/TEST_EPISODE
+                best_epoch = episode
             print("best val acc: ", best_acc)
             print("****************************************")
             # input("----- Test Complete ! -----")
@@ -200,6 +208,7 @@ plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
 plt.title('%d-shot %d-way Residual-%s Net Loss'%(k,n,metric))
+plt.ylim(0,3)
 plt.plot(train_x, [train_loss_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
