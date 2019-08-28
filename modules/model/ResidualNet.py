@@ -52,6 +52,9 @@ class ResidualNet(nn.Module):
         for i in range(block_num):
             self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channel,channel,kernel_size=3,stride=1))
 
+        # 新增的转换feature的matrix
+        # shape: [d,d]
+        self.Transformer = nn.Linear(kwargs['trans_size'] * channel, kwargs['trans_size'] * channel)
 
         conv_out = input_size/4/(2**block_num)
         out_size = int(channel*conv_out*conv_out)
@@ -78,13 +81,20 @@ class ResidualNet(nn.Module):
         query = self.Layer1(x[1])
         query = self.Layer2(query)
         query_size = query.size(0)
-
+        support_size = support.size(0)
 
         if self.metric == "Siamese":
             # shape: [qk,n,k,d]
             support = support.view(n,k,-1).repeat(query_size,1,1,1)
             query = query.view(qk,-1).repeat(k*n,1,1).transpose(0,1).contiguous().view(query_size,n,k,-1)
         elif self.metric=="Proto":
+            support = support.view(support_size,-1)
+            query = query.view(query_size,-1)
+
+            # 新增的feature转换matrix
+            support = self.Transformer(support)
+            query = self.Transformer(query)
+
             # shape: [n,k,d]->[qk,n,d]
             support = support.view(n,k,-1)
             self.forward_inner_var = support.var(dim=1).sum()

@@ -20,7 +20,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"+"Residual_20000_epoch1_model_5shot_5way_v12.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v12.0.h5"
 
 input_size = 256
 
@@ -37,11 +37,12 @@ lr = 1e-3
 
 version = 1
 
-TEST_EPISODE = 100
+TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
+if_finetuning = False
 
-test_classes = 81
+test_classes = 30
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
@@ -113,9 +114,12 @@ acc_gain_all = 0.
 loss_gain_all = 0.
 print(net)
 for episode in range(TEST_EPISODE):
+    states = t.load(MODEL_LOAD_PATH)
     net.load_state_dict(states)
-    net.train()
-    net.zero_grad()
+
+    if if_finetuning:
+        net.train()
+        net.zero_grad()
     print("%d th episode"%episode)
 
     # 每一轮开始的时候先抽取n个实验类
@@ -129,61 +133,63 @@ for episode in range(TEST_EPISODE):
     before_acc_total += before_acc
     before_loss_total += before_loss
 
-    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
-    # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+    if if_finetuning:
+        sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
+        # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
-    train_sample_dataloader = DataLoader(dataset, batch_size=n*k, sampler=sample_sampler)
-    # train_query_dataloader = DataLoader(dataset, batch_size=qk*n, sampler=query_sampler)
+        train_sample_dataloader = DataLoader(dataset, batch_size=n*k, sampler=sample_sampler)
+        # train_query_dataloader = DataLoader(dataset, batch_size=qk*n, sampler=query_sampler)
 
-    samples,sample_labels = train_sample_dataloader.__iter__().next()
-    # queries,query_labels = train_query_dataloader.__iter__().next()
+        samples,sample_labels = train_sample_dataloader.__iter__().next()
+        # queries,query_labels = train_query_dataloader.__iter__().next()
 
-    samples = samples.cuda()
-    sample_labels = sample_labels.cuda()
-    # queries = queries.cuda()
-    # query_labels = query_labels.cuda()
+        samples = samples.cuda()
+        sample_labels = sample_labels.cuda()
+        # queries = queries.cuda()
+        # query_labels = query_labels.cuda()
 
-    labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
-    # labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
+        labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
+        # labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
 
 
 
-    for i in range(FINETUNING_EPISODE):
-        # fine-tuning
-        net.train()
-        net.zero_grad()
-        outs = net(samples, samples)
+        for i in range(FINETUNING_EPISODE):
+            # fine-tuning
+            net.train()
+            net.zero_grad()
+            outs = net(samples, samples)
 
-        loss = entro(outs, labels)
+            loss = entro(outs, labels)
 
-        loss.backward()
+            loss.backward()
 
-        opt.step()
+            opt.step()
 
-    after_acc,after_loss = validate(net, entro, sample_classes, episode)
-    after_acc_total += after_acc
-    after_loss_total += after_loss
+            after_acc,after_loss = validate(net, entro, sample_classes, episode)
+            after_acc_total += after_acc
+            after_loss_total += after_loss
 
-    acc_gain = after_acc-before_acc
-    loss_gain = after_loss-before_loss
-    print("after %d fine-tuning:"%i)
-    print("acc: ", after_acc)
-    print("loss: ", after_loss)
-    print("------------------------------------")
-    print("acc gain:", acc_gain)
-    print("loss gain:", loss_gain)
-    print("*************************************")
+            acc_gain = after_acc-before_acc
+            loss_gain = after_loss-before_loss
+            print("after %d fine-tuning:"%i)
+            print("acc: ", after_acc)
+            print("loss: ", after_loss)
+            print("------------------------------------")
+            print("acc gain:", acc_gain)
+            print("loss gain:", loss_gain)
+            print("*************************************")
 
-    acc_gain_all += acc_gain
-    loss_gain_all += loss_gain
+            acc_gain_all += acc_gain
+            loss_gain_all += loss_gain
 
 print("***********************************")
-print("average acc gain: ", acc_gain_all/TEST_EPISODE)
-print("average loss gain: ", loss_gain_all/TEST_EPISODE)
 print("average acc before:", before_acc_total/TEST_EPISODE)
 print("average loss before:", before_loss_total/TEST_EPISODE)
-print("average acc after:", after_acc_total/TEST_EPISODE)
-print("average loss after:", after_loss_total/TEST_EPISODE)
-print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
-print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
+if if_finetuning:
+    print("average acc after:", after_acc_total/TEST_EPISODE)
+    print("average loss after:", after_loss_total/TEST_EPISODE)
+    print("average acc gain: ", acc_gain_all/TEST_EPISODE)
+    print("average loss gain: ", loss_gain_all/TEST_EPISODE)
+    print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
+    print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
 

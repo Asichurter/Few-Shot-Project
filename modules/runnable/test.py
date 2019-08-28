@@ -15,6 +15,7 @@ import inspect
 from modules.utils.gpu_mem_track import MemTracker
 from sklearn.neighbors import KNeighborsClassifier as KNN
 import torch.nn.functional as F
+import time
 
 
 # train_datas = np.array([[0,0],[3,3]])
@@ -67,12 +68,7 @@ import torch.nn.functional as F
 # dat2_length = t.sqrt((dat2**2).sum(dim=1))
 # dot = t.mul(dat,dat2).sum(dim=1)
 
-try:
-    digis = input("输入数字:")
-    num = int(digis)
-    print(num)
-except Exception:
-    print("exception!")
+
 
 
 

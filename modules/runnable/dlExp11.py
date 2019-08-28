@@ -16,12 +16,14 @@ from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
+import time
+
 TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"+"Residual_20000_epoch1_model_5shot_5way_v12.0.h5"
-MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/models/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/expect/"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v13.0.h5"
+MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
 
 input_size = 256
 
@@ -36,12 +38,12 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 12
+version = 14
 metric = "Proto"
 
-TEST_CYCLE = 50
+TEST_CYCLE = 100
 MAX_ITER = 20000
-TEST_EPISODE = 20
+TEST_EPISODE = 50
 
 # 训练和测试中类的总数
 total_train_classes = 300
@@ -51,17 +53,17 @@ test_classes = 81
 inner_var_alpha = 0.01
 outer_var_alpha = 0.01
 
-init_best_acc = 0.8
+# init_best_acc = 0.8
 
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
-net.load_state_dict(t.load(MODEL_LOAD_PATH))
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6,trans_size=1)
+# net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
-# net.apply(RN_weights_init)
+net.apply(RN_weights_init)
 
 # net.apply(net_init)
 
@@ -78,15 +80,16 @@ train_loss_his = []
 test_acc_his = []
 test_loss_his = []
 
-best_acc = init_best_acc
+# best_acc = init_best_acc
+best_acc = 0
 best_epoch = -1
 print(net)
 for episode in range(MAX_ITER):
 
-    # if (episode+1)%5000 == 0:
-    #     choice = input("%d episodes have finished, continue?"%episode)
-    #     if choice == "n" or choice == "no":
-    #         break
+    if (episode+1)%5000 == 0:
+        choice = input("%d episodes have finished, continue?"%episode)
+        if choice.find("n") != -1 or choice.find("no")!= -1:
+            break
 
     net.train()
     net.zero_grad()
@@ -95,7 +98,7 @@ for episode in range(MAX_ITER):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TRAIN_CLASSES, n)
     train_dataset = FewShotRNDataset(TRAIN_PATH, N)
-    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
+    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
     # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
     train_sample_dataloader = DataLoader(train_dataset, batch_size=n*k, sampler=sample_sampler)
@@ -108,16 +111,14 @@ for episode in range(MAX_ITER):
     sample_labels = sample_labels.cuda()
     queries = queries.cuda()
     query_labels = query_labels.cuda()
-    # tracker.track()
 
     labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
     # labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
 
     outs = net(samples, queries)
 
-    # outs = F.softmax(outs, dim=1)
-
     loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
+    # loss = entro(outs, labels)
 
     loss.backward()
 
@@ -136,9 +137,9 @@ for episode in range(MAX_ITER):
     train_acc_his.append(acc)
     train_loss_his.append(loss_val)
 
-    scheduler.step()
+    # scheduler.step()
 
-    if (episode+1) % TEST_CYCLE == 0 or episode==0:
+    if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")
         net.eval()
         print("test stage at %d episode"%episode)
@@ -151,7 +152,7 @@ for episode in range(MAX_ITER):
                 support_classes = rd.sample(TEST_CLASSES, n)
                 # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
                 # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
-                support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N, episode*2)
+                support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N)
                 # print(list(support_sampler.__iter__()))
                 test_dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
@@ -173,6 +174,7 @@ for episode in range(MAX_ITER):
                 test_relations = net(supports, tests)
 
                 test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
+                # test_loss += entro(test_relations, test_labels).item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
                 # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 
@@ -192,6 +194,7 @@ for episode in range(MAX_ITER):
                 best_acc = test_acc/TEST_EPISODE
                 best_epoch = episode
             print("best val acc: ", best_acc)
+            print("best epoch: %d"%best_epoch)
             print("****************************************")
             # input("----- Test Complete ! -----")
 
@@ -208,7 +211,7 @@ plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
 plt.title('%d-shot %d-way Residual-%s Net Loss'%(k,n,metric))
-plt.ylim(0,3)
+plt.ylim(0,5)
 plt.plot(train_x, [train_loss_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()

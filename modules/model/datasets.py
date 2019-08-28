@@ -4,6 +4,7 @@ from PIL import Image
 from torchvision import transforms as T
 from torch.utils.data import Sampler
 import random as rd
+import time
 
 
 # 文件夹数据集
@@ -99,9 +100,10 @@ class PretrainedResnetDataset(DirDataset):
 
 class FewShotRNDataset(Dataset):
     # 直接指向support set或者query set路径下
-    def __init__(self, base, n, transform=None):
+    def __init__(self, base, n, transform=None, rd_crop_size=None):
         self.Data = []
         self.Label = []
+        self.rd_crop_size = rd_crop_size
         # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
         for i,c in enumerate(os.listdir(base)):
             assert n == len(os.listdir(base+c+"/")), "实际类别内样本数目%d不等同输入样本数目%d！" % (n, len(os.listdir(base+c+"/")))
@@ -112,6 +114,8 @@ class FewShotRNDataset(Dataset):
 
     def __getitem__(self, index):
         img = Image.open(self.Data[index])
+        if self.rd_crop_size is not None:
+            img = img.RandomCrop(self.rd_crop_size)
         # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
         rotation = rd.choice([0,90,180,270])
         img = img.rotate(rotation)
@@ -245,7 +249,9 @@ class RNModifiedSamlper(Sampler):
     def __len__(self):
         return 1
 
-def get_RN_sampler(classes, train_num, test_num, num_per_class, seed):
+def get_RN_sampler(classes, train_num, test_num, num_per_class, seed=None):
+    if seed is None:
+        seed = time.time()%1000000
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
     instance_pool = [i for i in range(num_per_class)]
     instances = rd.sample(instance_pool, train_num+test_num)
