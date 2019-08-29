@@ -54,7 +54,7 @@ class ResidualNet(nn.Module):
 
         # 新增的转换feature的matrix
         # shape: [d,d]
-        self.Transformer = nn.Linear(kwargs['trans_size'] * channel, kwargs['trans_size'] * channel)
+        # self.Transformer = nn.Linear(kwargs['trans_size'] * channel, kwargs['trans_size'] * channel)
 
         conv_out = input_size/4/(2**block_num)
         out_size = int(channel*conv_out*conv_out)
@@ -65,7 +65,7 @@ class ResidualNet(nn.Module):
         elif metric=="Relation":
             # shape: [d,hidden]
             self.relation = ResidualBlock(channel*2,channel)
-            out_size = int(out_size/(2*2))
+            out_size = int(64/(2**block_num)*channel)
             self.fc1 = nn.Linear(out_size,kwargs['hidden_size'])
             self.fc2 = nn.Linear(kwargs['hidden_size'],1)
 
@@ -92,8 +92,8 @@ class ResidualNet(nn.Module):
             query = query.view(query_size,-1)
 
             # 新增的feature转换matrix
-            support = self.Transformer(support)
-            query = self.Transformer(query)
+            # support = self.Transformer(support)
+            # query = self.Transformer(query)
 
             # shape: [n,k,d]->[qk,n,d]
             support = support.view(n,k,-1)

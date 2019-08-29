@@ -20,7 +20,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 
 VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v13.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v16.0.h5"
 
 input_size = 256
 
@@ -106,7 +106,7 @@ samples_trans,queries_trans,center_trans = net.proto_embed_reduction(samples,que
 acc,_loss = validate(net, nn.NLLLoss().cuda(), sample_classes, seed)
 
 colors = ["red","blue","orange","green","purple"]
-plt.title("Acc = %.4f"%acc)
+plt.title("Variance without loss\nAcc = %.4f"%acc)
 plt.axis("off")
 for i in range(n):
     plt.scatter([center_trans[i][0]], center_trans[i][1], marker="x", color=colors[i])
