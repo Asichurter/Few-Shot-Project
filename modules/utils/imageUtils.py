@@ -9,6 +9,7 @@ import shutil
 import warnings
 import sklearn
 import random as rd
+import re
 
 HOME = r'C:/Users/10904/Desktop/'
 EXES = ['exe', 'dll', 'ocx', 'sys', 'com']
@@ -95,7 +96,8 @@ def convert_to_images(base, destination, mode='file', method='normal',
         if not os.path.isdir(base):
             raise Exception(base + ' is not a director!\n')
         files = os.listdir(base)
-        files = list(filter(lambda x: cluster in [x.split(".")[-2], x.split(".")[-3]], files)) if cluster is not None else files
+        files = list(filter(lambda x: cluster in [formalize_class_name(x)],
+                            files)) if cluster is not None else files
         # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
         assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d! Cluter: %s"%(len(files), num_constrain, cluster)
         if sample:
@@ -252,12 +254,20 @@ def create_benign(dest, num,
         if file in delete_files:
             os.remove(dest + file)
 
+def formalize_class_name(x):
+    digits_pattern = re.compile("^[0-9]+$")
+    x = x.split(".")[:-1]
+    # 如果类名的最后一个位置全是数字，则过滤掉
+    if digits_pattern.search(x[-1]) is not None:
+        x = x[:-1]
+    return ".".join(x)
+
 def make_few_shot_datas(num_per_class, dest):
     num = 0
     all_names = []
     for c in os.listdir(MALWARE_BASE):
         path = MALWARE_BASE+c+"/"
-        names = list(map(lambda x: ".".join(x.split(".")[:-1]),os.listdir(path)))
+        names = list(map(lambda x: formalize_class_name(x),os.listdir(path)))
         names_set = set(names)
         for name in names_set:
             print(c+"/"+name)
@@ -270,9 +280,24 @@ def make_few_shot_datas(num_per_class, dest):
                                   mode='dir',
                                   padding=False,
                                   num_constrain=num_per_class,
-                                  cluster=name.split(".")[-1],
+                                  cluster=name,
                                   sample=True)
                 num += 1
+
+def check_data_is_valid(base):
+    invalid_list = {}
+    for c in os.listdir(base):
+        class_path = base + c + "/"
+        instances = os.listdir(class_path)
+        # 过滤掉jpg扩展名和区分各个实例的随机扩展名
+        prefixes = list(map(lambda x: formalize_class_name(".".join(x.split(".")[:-2])), instances))
+        # 由过滤后的名称生成集合，查看是否有重复的元素
+        inst_set = set(prefixes)
+        if len(inst_set) != 1:
+            invalid_list[c] = list(inst_set)
+    print("存在两个及以上类的类和对应子类如下:")
+    for k,v in invalid_list.items():
+        print(k,v)
 
 def make_few_shot_datas_by_class(num_per_class, dest):
     class_num = 0
@@ -450,11 +475,13 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src='D:/peimages/New/ProtoNet_5shot_5way_exp/validate/',
-    #             dest='D:/peimages/New/ProtoNet_5shot_5way_exp/test/',
-    #             ratio=30,
-    #             mode="x",
-    #             is_dir=True)
+    split_datas(src='D:/peimages/New/Residual_5shot_5way_exp/train/',
+                dest='D:/peimages/New/Residual_5shot_5way_exp/test/',
+                ratio=59,
+                mode="x",
+                is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
+    # make_few_shot_datas(20, "D:/peimages/New/Residual_5shot_5way_exp/train/")
+    # check_data_is_valid("D:/peimages/New/Residual_5shot_5way_exp/train/")
 

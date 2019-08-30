@@ -20,9 +20,10 @@ from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/test/"
+VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v17.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v17.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v19.0.h5"
 
 input_size = 256
 
@@ -39,12 +40,12 @@ lr = 1e-3
 
 version = 1
 
-TEST_EPISODE = 50
+TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 if_finetuning = False
 
-test_classes = 30
+test_classes = 59
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
@@ -75,25 +76,26 @@ def validate(model, loss, classes, seed=0):
             tests = tests.cuda()
             test_labels = test_labels.cuda()
 
-            test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
-            # test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
+            # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
+            test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
             test_relations = net(supports, tests)
 
             test_loss += loss(test_relations, test_labels).item()
-            # test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
-            test_acc += (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
+            test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+            # test_acc += (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
 
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=6)
+# net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 states = t.load(MODEL_LOAD_PATH)
 net.load_state_dict(states)
 net = net.cuda()
 
 # opt = Adam(net.parameters(), lr=lr)
 opt = SGD(net.parameters(), lr=lr)
-# entro = nn.NLLLoss().cuda()
-entro = nn.MSELoss().cuda()
+entro = nn.NLLLoss().cuda()
+# entro = nn.MSELoss().cuda()
 # entro = nn.CrossEntropyLoss().cuda()
 
 # net.Layer1.requires_grad_(False)
@@ -151,8 +153,8 @@ for episode in range(TEST_EPISODE):
         # queries = queries.cuda()
         # query_labels = query_labels.cuda()
 
-        # labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
-        labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
+        labels = RN_labelize(sample_labels, sample_labels, k, n, type="long", expand=False)
+        # labels = RN_labelize(sample_labels, sample_labels, k, n, type="float", expand=True)
 
 
 

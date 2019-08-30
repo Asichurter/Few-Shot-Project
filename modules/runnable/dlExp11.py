@@ -18,11 +18,11 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 
 import time
 
-TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
-VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
+TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
+VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v13.0.h5"
-MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
+# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v13.0.h5"
+MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
 
 input_size = 256
@@ -38,8 +38,8 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 17
-metric = "Relation"
+version = 20
+metric = "Proto"
 
 TEST_CYCLE = 100
 MAX_ITER = 20000
@@ -48,17 +48,17 @@ TEST_EPISODE = 50
 # 训练和测试中类的总数
 total_train_classes = 300
 train_classes = 300
-test_classes = 81
+test_classes = 60
 
-inner_var_alpha = 0.01
-outer_var_alpha = 0.01
+inner_var_alpha = 1e-3
+outer_var_alpha = 1e-3
 
 # init_best_acc = 0.8
 
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, hidden_size=64, block_num=6)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, block_num=6)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
 # net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
@@ -72,8 +72,8 @@ opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=5e-4, momentum=0.9)
 scheduler = StepLR(opt, step_size=1000, gamma=0.5)
 # scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=100, verbose=True, min_lr=1e-6)
-# entro = nn.NLLLoss().cuda()
-entro = nn.MSELoss().cuda()
+entro = nn.NLLLoss().cuda()
+# entro = nn.MSELoss().cuda()
 # entro = nn.CrossEntropyLoss().cuda()
 
 train_acc_his = []
@@ -87,8 +87,8 @@ best_epoch = -1
 print(net)
 for episode in range(MAX_ITER):
 
-    if (episode+1)%5000 == 0:
-        choice = input("%d episodes have finished, continue?"%episode)
+    if episode%5000 == 0 and episode != 0:
+        choice = input("%d episodes have finished, continue?"%(episode-1))
         if choice.find("n") != -1 or choice.find("no")!= -1:
             break
 
@@ -113,13 +113,13 @@ for episode in range(MAX_ITER):
     queries = queries.cuda()
     query_labels = query_labels.cuda()
 
-    # labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
-    labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
+    labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
+    # labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
 
     outs = net(samples, queries)
 
-    # loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
-    loss = entro(outs, labels)
+    loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
+    # loss = entro(outs, labels)
 
     loss.backward()
 
@@ -128,8 +128,8 @@ for episode in range(MAX_ITER):
 
     opt.step()
 
-    # acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
-    acc = (t.argmax(outs, dim=1)==t.argmax(labels,dim=1)).sum().item()/labels.size(0)
+    acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
+    # acc = (t.argmax(outs, dim=1)==t.argmax(labels,dim=1)).sum().item()/labels.size(0)
     loss_val = loss.item()
 
     print("train acc: ", acc)
@@ -174,14 +174,14 @@ for episode in range(MAX_ITER):
                 tests = tests.cuda()
                 test_labels = test_labels.cuda()
 
-                test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
-                # test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
+                # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
+                test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
-                # test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
-                test_loss += entro(test_relations, test_labels).item()
-                # test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
-                test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
+                test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
+                # test_loss += entro(test_relations, test_labels).item()
+                test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+                # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)

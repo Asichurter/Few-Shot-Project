@@ -16,6 +16,7 @@ from modules.utils.gpu_mem_track import MemTracker
 from sklearn.neighbors import KNeighborsClassifier as KNN
 import torch.nn.functional as F
 import time
+import re
 
 
 # train_datas = np.array([[0,0],[3,3]])
@@ -67,6 +68,11 @@ import time
 # dat_length = t.sqrt((dat**2).sum(dim=1))
 # dat2_length = t.sqrt((dat2**2).sum(dim=1))
 # dot = t.mul(dat,dat2).sum(dim=1)
+
+
+string1 = "data12data"
+string2 = "12"
+
 
 
 

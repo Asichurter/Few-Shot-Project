@@ -18,9 +18,10 @@ from modules.model.ResidualNet import ResidualNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
+VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
+# VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_best_acc_model_5shot_5way_v16.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v19.0.h5"
 
 input_size = 256
 
@@ -37,7 +38,7 @@ lr = 1e-3
 
 seed = time.time()%100000
 
-test_classes = 81
+test_classes = 30
 TEST_CLASSES = [i for i in range(test_classes)]
 VALIDATE_EPISODE = 1
 
@@ -84,6 +85,7 @@ net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=6
 net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
+# sample_classes = [48, 49, 50, 51, 52]
 sample_classes = rd.sample(TEST_CLASSES, n)
 sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, seed=seed)
 
@@ -106,7 +108,7 @@ samples_trans,queries_trans,center_trans = net.proto_embed_reduction(samples,que
 acc,_loss = validate(net, nn.NLLLoss().cuda(), sample_classes, seed)
 
 colors = ["red","blue","orange","green","purple"]
-plt.title("Variance without loss\nAcc = %.4f"%acc)
+plt.title("Variance not in loss\nAcc = %.4f"%acc)
 plt.axis("off")
 for i in range(n):
     plt.scatter([center_trans[i][0]], center_trans[i][1], marker="x", color=colors[i])
