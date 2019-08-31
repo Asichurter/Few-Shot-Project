@@ -38,7 +38,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 20
+version = 18
 metric = "Proto"
 
 TEST_CYCLE = 100
@@ -50,8 +50,8 @@ total_train_classes = 300
 train_classes = 300
 test_classes = 60
 
-inner_var_alpha = 1e-3
-outer_var_alpha = 1e-3
+inner_var_alpha = 1e-2
+outer_var_alpha = 1e-2
 
 # init_best_acc = 0.8
 
@@ -213,7 +213,7 @@ plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
 plt.title('%d-shot %d-way Residual-%s Net Loss'%(k,n,metric))
-plt.ylim(0,5)
+plt.ylim(0,3)
 plt.plot(train_x, [train_loss_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
