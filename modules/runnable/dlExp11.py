@@ -38,7 +38,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 18
+version = 21
 metric = "Proto"
 
 TEST_CYCLE = 100
@@ -58,7 +58,7 @@ outer_var_alpha = 1e-2
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, block_num=6)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, block_num=5)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
 # net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
@@ -85,6 +85,12 @@ test_loss_his = []
 best_acc = 0
 best_epoch = -1
 print(net)
+
+train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=224)
+test_dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
+
+previous_stamp = time.time()
+
 for episode in range(MAX_ITER):
 
     if episode%5000 == 0 and episode != 0:
@@ -98,7 +104,8 @@ for episode in range(MAX_ITER):
 
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TRAIN_CLASSES, n)
-    train_dataset = FewShotRNDataset(TRAIN_PATH, N)
+
+    # train_dataset = FewShotRNDataset(TRAIN_PATH, N)
     sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
     # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
@@ -159,13 +166,11 @@ for episode in range(MAX_ITER):
                 # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
                 support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N)
                 # print(list(support_sampler.__iter__()))
-                test_dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
                 test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
                                                      sampler=support_sampler)
                 test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
                                                     sampler=test_sampler)
-
                 supports, support_labels = test_support_dataloader.__iter__().next()
                 tests, test_labels = test_test_dataloader.__iter__().next()
 
@@ -186,6 +191,8 @@ for episode in range(MAX_ITER):
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)
 
+            now_stamp = time.time()
+
             print("****************************************")
             print("val acc: ", test_acc/TEST_EPISODE)
             print("val loss: ", test_loss/TEST_EPISODE)
@@ -197,7 +204,10 @@ for episode in range(MAX_ITER):
                 best_epoch = episode
             print("best val acc: ", best_acc)
             print("best epoch: %d"%best_epoch)
+            print(TEST_CYCLE,"episode time consume:",now_stamp-previous_stamp)
             print("****************************************")
+
+            previous_stamp = now_stamp
             # input("----- Test Complete ! -----")
 
 # 根据历史值画出准确率和损失值曲线

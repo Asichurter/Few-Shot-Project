@@ -23,7 +23,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v17.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v18.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_10000_epoch_model_5shot_5way_v18.0.h5"
 
 input_size = 256
 
@@ -49,6 +49,10 @@ test_classes = 59
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
+
+acc_hist = []
+loss_hist = []
+
 
 def validate(model, loss, classes, seed=0):
     model.eval()
@@ -80,9 +84,15 @@ def validate(model, loss, classes, seed=0):
             test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
             test_relations = net(supports, tests)
 
-            test_loss += loss(test_relations, test_labels).item()
-            test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
-            # test_acc += (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
+            l = loss(test_relations, test_labels).item()
+            a = (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
+            # a = (t.argmax(test_relations, dim=1) == t.argmax(test_labels,dim=1)).sum().item() / test_labels.size(0)
+            if not if_finetuning:
+                acc_hist.append(a)
+                loss_hist.append(l)
+
+            test_loss += l
+            test_acc += a
 
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
@@ -192,8 +202,10 @@ for episode in range(TEST_EPISODE):
     print("time:%.2f"%(time.time()-s_time))
 
 print("***********************************")
-print("average acc before:", before_acc_total/TEST_EPISODE)
-print("average loss before:", before_loss_total/TEST_EPISODE)
+print("average acc:", np.mean(acc_hist))
+print("average loss:", np.mean(loss_hist))
+print("acc std var:", np.std(acc_hist))
+print("loss std var:", np.std(loss_hist))
 if if_finetuning:
     print("average acc after:", after_acc_total/TEST_EPISODE)
     print("average loss after:", after_loss_total/TEST_EPISODE)

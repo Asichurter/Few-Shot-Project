@@ -69,9 +69,8 @@ import re
 # dat2_length = t.sqrt((dat2**2).sum(dim=1))
 # dot = t.mul(dat,dat2).sum(dim=1)
 
+a = [1,3,4,5,8]
 
-string1 = "data12data"
-string2 = "12"
 
 
 

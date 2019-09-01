@@ -103,7 +103,7 @@ class FewShotRNDataset(Dataset):
     def __init__(self, base, n, transform=None, rd_crop_size=None):
         self.Data = []
         self.Label = []
-        self.rd_crop_size = rd_crop_size
+        self.RandomCrop = T.RandomCrop(rd_crop_size) if rd_crop_size is not None else None
         # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
         for i,c in enumerate(os.listdir(base)):
             assert n == len(os.listdir(base+c+"/")), "实际类别内样本数目%d不等同输入样本数目%d！" % (n, len(os.listdir(base+c+"/")))
@@ -114,8 +114,8 @@ class FewShotRNDataset(Dataset):
 
     def __getitem__(self, index):
         img = Image.open(self.Data[index])
-        if self.rd_crop_size is not None:
-            img = img.RandomCrop(self.rd_crop_size)
+        if self.RandomCrop is not None:
+            img = self.RandomCrop(img)
         # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
         rotation = rd.choice([0,90,180,270])
         img = img.rotate(rotation)
