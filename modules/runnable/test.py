@@ -7,7 +7,7 @@ from sklearn.preprocessing import label_binarize
 from scipy.stats import entropy
 import PIL.Image as Image
 import torch.nn as nn
-import math as m
+import math
 from sklearn.preprocessing import label_binarize
 import random as rd
 from modules.model.RelationNet import EmbeddingNet

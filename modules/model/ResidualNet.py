@@ -1,13 +1,14 @@
 import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 from torch.nn.init import kaiming_normal_
 import numpy as np
 
 from sklearn.manifold import MDS, t_sne
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, pool=2):
+    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, keep_dim=False):
         super(ResidualBlock, self).__init__()
         # self.Layer1 = nn.Sequential(
         #     nn.Conv2d(in_channel,out_channel,kernel_size,stride,padding=int((kernel_size-1)/2), bias=False),
@@ -16,7 +17,7 @@ class ResidualBlock(nn.Module):
         self.Layer1 = nn.Sequential(
             nn.Conv2d(in_channel,out_channel,kernel_size,stride,padding=int((kernel_size-1)/2), bias=False),
             nn.BatchNorm2d(out_channel))
-        self.Pool = nn.MaxPool2d(2)
+        self.Pool = nn.MaxPool2d(2) if not keep_dim else None
         self.trans = nn.Sequential(
             nn.Conv2d(in_channel,out_channel,kernel_size=1,stride=1,padding=0,bias=False),
             nn.BatchNorm2d(out_channel)) if in_channel!=out_channel else None
@@ -26,7 +27,7 @@ class ResidualBlock(nn.Module):
         # left = self.Layer2(x)
         x = self.trans(x) if self.trans is not None else x
         x = x + left
-        x = self.Pool(x)
+        x = self.Pool(x) if self.Pool is not None else x
         return F.relu(x)
 
 class ResidualNet(nn.Module):
@@ -49,8 +50,11 @@ class ResidualNet(nn.Module):
             nn.MaxPool2d(2)
         )
         self.Layer2 = nn.Sequential()
+        max_pool_num = int(math.log2(int(input_size/4)))
         for i in range(block_num):
-            self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channel,channel,kernel_size=3,stride=1))
+            # 在block的数量大于最大池化次数时，设定前k个block不使用最大池化
+            self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channel,channel,kernel_size=3,stride=1,
+                                                                 keep_dim=(block_num-i)>max_pool_num))
 
         # 新增的转换feature的matrix
         # shape: [d,d]

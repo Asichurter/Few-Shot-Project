@@ -21,7 +21,7 @@ import time
 TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
-# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v13.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/"+"Residual_10000_epoch_model_5shot_5way_v13.0.h5"
 MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
 
@@ -60,7 +60,7 @@ TEST_CLASSES = [i for i in range(test_classes)]
 
 net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, block_num=5)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
-# net.load_state_dict(t.load(MODEL_LOAD_PATH))
+net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
