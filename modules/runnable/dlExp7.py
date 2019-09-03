@@ -1,3 +1,5 @@
+# 测试论文中的Prototypical Net的小样本性能
+
 import torch as t
 import torch.nn as nn
 import numpy as np

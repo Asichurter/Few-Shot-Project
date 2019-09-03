@@ -21,7 +21,7 @@ import time
 TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/"+"Residual_10000_epoch_model_5shot_5way_v13.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/"+"Residual_10000_epoch_model_5shot_5way_v21.0.h5"
 MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
 
@@ -38,7 +38,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 21
+version = 22
 metric = "Proto"
 
 TEST_CYCLE = 100
@@ -53,18 +53,17 @@ test_classes = 60
 inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2
 
-# init_best_acc = 0.8
+# init_best_acc = 0.6
 
 TRAIN_CLASSES = rd.sample([i for i in range(total_train_classes)],train_classes)
 TEST_CLASSES = [i for i in range(test_classes)]
 
 net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric, block_num=5)
-# net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric=metric,block_num=6)
-net.load_state_dict(t.load(MODEL_LOAD_PATH))
+# net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
 # net.Embed.apply(RN_weights_init)
-net.apply(RN_weights_init)
+# net.apply(RN_weights_init)
 
 # net.apply(net_init)
 
@@ -125,8 +124,8 @@ for episode in range(MAX_ITER):
 
     outs = net(samples, queries)
 
-    loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
-    # loss = entro(outs, labels)
+    # loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
+    loss = entro(outs, labels)
 
     loss.backward()
 
@@ -183,8 +182,8 @@ for episode in range(MAX_ITER):
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
-                test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
-                # test_loss += entro(test_relations, test_labels).item()
+                # test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
+                test_loss += entro(test_relations, test_labels).item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
                 # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 
@@ -193,7 +192,14 @@ for episode in range(MAX_ITER):
 
             now_stamp = time.time()
 
+            current_length = TEST_CYCLE if len(train_acc_his) >= TEST_CYCLE else 1
+            current_train_acc = np.mean(train_acc_his[-1*current_length:])
+            current_train_loss = np.mean(train_loss_his[-1*current_length:])
+
             print("****************************************")
+            print("train acc: ", current_train_acc)
+            print("train acc: ", current_train_loss)
+            print("----------------------------------------")
             print("val acc: ", test_acc/TEST_EPISODE)
             print("val loss: ", test_loss/TEST_EPISODE)
             if test_acc/TEST_EPISODE > best_acc:
