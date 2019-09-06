@@ -220,8 +220,12 @@ for episode in range(MAX_ITER):
 train_x = [i for i in range(0,len(train_acc_his),TEST_CYCLE)]
 test_x = [i for i in range(0,len(train_acc_his), TEST_CYCLE)]
 
+# 修改为计算TEST_CYCLE轮内的正确率和损失值的平均值
+train_acc_plot = np.array(train_acc_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
+train_loss_plot = np.array(train_loss_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
+
 plt.title('%d-shot %d-way Residual-%s Net Accuracy'%(k,n,metric))
-plt.plot(train_x, [train_acc_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
+plt.plot(train_x, train_acc_plot , linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
 plt.plot(train_x, [1/k]*len(train_x), linestyle='--', color="black", label="baseline")
 plt.legend()
@@ -230,7 +234,7 @@ plt.show()
 
 plt.title('%d-shot %d-way Residual-%s Net Loss'%(k,n,metric))
 plt.ylim(0,3)
-plt.plot(train_x, [train_loss_his[i] for i in range(0,len(train_acc_his),TEST_CYCLE)], linestyle='-', color='blue', label='train')
+plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_loss.png'%version)

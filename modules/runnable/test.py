@@ -12,7 +12,6 @@ from sklearn.preprocessing import label_binarize
 import random as rd
 from modules.model.RelationNet import EmbeddingNet
 import inspect
-from modules.utils.gpu_mem_track import MemTracker
 from sklearn.neighbors import KNeighborsClassifier as KNN
 import torch.nn.functional as F
 import time
@@ -69,9 +68,8 @@ import re
 # dat2_length = t.sqrt((dat2**2).sum(dim=1))
 # dot = t.mul(dat,dat2).sum(dim=1)
 
-a = [1,3,4,5,8]
-
-
+a = [1,3,4,5,6,8]
+a = np.array(a).reshape(-1,3).mean(axis=1).reshape(-1).tolist()
 
 
 
