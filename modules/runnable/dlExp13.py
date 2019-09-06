@@ -21,7 +21,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v19.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v22.0.h5"
 
 input_size = 256
 
@@ -81,7 +81,7 @@ def validate(model, loss, classes, seed=0):
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N)
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=6)
+net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=5)
 net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 

@@ -38,7 +38,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 22
+version = 24
 metric = "Proto"
 
 TEST_CYCLE = 100
@@ -124,8 +124,8 @@ for episode in range(MAX_ITER):
 
     outs = net(samples, queries)
 
-    # loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
-    loss = entro(outs, labels)
+    loss = entro(outs, labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var
+    # loss = entro(outs, labels)
 
     loss.backward()
 
@@ -182,8 +182,8 @@ for episode in range(MAX_ITER):
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
-                # test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
-                test_loss += entro(test_relations, test_labels).item()
+                test_loss += (entro(test_relations, test_labels) + inner_var_alpha*net.forward_inner_var - outer_var_alpha*net.forward_outer_var).item()
+                # test_loss += entro(test_relations, test_labels).item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
                 # test_acc += (t.argmax(test_relations, dim=1)==t.argmax(test_labels,dim=1)).sum().item()/test_labels.size(0)
 
