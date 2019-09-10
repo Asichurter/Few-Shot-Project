@@ -5,6 +5,8 @@ import math
 from torch.nn.init import kaiming_normal_
 import numpy as np
 
+from modules.model.AttentionLayer import AttentionLayer
+
 from sklearn.manifold import MDS, t_sne
 
 class ResidualBlock(nn.Module):
@@ -31,7 +33,9 @@ class ResidualBlock(nn.Module):
         return F.relu(x)
 
 class ResidualNet(nn.Module):
-    def __init__(self, input_size, n, k, qk, channel=64, block_num=4, metric="Proto", **kwargs):
+    def __init__(self, input_size, n, k, qk, channel=64, block_num=4, metric="Proto",
+                 attention=False, attention_num = 1,
+                 **kwargs):
         super(ResidualNet, self).__init__()
         assert metric in ["Siamese","Proto","Relation"]
         self.metric = metric
@@ -40,6 +44,7 @@ class ResidualNet(nn.Module):
         pars['k'] = k
         pars['qk'] = qk
         pars['channel'] = channel
+        pars['block_num'] = block_num
         self.pars = pars
         self.forward_inner_var = None
         self.forward_outer_var = None
@@ -49,16 +54,31 @@ class ResidualNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2)
         )
+        max_pool_num = int(math.log2(int(input_size / 4)))
+        # self.Layer2 = nn.ModuleList([ResidualBlock(channel,
+        #                                            channel,
+        #                                            kernel_size=3,
+        #                                            stride=1,
+        #                                            keep_dim=(block_num-i)>max_pool_num) for i in range(block_num)])
+
+        # 由于存在一个前置的block用于快速缩小图片尺寸，因此注意力映射要比block的数量多一个
+        # assert not attention or attention_num is not None, "注意力映射数量不能为None"
+        # self.Attentions = nn.ModuleList([AttentionLayer(2*channel,attention_num) for i in range(block_num+1)]) \
+        #                                                                             if attention else None
         self.Layer2 = nn.Sequential()
-        max_pool_num = int(math.log2(int(input_size/4)))
         for i in range(block_num):
             # 在block的数量大于最大池化次数时，设定前k个block不使用最大池化
             self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channel,channel,kernel_size=3,stride=1,
                                                                  keep_dim=(block_num-i)>max_pool_num))
 
-        # 新增的转换feature的matrix
-        # shape: [d,d]
-        # self.Transformer = nn.Linear(kwargs['trans_size'] * channel, kwargs['trans_size'] * channel)
+        # 用于接收类内向量生成类向量的转换器
+        # shape: [n,k,d]->[n,d]
+        # self.Transformer = nn.Sequential(
+        #                         nn.Conv2d(k,k,kernel_size=3,padding=1,bias=False),
+        #                         nn.BatchNorm2d(k),
+        #                         nn.ReLU(inplace=True),
+        #                         nn.Conv2d(k, 1, kernel_size=3, padding=1),
+        # )
 
         conv_out = input_size/4/(2**block_num)
         out_size = int(channel*conv_out*conv_out)
@@ -78,12 +98,25 @@ class ResidualNet(nn.Module):
         k = self.pars['k']
         qk = self.pars['qk']
         channel = self.pars['channel']
+        block_num = self.pars['block_num']
 
         support = self.Layer1(x[0])
-        support = self.Layer2(support)
-
         query = self.Layer1(x[1])
+        support = self.Layer2(support)
         query = self.Layer2(query)
+        # support,query = self.Attentions[0](support,query) \
+        #                     if self.Attentions is not None else support,query
+        # support = self.Layer2(support)
+        # for i in range(block_num):
+        #     support = self.Layer2[i](support)
+        #     query = self.Layer2[i](query)
+            # 注意力模块的下标比block多1
+            # support,query = self.Attentions[i+1](support,query) \
+            #     if self.Attentions is not None else support,query
+
+        # query = self.Layer1(x[1])
+        # query = self.Layer2(query)
+
         query_size = query.size(0)
         support_size = support.size(0)
 
@@ -99,11 +132,32 @@ class ResidualNet(nn.Module):
             # support = self.Transformer(support)
             # query = self.Transformer(query)
 
-            # shape: [n,k,d]->[qk,n,d]
+            # shape: [b,d]->[n,k,d]
             support = support.view(n,k,-1)
             self.forward_inner_var = support.var(dim=1).sum()
-            support = support.sum(dim=1).div(k).squeeze(1)
+
+            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # 类均值向量
+            # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            support_center = support.sum(dim=1).div(k).repeat(1,k).reshape(n,k,-1)
+            # 支持集与均值向量的欧式平方距离
+            # dis shape: [n,k,d]->[n]->[n,k]
+            support_dis_sum = ((support-support_center)**2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,k)
+            # attention shape: [n,k,d]
+            # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+            d = support.size(2)
+            attention_map = t.softmax((((support-support_center)**2).sum(dim=2)/support_dis_sum).neg(), dim=1)
+            # [n,k]->[n,k,d]
+            # 将向量的注意力系数重复到每个位置
+            attention_map = attention_map.unsqueeze(dim=2).repeat(1,1,d)
+            # support: [n,k,d]->[n,d]
+            # 注意力映射后的支持集中心向量
+            support = t.mul(support, attention_map).sum(dim=1).squeeze()
+
+            # support = support.sum(dim=1).div(k).squeeze(1)
+
             self.forward_outer_var = support.var(dim=0).sum()
+            # shape: [n,k,d]->[qk,n,d]
             support = support.repeat(query_size,1,1)
             # shape: [qk,d]->[qk,n,d]
             query = query.view(query_size,-1).repeat(n,1,1).transpose(0,1)

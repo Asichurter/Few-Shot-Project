@@ -7,7 +7,7 @@ from modules.utils.dlUtils import RN_repeat_query_instance
 
 # 基于卷积神经网络的图像嵌入网络
 class ProtoNet(nn.Module):
-    def __init__(self, n, k, qk, metric="SqEuc"):
+    def __init__(self, n, k, qk, metric="SqEuc", **kwargs):
         super(ProtoNet, self).__init__()
 
         self.n = n
@@ -45,8 +45,18 @@ class ProtoNet(nn.Module):
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
+        self.Transformer = nn.Sequential(
+            nn.Linear(k*kwargs['trans_size'], kwargs['hidden_size']),
+            nn.ReLU(kwargs['hidden_size']),
+            nn.Dropout(0.1),
+            nn.Linear(kwargs['hidden_size'], kwargs['feature_size'])
+        )
 
     def forward(self, *x):
+        k = self.k
+        qk = self.qk
+        n = self.n
+
         # 每一层都是以上一层的输出为输入，得到新的输出、
         # 支持集输入是N个类，每个类有K个实例
         support = self.layer1(x[0])
@@ -64,8 +74,28 @@ class ProtoNet(nn.Module):
         query_size = query.size(0)
 
         # 计算类的原型向量
+        # shape: [n, k, d]
         support = support.view(self.n, self.k, -1)
-        support = t.sum(support, dim=1).div(self.k).squeeze(1)
+        d = support.size(2)
+
+        # support = t.sum(support, dim=1).div(self.k).squeeze(1)
+
+        # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+        # 类均值向量
+        # centers shape: [n,k,d]->[n,d]->[n,k,d]
+        support_center = support.sum(dim=1).div(k).repeat(1, k).reshape(n, k, -1)
+        # 支持集与均值向量的欧式平方距离
+        # dis shape: [n,k,d]->[n]->[n,k]
+        support_dis_sum = ((support - support_center) ** 2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1, k)
+        # attention shape: [n,k,d]
+        # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+        attention_map = t.softmax((((support - support_center) ** 2).sum(dim=2) / support_dis_sum).neg(), dim=1)
+        # [n,k]->[n,k,d]
+        # 将向量的注意力系数重复到每个位置
+        attention_map = attention_map.unsqueeze(dim=2).repeat(1, 1, d)
+        # support: [n,k,d]->[n,d]
+        # 注意力映射后的支持集中心向量
+        support = t.mul(support, attention_map).sum(dim=1).squeeze()
 
         # 将原型向量与查询集打包
         support = support.repeat((query_size,1,1)).view(query_size,self.n,-1)

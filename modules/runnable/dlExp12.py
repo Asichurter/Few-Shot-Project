@@ -17,13 +17,17 @@ import time
 from sklearn.manifold import MDS
 
 from modules.model.ResidualNet import ResidualNet
+from modules.model.PrototypicalNet import ProtoNet
+from modules.model.RelationNet import RN
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v17.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v21.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v27.0.h5"
 
 input_size = 256
 
@@ -45,6 +49,9 @@ VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 if_finetuning = False
 
+embed_size = 7
+hidden_size = 8
+
 test_classes = 59
 TEST_CLASSES = [i for i in range(test_classes)]
 
@@ -52,7 +59,6 @@ dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 
 acc_hist = []
 loss_hist = []
-
 
 def validate(model, loss, classes, seed=0):
     model.eval()
@@ -96,8 +102,10 @@ def validate(model, loss, classes, seed=0):
 
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=5)
+# net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=5)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
+# net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
+net = ProtoNet(k=k, n=n, qk=qk)
 states = t.load(MODEL_LOAD_PATH)
 net.load_state_dict(states)
 net = net.cuda()

@@ -12,15 +12,20 @@ from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
 from modules.utils.dlUtils import RN_baseline_KNN
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
+
+import time
 
 from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler
+from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-TRAIN_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/train/"
-TEST_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/RN_5shot_5way_exp/"
+TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
+TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
+MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+
+writer = SummaryWriter(DOC_SAVE_PATH+"log/")
 
 input_size = 256
 hidder_size = 8
@@ -36,20 +41,23 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 7
+version = 11
 
-TEST_CYCLE = 50
-MAX_ITER = 10000
-TEST_EPISODE = 20
+TEST_CYCLE = 100
+MAX_ITER = 50000
+TEST_EPISODE = 100
 
 # 训练和测试中类的总数
-train_classes = 30
-test_classes = 30
+train_classes = 300
+test_classes = 60
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
 
 IF_LOAD_MODEL = False
+
+train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=224)
+test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=224)
 
 net = ProtoNet(k=k, n=n, qk=qk)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,version)))
@@ -58,11 +66,11 @@ net = net.cuda()
 # net.Embed.apply(RN_weights_init)
 # net.Relation.apply(RN_weights_init)
 
-net.apply(net_init)
+net.apply(RN_weights_init)
 
-# opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
-opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
-scheduler = StepLR(opt, step_size=1000 , gamma=0.5)
+opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
+# opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
+scheduler = StepLR(opt, step_size=10000 , gamma=0.5)
 nll = NLLLoss().cuda()
 
 train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()
@@ -71,10 +79,15 @@ test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%v
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
 
 best_acc = 0.
+previous_stamp = time.time()
+rd.seed(time.time()%10000000)
+
+global_step = 0
+
 for episode in range(MAX_ITER):
-    if episode==10000:
-        choice = input("10000 episode, continue?")
-        if choice == "n" or choice == "no":
+    if episode%5000 == 0 and episode!=0:
+        choice = input("%d episode, continue?"%(episode+1))
+        if choice.find("no") != -1 or choice.find("n") != -1:
             break
     net.train()
     net.zero_grad()
@@ -82,9 +95,9 @@ for episode in range(MAX_ITER):
 
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TRAIN_CLASSES, n)
-    train_dataset = FewShotRNDataset(TRAIN_PATH, N)
+
     # sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
-    sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
+    sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N)
 
     train_sample_dataloader = DataLoader(train_dataset, batch_size=n*k, sampler=sample_sampler)
     train_query_dataloader = DataLoader(train_dataset, batch_size=qk*n, sampler=query_sampler)
@@ -98,18 +111,16 @@ for episode in range(MAX_ITER):
     query_labels = query_labels.cuda()
     # tracker.track()
 
-    labels = RN_labelize(sample_labels, query_labels, k, type="long", expand=False)
+    labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
 
     outs = net(samples, queries)
-
-    # outs = F.softmax(outs, dim=1)
 
     loss = nll(outs, labels)
 
     loss.backward()
 
     # 使用了梯度剪裁
-    t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+    # t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
     opt.step()
 
     acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
@@ -123,10 +134,10 @@ for episode in range(MAX_ITER):
 
     scheduler.step()
 
-    if acc > best_acc:
-        t.save(net.state_dict(), MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,version))
-        print("model save at %d episode"%episode)
-        best_acc = acc
+    if (episode + 1) % 5000 == 0:
+        print("save!")
+        t.save(net.state_dict(),
+               MODEL_SAVE_PATH + "ProtoNet_%d_epoch_model_%dshot_%dway_v%d.0.h5" % (episode + 1, k, n, version))
 
     if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")
@@ -140,10 +151,8 @@ for episode in range(MAX_ITER):
                 # 每一轮开始的时候先抽取n个实验类
                 support_classes = rd.sample(TEST_CLASSES, n)
                 # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-                support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
-                # print(list(support_sampler.__iter__()))
-                test_dataset = FewShotRNDataset(TEST_PATH, N)
-
+                support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N)
+                # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
                 test_support_dataloader = DataLoader(test_dataset, batch_size=n * k,
                                                      sampler=support_sampler)
                 test_test_dataloader = DataLoader(test_dataset, batch_size=qk * n,
@@ -157,7 +166,7 @@ for episode in range(MAX_ITER):
                 tests = tests.cuda()
                 test_labels = test_labels.cuda()
 
-                test_labels = RN_labelize(support_labels, test_labels, k, type="long", expand=False)
+                test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports, tests)
 
                 test_loss += nll(test_relations, test_labels).item()
@@ -166,18 +175,50 @@ for episode in range(MAX_ITER):
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)
 
+
+
+            current_length = TEST_CYCLE if len(train_acc_his) >= TEST_CYCLE else 1
+            current_train_acc = np.mean(train_acc_his[-1*current_length:])
+            current_train_loss = np.mean(train_loss_his[-1*current_length:])
+
+            writer.add_scalars("Accuracy",
+                               {"train":current_train_acc,"validate":test_acc/TEST_EPISODE},
+                               global_step)
+            writer.add_scalars("Loss",
+                               {"train":current_train_loss,"validate":test_loss/TEST_EPISODE},
+                               global_step)
+            global_step += TEST_CYCLE
+
             print("****************************************")
+            print("train acc: ", current_train_acc)
+            print("train acc: ", current_train_loss)
+            print("----------------------------------------")
             print("val acc: ", test_acc/TEST_EPISODE)
             print("val loss: ", test_loss/TEST_EPISODE)
+            if test_acc/TEST_EPISODE > best_acc:
+                t.save(net.state_dict(),
+                       MODEL_SAVE_PATH + "ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5" % (k, n, version))
+                print("model save at %d episode" % episode)
+                best_acc = test_acc/TEST_EPISODE
+                best_epoch = episode
+            print("best val acc: ", best_acc)
+            print("best epoch: %d"%best_epoch)
+            now_stamp = time.time()
+            print(TEST_CYCLE,"episode time consume:",now_stamp-previous_stamp)
             print("****************************************")
+            previous_stamp = now_stamp
             # input("----- Test Complete ! -----")
 
 # 根据历史值画出准确率和损失值曲线
 train_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]
 test_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]
 
+# 修改为计算TEST_CYCLE轮内的正确率和损失值的平均值
+train_acc_plot = np.array(train_acc_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
+train_loss_plot = np.array(train_loss_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
+
 plt.title('%d-shot %d-way Prototypical Net Accuracy'%(k,n))
-plt.plot(train_x, [train_acc_his[i*TEST_EPISODE] for i in range(len(test_acc_his))], linestyle='-', color='blue', label='train')
+plt.plot(train_x, train_acc_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
 plt.plot(train_x, [1/k]*len(train_x), linestyle='--', color="black", label="baseline")
 plt.legend()
@@ -185,7 +226,7 @@ plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
 plt.title('%d-shot %d-way Prototypical Net Loss'%(k,n))
-plt.plot(train_x, [train_loss_his[i*TEST_EPISODE] for i in range(len(test_loss_his))], linestyle='-', color='blue', label='train')
+plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_loss.png'%version)

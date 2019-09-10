@@ -68,8 +68,13 @@ import re
 # dat2_length = t.sqrt((dat2**2).sum(dim=1))
 # dot = t.mul(dat,dat2).sum(dim=1)
 
-a = [1,3,4,5,6,8]
-a = np.array(a).reshape(-1,3).mean(axis=1).reshape(-1).tolist()
+
+a = t.Tensor([[[1,2],[1,1]],[[0,2],[1,3]],[[0,1],[1,2]]])
+b = a.sum(dim=2)
+c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
+
+
+
 
 
 

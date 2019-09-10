@@ -65,13 +65,13 @@ class RelationNetwork(nn.Module):
         super(RelationNetwork, self).__init__()
 # 第一层是128输入（因为两个深度为64的矩阵相加），64个3x3过滤器，周围补0，批正则化，relu为激活函数，2x2maxpool的卷积层
         self.layer1 = nn.Sequential(
-                        nn.Conv2d(64,64,kernel_size=3,padding=1, stride=2, bias=False),
+                        nn.Conv2d(128,64,kernel_size=3,padding=1, stride=1, bias=False),
                         nn.BatchNorm2d(64, affine=True),
                         nn.ReLU(inplace=True),
                         nn.MaxPool2d(2))
 # 第二层是64输入，64个3x3过滤器，周围补0，批正则化，relu为激活函数，2x2maxpool的卷积层
         self.layer2 = nn.Sequential(
-                        nn.Conv2d(64,64,kernel_size=3,padding=1, stride=2, bias=False),
+                        nn.Conv2d(64,64,kernel_size=3,padding=1, stride=1, bias=False),
                         nn.BatchNorm2d(64, affine=True),
                         nn.ReLU(inplace=True),
                         nn.MaxPool2d(2))
@@ -99,12 +99,12 @@ class RelationNetwork(nn.Module):
         return out
 
 class RN(nn.Module):
-    def __init__(self, input_size, linear_hidden_size=8, k=5, n=20, qk=15):
+    def __init__(self, input_size, embed_size, linear_hidden_size=8, k=5, n=20, qk=15):
         super(RN, self).__init__()
         self.K = k
         self.N = n
         self.Embed = EmbeddingNet()
-        self.EmbedOutSize = int(input_size/2/2/2/2/2)
+        self.EmbedOutSize = embed_size
         # self.LinearInputSize = int(64*(self.EmbedOutSize/2/2)*(self.EmbedOutSize/2/2))
         self.LinearInputSize = 64
         # print(self.EmbedOutSize, self.LinearInputSize)
@@ -152,7 +152,7 @@ class RN(nn.Module):
         # relation_input = (support_out-query_out).view(-1,64,self.EmbedOutSize,self.EmbedOutSize)
 
         relations = self.Relation(relation_input)
-        return relations
+        return relations.view(-1,n)
 
 if __name__ == '__main__':
     pass
