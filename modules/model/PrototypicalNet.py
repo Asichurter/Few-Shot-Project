@@ -45,12 +45,7 @@ class ProtoNet(nn.Module):
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
-        self.Transformer = nn.Sequential(
-            nn.Linear(k*kwargs['trans_size'], kwargs['hidden_size']),
-            nn.ReLU(kwargs['hidden_size']),
-            nn.Dropout(0.1),
-            nn.Linear(kwargs['hidden_size'], kwargs['feature_size'])
-        )
+        # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
     def forward(self, *x):
         k = self.k
@@ -98,6 +93,7 @@ class ProtoNet(nn.Module):
         support = t.mul(support, attention_map).sum(dim=1).squeeze()
 
         # 将原型向量与查询集打包
+        # shape: [n,d]->[qk*n, n, d]
         support = support.repeat((query_size,1,1)).view(query_size,self.n,-1)
 
         query = query.repeat(self.n,1,1,1,1).transpose(0,1).contiguous().view(query_size,self.n, -1)

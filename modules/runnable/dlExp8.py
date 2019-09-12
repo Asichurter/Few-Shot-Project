@@ -13,6 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 from modules.utils.dlUtils import RN_baseline_KNN
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+import os
 
 import time
 
@@ -20,12 +21,23 @@ from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
-TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+# TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
+# TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
+# MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
+# DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-writer = SummaryWriter(DOC_SAVE_PATH+"log/")
+TRAIN_PATH = "D:/peimages/New/same_super_class/train/"
+TEST_PATH = "D:/peimages/New/same_super_class/validate/"
+MODEL_SAVE_PATH = "D:/peimages/New/same_super_class/models/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_same_super_exp/"
+
+LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
+# for con in os.listdir(LOG_PATH):
+#     if os.path.isdir(LOG_PATH+"/"+con):
+#         os.removedirs(LOG_PATH+"/"+con)
+#     else:
+#         os.remove(LOG_PATH+"/"+con)
+writer = SummaryWriter(LOG_PATH)
 
 input_size = 256
 hidder_size = 8
@@ -41,15 +53,16 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 11
+version = 12
 
 TEST_CYCLE = 100
-MAX_ITER = 50000
+MAX_ITER = 40000
 TEST_EPISODE = 100
+ASK_CYCLE = 10000
 
 # 训练和测试中类的总数
-train_classes = 300
-test_classes = 60
+train_classes = len(os.listdir(TRAIN_PATH))
+test_classes = len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -60,11 +73,8 @@ train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=224)
 test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=224)
 
 net = ProtoNet(k=k, n=n, qk=qk)
-# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,version)))
+# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
 net = net.cuda()
-
-# net.Embed.apply(RN_weights_init)
-# net.Relation.apply(RN_weights_init)
 
 net.apply(RN_weights_init)
 
@@ -85,10 +95,10 @@ rd.seed(time.time()%10000000)
 global_step = 0
 
 for episode in range(MAX_ITER):
-    if episode%5000 == 0 and episode!=0:
-        choice = input("%d episode, continue?"%(episode+1))
-        if choice.find("no") != -1 or choice.find("n") != -1:
-            break
+    # if episode%ASK_CYCLE == 0 and episode!=0:
+    #     choice = input("%d episode, continue?"%episode)
+    #     if choice.find("no") != -1 or choice.find("n") != -1:
+    #         break
     net.train()
     net.zero_grad()
     print("%d th episode"%episode)

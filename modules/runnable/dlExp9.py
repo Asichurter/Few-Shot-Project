@@ -200,7 +200,7 @@ for episode in range(MAX_ITER):
             print("val loss: ", test_loss/TEST_EPISODE)
             if test_acc/TEST_EPISODE > best_acc:
                 t.save(net.state_dict(),
-                       MODEL_SAVE_PATH + "ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5" % (k, n, version))
+                       MODEL_SAVE_PATH + "Siamese_best_acc_model_%dshot_%dway_v%d.0.h5" % (k, n, version))
                 print("model save at %d episode" % episode)
                 best_acc = test_acc/TEST_EPISODE
                 best_epoch = episode

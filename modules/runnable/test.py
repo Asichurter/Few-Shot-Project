@@ -69,9 +69,13 @@ import re
 # dot = t.mul(dat,dat2).sum(dim=1)
 
 
-a = t.Tensor([[[1,2],[1,1]],[[0,2],[1,3]],[[0,1],[1,2]]])
-b = a.sum(dim=2)
-c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
+# a = t.Tensor([[[1,2],[1,1]],[[0,2],[1,3]],[[0,1],[1,2]]])
+# b = a.sum(dim=2)
+# c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
+
+path = 'D:/peimages/New/same_super_class/train/182/Trojan-Dropper.Win32.VB.fxb'
+image = Image.open(path, mode="gray")
+
 
 
 

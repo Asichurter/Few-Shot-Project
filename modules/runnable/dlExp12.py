@@ -19,13 +19,34 @@ from sklearn.manifold import MDS
 from modules.model.ResidualNet import ResidualNet
 from modules.model.PrototypicalNet import ProtoNet
 from modules.model.RelationNet import RN
+from modules.model.SiameseNet import SiameseNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
-VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
+def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2):
+    bin_interval = 1/bins
+    x = np.arange(bins)*bar_width
+    x_label = (x-bar_width/2)
+    x_label = np.append(x_label, x_label[-1]+bar_width)
+    x_ticks = [round(i*bin_interval, precision) for i in range(bins+1)]
+    print(x, x_label, x_ticks, sep='\n')
+    data = np.floor(np.array(data)/bin_interval)
+    frequency = [0]*bins
+    for i in data:
+        frequency[int(i)] += 1/len(data)
+    plt.title(title)
+    plt.bar(x, frequency, alpha=0.5, width=bar_width, color=color, edgecolor='black', label="frequency", lw=3)
+    plt.xticks(x_label, x_ticks)
+    plt.legend()
+    plt.show()
+
+VALIDATE_PATH = "D:/peimages/New/test/test/"
+
+# VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_5000_epoch_model_5shot_5way_v17.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v14.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
+# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v27.0.h5"
 
@@ -52,7 +73,7 @@ if_finetuning = False
 embed_size = 7
 hidden_size = 8
 
-test_classes = 59
+test_classes = 30
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
@@ -60,7 +81,7 @@ dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 acc_hist = []
 loss_hist = []
 
-def validate(model, loss, classes, seed=0):
+def validate(model, loss, classes):
     model.eval()
     # print("test stage at %d episode" % episode)
     with no_grad():
@@ -70,7 +91,7 @@ def validate(model, loss, classes, seed=0):
             #print("test %d" % j)
             support_classes = classes
             # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-            support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N, seed)
+            support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N)
             # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
 
             test_support_dataloader = DataLoader(dataset, batch_size=n * k,
@@ -106,6 +127,7 @@ def validate(model, loss, classes, seed=0):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
 net = ProtoNet(k=k, n=n, qk=qk)
+# net = SiameseNet(input_size=input_size, k=k, n=n)
 states = t.load(MODEL_LOAD_PATH)
 net.load_state_dict(states)
 net = net.cuda()
@@ -135,6 +157,7 @@ after_loss_total = 0.
 acc_gain_all = 0.
 loss_gain_all = 0.
 print(net)
+rd.seed(time.time()%10000000)
 for episode in range(TEST_EPISODE):
     s_time = time.time()
     states = t.load(MODEL_LOAD_PATH)
@@ -148,7 +171,7 @@ for episode in range(TEST_EPISODE):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TEST_CLASSES, n)
 
-    before_acc,before_loss = validate(net, entro, sample_classes, time.time()%100000)
+    before_acc,before_loss = validate(net, entro, sample_classes)
     print("before:")
     print("acc: ", before_acc)
     print("loss: ", before_loss)
@@ -222,3 +245,4 @@ if if_finetuning:
     print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
     print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
 
+bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))

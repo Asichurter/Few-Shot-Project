@@ -57,7 +57,8 @@ def get_benign_exe_abspath(base=BENIGN_BASE):
             yield base
 
 def convert_to_images(base, destination, mode='file', method='normal',
-                      padding=False, num_constrain=None, sample=False, cluster=None):
+                      padding=False, num_constrain=None, sample=False,
+                      cluster=None, size_range=None,verbose=True):
     '''
     base:目标文件或者目标所在的文件夹\n
     destination:转换后存储的文件夹\n
@@ -84,7 +85,8 @@ def convert_to_images(base, destination, mode='file', method='normal',
                 warnings.warn("迭代器内部总数量:%d 小于需求数量: %d"%(num, num_constrain), RuntimeWarning)
                 break
             benign_name = benign_path.split('/')[-1]
-            print(num)
+            if verbose:
+                print(num)
             # 为了不在相同名字的文件下重复覆盖来无意义增加num，添加时判断是否同名者已经存在
             if os.path.exists(str(destination + benign_name + '.jpg')):
                 continue
@@ -96,7 +98,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
         if not os.path.isdir(base):
             raise Exception(base + ' is not a director!\n')
         files = os.listdir(base)
-        files = list(filter(lambda x: cluster in [formalize_class_name(x)],
+        files = list(filter(lambda x: formalize_class_name(x)==cluster,
                             files)) if cluster is not None else files
         # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
         assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d! Cluter: %s"%(len(files), num_constrain, cluster)
@@ -106,7 +108,13 @@ def convert_to_images(base, destination, mode='file', method='normal',
         for one in files:
             if num_constrain is not None and num == num_constrain:
                 break
-            print(num)
+            if verbose:
+                print(num)
+            # 按照文件大小进行过滤
+            if size_range is not None:
+                file_size = int(os.path.getsize(base + one)/1024)
+                if not (size_range[0]<=file_size<=size_range[1]):
+                    continue
             im = convert(base + one, method, padding)
             im.save(destination + one + '.jpg', 'JPEG')
             num += 1
@@ -257,32 +265,76 @@ def create_benign(dest, num,
 def formalize_class_name(x):
     digits_pattern = re.compile("^[0-9]+$")
     x = x.split(".")[:-1]
+    # print(x)
     # 如果类名的最后一个位置全是数字，则过滤掉
     if digits_pattern.search(x[-1]) is not None:
         x = x[:-1]
     return ".".join(x)
 
-def make_few_shot_datas(num_per_class, dest):
-    num = 0
+def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=None):
+    '''
+    用于生成子类分类
+    :param num_per_class: 每一个子类的数量
+    :param dest: 目标文件夹
+    :param head_constraint: 大类限制
+    :param size_range: 文件大小范围
+    '''
+
+    dir_index = 0
     all_names = []
     for c in os.listdir(MALWARE_BASE):
+        # 按照指定的大类选择样本
+        if head_constraint is not None:
+            constraint_results = list(map(lambda x: c.find(x), head_constraint))
+            if  constraint_results.count(0) == 0:
+                # print('%s has been passed with constraint: %s'%(c,head_constraint))
+                continue
         path = MALWARE_BASE+c+"/"
-        names = list(map(lambda x: formalize_class_name(x),os.listdir(path)))
+        files = os.listdir(path)
+
+        # 按照指定的文件大小进行过滤
+        if size_range is not None:
+            assert len(size_range)==2 and size_range[0] <= size_range[1], "限定范围的格式错误！"
+            files = list(filter(lambda x: size_range[0] <= int(os.path.getsize(path+x)/1024) <= size_range[1], files))
+
+        # 计算满足条件的文件数量，只有满足的才会被转换
+        try:
+            names = list(map(formalize_class_name, files))
+        except IndexError:
+            print(files)
+            return
         names_set = set(names)
+        satisfies_names = []
         for name in names_set:
-            print(c+"/"+name)
-            if names.count(name) >= num_per_class and name not in all_names:
-                print(num)
+            count = names.count(name)
+            print(c+"/"+name, count)
+            if count >= num_per_class and name not in all_names:
+                # print(num)
                 all_names.append(name)
-                os.mkdir(dest+str(num))
+                satisfies_names.append(name)
+                os.mkdir(dest+str(dir_index))
                 convert_to_images(base=path,
-                                  destination=dest+str(num)+"/",
+                                  destination=dest+str(dir_index)+"/",
                                   mode='dir',
                                   padding=False,
                                   num_constrain=num_per_class,
                                   cluster=name,
-                                  sample=True)
-                num += 1
+                                  sample=True,
+                                  size_range=size_range,
+                                  verbose=False)
+                dir_index += 1
+        # for name in satisfies_names:
+        #     os.mkdir(dest+str(dir_index))
+        #     # 获取所有类别属于选定子类的样本
+        #     satisfies_files = list(filter(lambda x: formalize_class_name(x)==name, files))
+        #     assert len(satisfies_files) >= num_per_class, "过滤后的数量不足num"
+        #     # 从满足条件的样本中抽样
+        #     satisfies_files = rd.sample(satisfies_files, num_per_class)
+        #     for s_file in satisfies_files:
+        #         image = convert(path+s_file, "normal", False)
+        #         image.save(dest + str(dir_index) + "/" + s_file + '.jpg', 'JPEG')
+        #     dir_index += 1
+
 
 def check_data_is_valid(base):
     invalid_list = {}
@@ -298,36 +350,6 @@ def check_data_is_valid(base):
     print("存在两个及以上类的类和对应子类如下:")
     for k,v in invalid_list.items():
         print(k,v)
-
-def make_few_shot_datas_by_class(num_per_class, dest):
-    class_num = 0
-    sub_class_num = 0
-    all_names = []
-    currernt_class = ""
-    for c in os.listdir(MALWARE_BASE):
-        if c[:-1] != currernt_class:
-            currernt_class = c[:-1]
-            os.mkdir(dest+str(class_num))
-            class_num += 1
-            current_path = dest + str(class_num) + "/"
-            sub_class_num = 0
-        path = MALWARE_BASE+c+"/"
-        names = list(map(lambda x: ".".join(x.split(".")[:-1]),os.listdir(path)))
-        names_set = set(names)
-        for name in names_set:
-            print(c+"/"+name)
-            if names.count(name) >= num_per_class and name not in all_names:
-                print(num)
-                all_names.append(name)
-                os.mkdir(dest+str(num))
-                convert_to_images(base=path,
-                                  destination=dest+str(num)+"/",
-                                  mode='dir',
-                                  padding=False,
-                                  num_constrain=num_per_class,
-                                  cluster=name.split(".")[-1],
-                                  sample=True)
-                num += 1
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -475,13 +497,13 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    split_datas(src='D:/peimages/New/Residual_5shot_5way_exp/train/',
-                dest='D:/peimages/New/Residual_5shot_5way_exp/test/',
-                ratio=59,
-                mode="x",
-                is_dir=True)
+    # split_datas(src="D:/peimages/New/test/train/",
+    #             dest="D:/peimages/New/test/test/",
+    #             ratio=50,
+    #             mode="x",
+    #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
-    # make_few_shot_datas(20, "D:/peimages/New/Residual_5shot_5way_exp/train/")
+    make_few_shot_datas(20, "D:/peimages/New/test/train/", head_constraint=["Trojan"])
     # check_data_is_valid("D:/peimages/New/Residual_5shot_5way_exp/train/")
 
