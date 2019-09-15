@@ -73,24 +73,39 @@ class ProtoNet(nn.Module):
         support = support.view(self.n, self.k, -1)
         d = support.size(2)
 
-        # support = t.sum(support, dim=1).div(self.k).squeeze(1)
+        # 直接将均值向量作为原型向量
+        # support = support.mean(dim=1).squeeze()
 
         # 利用类内向量的均值向量作为键使用注意力机制生成类向量
         # 类均值向量
         # centers shape: [n,k,d]->[n,d]->[n,k,d]
-        support_center = support.sum(dim=1).div(k).repeat(1, k).reshape(n, k, -1)
+        support_center = support.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+
+        # -------------------------------------------------------------
         # 支持集与均值向量的欧式平方距离
-        # dis shape: [n,k,d]->[n]->[n,k]
-        support_dis_sum = ((support - support_center) ** 2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1, k)
-        # attention shape: [n,k,d]
-        # 类内对每个向量的注意力映射，由负距离输入到softmax生成
-        attention_map = t.softmax((((support - support_center) ** 2).sum(dim=2) / support_dis_sum).neg(), dim=1)
-        # [n,k]->[n,k,d]
-        # 将向量的注意力系数重复到每个位置
-        attention_map = attention_map.unsqueeze(dim=2).repeat(1, 1, d)
-        # support: [n,k,d]->[n,d]
-        # 注意力映射后的支持集中心向量
+        # dis shape: [n,k,d]->[n,k]
+        support_dis = ((support - support_center) ** 2).sum(dim=2).sqrt()
+        # dis_mean_shape: [n,k]->[n]->[n,k]
+        support_dis_mean = support_dis.mean(dim=1).unsqueeze(dim=1).repeat(1,k)
+        support_dis = t.abs(support_dis-support_dis_mean).neg()
+        # attention shape: [n,k]->[n,k,d]
+        attention_map = t.softmax(support_dis, dim=1).unsqueeze(dim=2).repeat(1,1,d)
         support = t.mul(support, attention_map).sum(dim=1).squeeze()
+        # -------------------------------------------------------------
+
+
+        # # 支持集与均值向量的欧式平方距离
+        # # dis shape: [n,k,d]->[n]->[n,k]
+        # support_dis_sum = ((support - support_center) ** 2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1, k)
+        # # attention shape: [n,k,d]
+        # # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+        # attention_map = t.softmax((((support - support_center) ** 2).sum(dim=2) / support_dis_sum).neg(), dim=1)
+        # # [n,k]->[n,k,d]
+        # # 将向量的注意力系数重复到每个位置
+        # attention_map = attention_map.unsqueeze(dim=2).repeat(1, 1, d)
+        # # support: [n,k,d]->[n,d]
+        # # 注意力映射后的支持集中心向量
+        # support = t.mul(support, attention_map).sum(dim=1).squeeze()
 
         # 将原型向量与查询集打包
         # shape: [n,d]->[qk*n, n, d]

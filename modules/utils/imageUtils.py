@@ -101,6 +101,9 @@ def convert_to_images(base, destination, mode='file', method='normal',
         files = list(filter(lambda x: formalize_class_name(x)==cluster,
                             files)) if cluster is not None else files
         # assert cluster is None or not sample, '限制名字和采样不能同时进行！'
+        if size_range is not None:
+            files = list(filter(lambda x: size_range[0]<=os.path.getsize(base+x)/1024<=size_range[1],
+                                        files))
         assert len(files)>=num_constrain, "规定cluster以后，数量:%d不够到num_constrain:%d! Cluter: %s"%(len(files), num_constrain, cluster)
         if sample:
             files = random.sample(files, num_constrain)
@@ -108,13 +111,10 @@ def convert_to_images(base, destination, mode='file', method='normal',
         for one in files:
             if num_constrain is not None and num == num_constrain:
                 break
+
             if verbose:
                 print(num)
             # 按照文件大小进行过滤
-            if size_range is not None:
-                file_size = int(os.path.getsize(base + one)/1024)
-                if not (size_range[0]<=file_size<=size_range[1]):
-                    continue
             im = convert(base + one, method, padding)
             im.save(destination + one + '.jpg', 'JPEG')
             num += 1
@@ -263,13 +263,14 @@ def create_benign(dest, num,
             os.remove(dest + file)
 
 def formalize_class_name(x):
-    digits_pattern = re.compile("^[0-9]+$")
-    x = x.split(".")[:-1]
-    # print(x)
-    # 如果类名的最后一个位置全是数字，则过滤掉
-    if digits_pattern.search(x[-1]) is not None:
-        x = x[:-1]
-    return ".".join(x)
+    # digits_pattern = re.compile("^[0-9]+$")
+    # x = x.split(".")[:-1]
+    # # print(x)
+    # # 如果类名的最后一个位置全是数字，则过滤掉
+    # if digits_pattern.search(x[-1]) is not None:
+    #     x = x[:-1]
+    # return ".".join(x)
+    return ".".join(x.split(".")[:3])
 
 def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=None):
     '''
@@ -287,7 +288,7 @@ def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=No
         if head_constraint is not None:
             constraint_results = list(map(lambda x: c.find(x), head_constraint))
             if  constraint_results.count(0) == 0:
-                # print('%s has been passed with constraint: %s'%(c,head_constraint))
+                print('%s has been passed with constraint: %s'%(c,head_constraint))
                 continue
         path = MALWARE_BASE+c+"/"
         files = os.listdir(path)
@@ -336,20 +337,30 @@ def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=No
         #     dir_index += 1
 
 
-def check_data_is_valid(base):
+def check_data_is_valid(base, size, remove_invalid=False, remove_dest=None):
     invalid_list = {}
+    size_out_list = {}
     for c in os.listdir(base):
         class_path = base + c + "/"
         instances = os.listdir(class_path)
         # 过滤掉jpg扩展名和区分各个实例的随机扩展名
-        prefixes = list(map(lambda x: formalize_class_name(".".join(x.split(".")[:-2])), instances))
+        prefixes = list(map(lambda x: ".".join(x.split(".")[:3]), instances))
+        # prefixes = list(map(lambda x: formalize_class_name(".".join(x.split(".")[:-2])), instances))
         # 由过滤后的名称生成集合，查看是否有重复的元素
         inst_set = set(prefixes)
         if len(inst_set) != 1:
             invalid_list[c] = list(inst_set)
+        if len(os.listdir(class_path)) != size:
+            size_out_list[c] = len(os.listdir(class_path))
     print("存在两个及以上类的类和对应子类如下:")
     for k,v in invalid_list.items():
         print(k,v)
+    print("存在数量不正常的子类如下:")
+    for k,v in size_out_list.items():
+        print(k,v)
+    if remove_invalid:
+        for c in invalid_list.keys():
+            shutil.move(base+c+"/", remove_dest)
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -497,13 +508,13 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/test/train/",
-    #             dest="D:/peimages/New/test/test/",
-    #             ratio=50,
-    #             mode="x",
-    #             is_dir=True)
+    split_datas(src="D:/peimages/New/test/train/",
+                dest="D:/peimages/New/test/test/",
+                ratio=50,
+                mode="x",
+                is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
-    make_few_shot_datas(20, "D:/peimages/New/test/train/", head_constraint=["Trojan"])
-    # check_data_is_valid("D:/peimages/New/Residual_5shot_5way_exp/train/")
+    # make_few_shot_datas(20, "D:/peimages/New/test/train/")
+    # check_data_is_valid("D:/peimages/New/test/train/", 20)
 

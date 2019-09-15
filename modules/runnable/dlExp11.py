@@ -18,6 +18,7 @@ from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
 
 import time
+import os
 
 TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
@@ -49,8 +50,8 @@ TEST_EPISODE = 100
 
 # 训练和测试中类的总数
 total_train_classes = 300
-train_classes = 300
-test_classes = 60
+train_classes = len(os.listdir(TRAIN_PATH))
+test_classes = len(os.listdir(VALIDATE_PATH))
 crop_size = 224
 
 inner_var_alpha = 1e-2

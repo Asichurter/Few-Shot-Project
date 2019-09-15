@@ -14,6 +14,7 @@ from modules.utils.dlUtils import RN_baseline_KNN
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import os
+import visdom
 
 import time
 
@@ -26,10 +27,10 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-TRAIN_PATH = "D:/peimages/New/same_super_class/train/"
-TEST_PATH = "D:/peimages/New/same_super_class/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/same_super_class/models/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_same_super_exp/"
+TRAIN_PATH = "D:/peimages/New/test/train/"
+TEST_PATH = "D:/peimages/New/test/validate/"
+MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
 LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
 # for con in os.listdir(LOG_PATH):
@@ -37,7 +38,7 @@ LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
 #         os.removedirs(LOG_PATH+"/"+con)
 #     else:
 #         os.remove(LOG_PATH+"/"+con)
-writer = SummaryWriter(LOG_PATH)
+# writer = SummaryWriter(LOG_PATH)
 
 input_size = 256
 hidder_size = 8
@@ -53,12 +54,14 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 12
+version = 21
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
 TEST_EPISODE = 100
-ASK_CYCLE = 10000
+ASK_CYCLE = 50000
+ASK_THRESHOLD = 50000
+CROP_SIZE = 224
 
 # 训练和测试中类的总数
 train_classes = len(os.listdir(TRAIN_PATH))
@@ -69,8 +72,13 @@ TEST_CLASSES = [i for i in range(test_classes)]
 
 IF_LOAD_MODEL = False
 
-train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=224)
-test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=224)
+vis = visdom.Visdom(env="train monitoring")
+acc_names = ["train acc", "validate acc"]
+loss_names = ["train loss", "validate loss"]
+
+
+train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
 
 net = ProtoNet(k=k, n=n, qk=qk)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
@@ -95,10 +103,10 @@ rd.seed(time.time()%10000000)
 global_step = 0
 
 for episode in range(MAX_ITER):
-    # if episode%ASK_CYCLE == 0 and episode!=0:
-    #     choice = input("%d episode, continue?"%episode)
-    #     if choice.find("no") != -1 or choice.find("n") != -1:
-    #         break
+    if episode%ASK_CYCLE == 0 and episode!=0 and episode <= ASK_THRESHOLD:
+        choice = input("%d episode, continue?"%episode)
+        if choice.find("no") != -1 or choice.find("n") != -1:
+            break
     net.train()
     net.zero_grad()
     print("%d th episode"%episode)
@@ -191,12 +199,37 @@ for episode in range(MAX_ITER):
             current_train_acc = np.mean(train_acc_his[-1*current_length:])
             current_train_loss = np.mean(train_loss_his[-1*current_length:])
 
-            writer.add_scalars("Accuracy",
-                               {"train":current_train_acc,"validate":test_acc/TEST_EPISODE},
-                               global_step)
-            writer.add_scalars("Loss",
-                               {"train":current_train_loss,"validate":test_loss/TEST_EPISODE},
-                               global_step)
+            # writer.add_scalars("Accuracy",
+            #                    {"train":current_train_acc,"validate":test_acc/TEST_EPISODE},
+            #                    global_step)
+            # writer.add_scalars("Loss",
+            #                    {"train":current_train_loss,"validate":test_loss/TEST_EPISODE},
+            #                    global_step)
+
+            plot_x = np.ones((1,2))*global_step
+            plot_acc = np.array([current_train_acc, test_acc/TEST_EPISODE]).reshape((1,2))
+            plot_loss = np.array([current_train_loss, test_loss/TEST_EPISODE]).reshape((1,2))
+            acc_line = vis.line(X=plot_x,
+                                Y=plot_acc,
+                                win="acc",
+                                opts=dict(
+                                    legend=acc_names,
+                                    title="Accuracy",
+                                    xlabel="Iterations",
+                                    ylabel="Accuracy"
+                                ),
+                                update=None if episode==0 else "append")
+            loss_line = vis.line(X=plot_x,
+                                Y=plot_loss,
+                                 win="loss",
+                                opts=dict(
+                                    legend=loss_names,
+                                    title="Loss",
+                                    xlabel="Iterations",
+                                    ylabel="Loss"
+                                ),
+                                update=None if episode==0 else "append")
+
             global_step += TEST_CYCLE
 
             print("****************************************")

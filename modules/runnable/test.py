@@ -73,9 +73,8 @@ import re
 # b = a.sum(dim=2)
 # c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
 
-path = 'D:/peimages/New/same_super_class/train/182/Trojan-Dropper.Win32.VB.fxb'
-image = Image.open(path, mode="gray")
-
+a = t.Tensor([[1,2],[3,4]])
+print(a.softmax(dim=1).unsqueeze(dim=2))
 
 
 

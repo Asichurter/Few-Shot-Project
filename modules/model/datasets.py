@@ -106,7 +106,7 @@ class FewShotRNDataset(Dataset):
         self.RandomCrop = T.RandomCrop(rd_crop_size) if rd_crop_size is not None else None
         # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
         for i,c in enumerate(os.listdir(base)):
-            assert n == len(os.listdir(base+c+"/")), "实际类别内样本数目%d不等同输入样本数目%d！" % (n, len(os.listdir(base+c+"/")))
+            assert n == len(os.listdir(base+c+"/")), "实际类别%s内样本数目%d不等同输入样本数目%d！" % (c, n, len(os.listdir(base+c+"/")))
             for instance in os.listdir(base+c+"/"):
                 self.Data.append(base+c+"/"+instance)
             self.Label += [i]*len(os.listdir(base+c+"/"))

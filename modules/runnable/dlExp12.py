@@ -13,6 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 import torch.nn.functional as F
 
 import time
+import os
 
 from sklearn.manifold import MDS
 
@@ -33,7 +34,10 @@ def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2
     data = np.floor(np.array(data)/bin_interval)
     frequency = [0]*bins
     for i in data:
-        frequency[int(i)] += 1/len(data)
+        try:
+            frequency[int(i)] += 1/len(data)
+        except IndexError:
+            print(i)
     plt.title(title)
     plt.bar(x, frequency, alpha=0.5, width=bar_width, color=color, edgecolor='black', label="frequency", lw=3)
     plt.xticks(x_label, x_ticks)
@@ -44,7 +48,7 @@ VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v14.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v21.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
@@ -73,7 +77,7 @@ if_finetuning = False
 embed_size = 7
 hidden_size = 8
 
-test_classes = 30
+test_classes = len(os.listdir(VALIDATE_PATH))
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
