@@ -45,7 +45,7 @@ class ProtoNet(nn.Module):
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
-        # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
+        self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
     def forward(self, *x, save_embed=False):
         k = self.k
@@ -65,6 +65,8 @@ class ProtoNet(nn.Module):
         query = self.layer2(query)
         query = self.layer3(query)
         query = self.layer4(query)
+
+        support = self.Transformer(support.view(self.n, self.k, -1))
 
         if save_embed:
             return support.view(self.n, self.k, -1),query.view(self.n, self.qk, -1)

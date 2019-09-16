@@ -54,7 +54,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 22
+version = 24
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
@@ -80,7 +80,7 @@ loss_names = ["train loss", "validate loss"]
 train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
 
-net = ProtoNet(k=k, n=n, qk=qk)
+net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
 net = net.cuda()
 
