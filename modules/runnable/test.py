@@ -73,8 +73,20 @@ import re
 # b = a.sum(dim=2)
 # c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
 
-a = t.Tensor([[1,2],[3,4]])
-print(a.softmax(dim=1).unsqueeze(dim=2))
+a = t.randn((5,1,5,14))
+# [qk,n,d]
+# 距离
+dis = t.randn((15,5,14))
+
+conv1 = nn.Conv2d(1,32, kernel_size=(5,1), stride=(1,1), padding=(int((5-1)/2), 0))
+conv2 = nn.Conv2d(32,1, kernel_size=(5,1), stride=(5,1), padding=(int((5-1)/2), 0))
+
+attention = conv2(conv1(a)).squeeze().repeat(15,1,1)
+
+attented = (attention*dis).sum(dim=2)
+
+
+
 
 
 

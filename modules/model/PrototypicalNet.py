@@ -111,7 +111,7 @@ class ProtoNet(nn.Module):
         # support = t.mul(support, attention_map).sum(dim=1).squeeze()
 
         # 将原型向量与查询集打包
-        # shape: [n,d]->[qk*n, n, d]
+        # shape: [n,d]->[qk, n, d]
         support = support.repeat((query_size,1,1)).view(query_size,self.n,-1)
 
         query = query.repeat(self.n,1,1,1,1).transpose(0,1).contiguous().view(query_size,self.n, -1)
