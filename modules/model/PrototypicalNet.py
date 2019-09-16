@@ -47,7 +47,7 @@ class ProtoNet(nn.Module):
             nn.MaxPool2d(2))
         # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
-    def forward(self, *x):
+    def forward(self, *x, save_embed=False):
         k = self.k
         qk = self.qk
         n = self.n
@@ -66,6 +66,9 @@ class ProtoNet(nn.Module):
         query = self.layer3(query)
         query = self.layer4(query)
 
+        if save_embed:
+            return support.view(self.n, self.k, -1),query.view(self.n, self.qk, -1)
+
         query_size = query.size(0)
 
         # 计算类的原型向量
@@ -74,23 +77,23 @@ class ProtoNet(nn.Module):
         d = support.size(2)
 
         # 直接将均值向量作为原型向量
-        # support = support.mean(dim=1).squeeze()
+        support = support.mean(dim=1).squeeze()
 
         # 利用类内向量的均值向量作为键使用注意力机制生成类向量
         # 类均值向量
         # centers shape: [n,k,d]->[n,d]->[n,k,d]
-        support_center = support.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+        # support_center = support.mean(dim=1).repeat(1, k).reshape(n, k, -1)
 
         # -------------------------------------------------------------
-        # 支持集与均值向量的欧式平方距离
-        # dis shape: [n,k,d]->[n,k]
-        support_dis = ((support - support_center) ** 2).sum(dim=2).sqrt()
-        # dis_mean_shape: [n,k]->[n]->[n,k]
-        support_dis_mean = support_dis.mean(dim=1).unsqueeze(dim=1).repeat(1,k)
-        support_dis = t.abs(support_dis-support_dis_mean).neg()
-        # attention shape: [n,k]->[n,k,d]
-        attention_map = t.softmax(support_dis, dim=1).unsqueeze(dim=2).repeat(1,1,d)
-        support = t.mul(support, attention_map).sum(dim=1).squeeze()
+        # # 支持集与均值向量的欧式平方距离
+        # # dis shape: [n,k,d]->[n,k]
+        # support_dis = ((support - support_center) ** 2).sum(dim=2).sqrt()
+        # # dis_mean_shape: [n,k]->[n]->[n,k]
+        # support_dis_mean = support_dis.mean(dim=1).unsqueeze(dim=1).repeat(1,k)
+        # support_dis = t.abs(support_dis-support_dis_mean).neg()
+        # # attention shape: [n,k]->[n,k,d]
+        # attention_map = t.softmax(support_dis, dim=1).unsqueeze(dim=2).repeat(1,1,d)
+        # support = t.mul(support, attention_map).sum(dim=1).squeeze()
         # -------------------------------------------------------------
 
 
