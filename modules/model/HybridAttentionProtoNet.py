@@ -72,10 +72,15 @@ class HAPNet(nn.Module):
 
         # 获得样例注意力的模块
         # 将嵌入后的向量拼接成单通道矩阵后，有多少个支持集就为几个batch
+        if k%2==0:
+            warnings.warn("K=%d是偶数将会导致feature_attention中卷积核的宽度为偶数，因此部分将会发生一些变化")
+            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
+        else:
+            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
         attention_channels = [1,32,64,1]
         attention_strides = [(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]
-        attention_paddings = [(int((k-1)/2),0),(int((k-1)/2),0),(int((k-1)/2),0)]
+
         self.FeatureAttention = nn.Sequential(
             *[get_attention_block(attention_channels[i],
                                   attention_channels[i+1],
