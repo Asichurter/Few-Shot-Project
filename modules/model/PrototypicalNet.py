@@ -52,6 +52,49 @@ class ProtoNet(nn.Module):
         qk = self.qk
         n = self.n
 
+        self.forward_inner_var = None
+        self.forward_outer_var = None
+
+        # input shape: [n, k, d]
+        def proto_mean(tensors):
+            return tensors.mean(dim=1).squeeze()
+
+        def proto_correct_attention(tensors):
+            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # 类均值向量
+            # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            support_center = tensors.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+
+            # -------------------------------------------------------------
+            # 支持集与均值向量的欧式平方距离
+            # dis shape: [n,k,d]->[n,k]
+            support_dis = ((tensors - support_center) ** 2).sum(dim=2).sqrt()
+            # dis_mean_shape: [n,k]->[n]->[n,k]
+            support_dis_mean = support_dis.mean(dim=1).unsqueeze(dim=1).repeat(1,k)
+            support_dis = t.abs(support_dis-support_dis_mean).neg()
+            # attention shape: [n,k]->[n,k,d]
+            attention_map = t.softmax(support_dis, dim=1).unsqueeze(dim=2).repeat(1,1,d)
+
+            # return shape: [n,k,d]->[n,d]
+            return t.mul(tensors, attention_map).sum(dim=1).squeeze()
+            # -------------------------------------------------------------
+
+        def proto_attention(tensors):
+            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # 类均值向量
+            # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            support_center = tensors.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+
+            # attention shape: [n,k,d]
+            # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+            attention_map = t.softmax(((tensors - support_center) ** 2).sum(dim=2).neg(), dim=1)
+            # [n,k]->[n,k,d]
+            # 将向量的注意力系数重复到每个位置
+            attention_map = attention_map.unsqueeze(dim=2).repeat(1, 1, d)
+            # support: [n,k,d]->[n,d]
+            # 注意力映射后的支持集中心向量
+            return t.mul(tensors, attention_map).sum(dim=1).squeeze()
+
         # 每一层都是以上一层的输出为输入，得到新的输出、
         # 支持集输入是N个类，每个类有K个实例
         support = self.layer1(x[0])
@@ -78,8 +121,14 @@ class ProtoNet(nn.Module):
         support = support.view(self.n, self.k, -1)
         d = support.size(2)
 
+        # proto shape: [n, d]
+        proto = proto_mean(support)
+        self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1, k, 1)) ** 2).sum()
+        self.forward_outer_var = proto.var(dim=0).sum()
+        support = proto
+
         # 直接将均值向量作为原型向量
-        support = support.mean(dim=1).squeeze()
+        # support = support.mean(dim=1).squeeze()
 
         # 利用类内向量的均值向量作为键使用注意力机制生成类向量
         # 类均值向量

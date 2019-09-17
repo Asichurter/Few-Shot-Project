@@ -73,18 +73,20 @@ import re
 # b = a.sum(dim=2)
 # c = a.sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,2)
 
-a = t.randn((5,1,4,14))
-# [qk,n,d]
-# 距离
-dis = t.randn((15,5,14))
+# a = t.randn((5,1,4,14))
+# # [qk,n,d]
+# # 距离
+# dis = t.randn((15,5,14))
+#
+# conv1 = nn.Conv2d(1,32, kernel_size=(4,1), stride=(1,1), padding=(1,0))
+# conv2 = nn.Conv2d(32,32, kernel_size=(4,1), stride=(1,1), padding=(2,0))
+# conv3 = nn.Conv2d(32,1, kernel_size=(4,1), stride=(4,1), padding=(0,0))
+#
+# attention = conv3(conv2(conv1(a))).squeeze().repeat(15,1,1)
+#
+# attented = (attention*dis).sum(dim=2)
 
-conv1 = nn.Conv2d(1,32, kernel_size=(4,1), stride=(1,1), padding=(1,0))
-conv2 = nn.Conv2d(32,32, kernel_size=(4,1), stride=(1,1), padding=(2,0))
-conv3 = nn.Conv2d(32,1, kernel_size=(4,1), stride=(4,1), padding=(0,0))
-
-attention = conv3(conv2(conv1(a))).squeeze().repeat(15,1,1)
-
-attented = (attention*dis).sum(dim=2)
+a = t.Tensor([[1,2],[3,4]])
 
 
 

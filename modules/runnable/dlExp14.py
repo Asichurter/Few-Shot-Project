@@ -273,8 +273,9 @@ cnames = {
 
 # plt.title("Acc = %.4f"%acc)
 plt.axis("off")
+plt.figure(figsize=(10,8))
 for i in range(DATA_LENGTH):
-    plt.scatter([reduced_datas[i][j][0] for j in range(class_contents_num)],
+    plt.plot([reduced_datas[i][j][0] for j in range(class_contents_num)],
                 [reduced_datas[i][j][1] for j in range(class_contents_num)],
                 marker="o", color=cnames[colors[i]])
     # plt.scatter([x[0] for x in samples_trans[i*k:(i+1)*k]],[x[1] for x in samples_trans[i*k:(i+1)*k]],
@@ -282,6 +283,12 @@ for i in range(DATA_LENGTH):
     # plt.scatter([x[0] for j,x in enumerate(queries_trans) if query_labels[j]==sample_labels[i]],
     #          [x[1] for j,x in enumerate(queries_trans) if query_labels[j]==sample_labels[i]],
     #          marker="^", color=colors[i])
+plt.show()
+plt.figure(figsize=(10,8))
+for i in range(DATA_LENGTH):
+    plt.scatter([reduced_datas[i][j][0] for j in range(class_contents_num)],
+                [reduced_datas[i][j][1] for j in range(class_contents_num)],
+                marker="o", color=cnames[colors[i]])
 plt.show()
 
 
