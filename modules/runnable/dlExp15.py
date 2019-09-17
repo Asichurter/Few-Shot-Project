@@ -34,15 +34,8 @@ def get_loss(p, num, alpha=0.1, beta=0.1, margin=1):
 centers = [[0,2],[-2,0],[2,0]]
 r = 3
 point_num = 50
-episode = 10
+episode = 20
 lr = 0.1
-
-points = []
-for c in centers:
-    points+= get_datas(c, r, point_num)
-plot(points, point_num, "Before transformation",group=3)
-points = t.Tensor(points)
-points.requires_grad_(True)
 
 feature_size = [2, 16, 16, 2]
 transformers = [nn.Linear(feature_size[i], feature_size[i+1]) for i in range(len(feature_size)-1)]
@@ -51,16 +44,23 @@ transformer = nn.Sequential(*transformers)
 opt = SGD(transformer.parameters(), lr=lr)
 
 for i in range(episode):
+    points = []
+    for c in centers:
+        points += get_datas(c, r, point_num)
+    # plot(points, point_num, "%dth before transformation"%(i+1), group=3)
+    points = t.Tensor(points)
+    points.requires_grad_(True)
+
     transformer.zero_grad()
-    points = transformer(points)
-    loss = get_loss(points, point_num)
+    transformed_points = transformer(points)
+    loss = get_loss(transformed_points, point_num)
 
     print(i, loss)
 
     loss.backward()
     opt.step()
 
-    plot(points.detach().numpy(), point_num, '%dth transformation'%(i+1))
+    plot(transformed_points.detach().numpy(), point_num, '%dth transformation'%(i+1))
 
 
 

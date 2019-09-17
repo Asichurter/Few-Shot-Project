@@ -48,7 +48,7 @@ VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v23.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v24.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
@@ -72,7 +72,7 @@ version = 1
 TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
-if_finetuning = False
+if_finetuning = True
 
 embed_size = 7
 hidden_size = 8
@@ -85,7 +85,7 @@ dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 acc_hist = []
 loss_hist = []
 
-def validate(model, loss, classes):
+def validate(model, loss, classes, seed=None):
     model.eval()
     # print("test stage at %d episode" % episode)
     with no_grad():
@@ -95,7 +95,7 @@ def validate(model, loss, classes):
             #print("test %d" % j)
             support_classes = classes
             # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
-            support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N)
+            support_sampler, test_sampler = get_RN_sampler(support_classes, k, qk, N, seed)
             # support_sampler, test_sampler = get_RN_modified_sampler(support_classes, k, qk, N)
 
             test_support_dataloader = DataLoader(dataset, batch_size=n * k,
@@ -130,7 +130,8 @@ def validate(model, loss, classes):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=5)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
-net = ProtoNet(k=k, n=n, qk=qk)
+net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
+# net = ProtoNet(k=k, n=n, qk=qk)
 # net = SiameseNet(input_size=input_size, k=k, n=n)
 states = t.load(MODEL_LOAD_PATH)
 net.load_state_dict(states)
@@ -145,13 +146,14 @@ entro = nn.NLLLoss().cuda()
 # net.Layer1.requires_grad_(False)
 # net.Layer2.requires_grad_(False)
 
-# for name,par in net.named_parameters():
-#     if name.find("fc") == -1:
-#         par.requires_grad_(False)
-#         print("---%s---"%name)
-#     else:
-#         par.requires_grad_(True)
-#         print("***%s***" % name)
+for name,par in net.named_parameters():
+    # print(name)
+    if name.find("Transformer") != -1:
+        par.requires_grad_(True)
+        print("---%s---"%name)
+    else:
+        par.requires_grad_(False)
+        print("***%s***" % name)
 
 before_acc_total = 0.
 before_loss_total = 0.
@@ -163,6 +165,7 @@ loss_gain_all = 0.
 print(net)
 rd.seed(time.time()%10000000)
 for episode in range(TEST_EPISODE):
+    seed = time.time()%10000000
     s_time = time.time()
     states = t.load(MODEL_LOAD_PATH)
     net.load_state_dict(states)
@@ -175,7 +178,7 @@ for episode in range(TEST_EPISODE):
     # 每一轮开始的时候先抽取n个实验类
     sample_classes = rd.sample(TEST_CLASSES, n)
 
-    before_acc,before_loss = validate(net, entro, sample_classes)
+    before_acc,before_loss = validate(net, entro, sample_classes, seed=seed)
     print("before:")
     print("acc: ", before_acc)
     print("loss: ", before_loss)
@@ -184,7 +187,7 @@ for episode in range(TEST_EPISODE):
     before_loss_total += before_loss
 
     if if_finetuning:
-        sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, episode)
+        sample_sampler,query_sampler = get_RN_sampler(sample_classes, k, qk, N, seed)
         # sample_sampler,query_sampler = get_RN_modified_sampler(sample_classes, k, qk, N)
 
         train_sample_dataloader = DataLoader(dataset, batch_size=n*k, sampler=sample_sampler)
@@ -215,25 +218,25 @@ for episode in range(TEST_EPISODE):
 
             opt.step()
 
-            after_acc,after_loss = validate(net, entro, sample_classes, episode)
-            after_acc_total += after_acc
-            after_loss_total += after_loss
+        after_acc,after_loss = validate(net, entro, sample_classes, seed)
+        after_acc_total += after_acc
+        after_loss_total += after_loss
 
-            acc_gain = after_acc-before_acc
-            loss_gain = after_loss-before_loss
+        acc_gain = after_acc-before_acc
+        loss_gain = after_loss-before_loss
 
 
 
-            print("after %d fine-tuning:"%i)
-            print("acc: ", after_acc)
-            print("loss: ", after_loss)
-            print("------------------------------------")
-            print("acc gain:", acc_gain)
-            print("loss gain:", loss_gain)
-            print("*************************************")
+        print("after %d fine-tuning:"%FINETUNING_EPISODE)
+        print("acc: ", after_acc)
+        print("loss: ", after_loss)
+        print("------------------------------------")
+        print("acc gain:", acc_gain)
+        print("loss gain:", loss_gain)
+        print("*************************************")
 
-            acc_gain_all += acc_gain
-            loss_gain_all += loss_gain
+        acc_gain_all += acc_gain
+        loss_gain_all += loss_gain
     print("time:%.2f"%(time.time()-s_time))
 
 print("***********************************")
@@ -241,12 +244,14 @@ print("average acc:", np.mean(acc_hist))
 print("average loss:", np.mean(loss_hist))
 print("acc std var:", np.std(acc_hist))
 print("loss std var:", np.std(loss_hist))
+print('------------------------------------')
 if if_finetuning:
     print("average acc after:", after_acc_total/TEST_EPISODE)
     print("average loss after:", after_loss_total/TEST_EPISODE)
+    print('---------------------------------------')
     print("average acc gain: ", acc_gain_all/TEST_EPISODE)
     print("average loss gain: ", loss_gain_all/TEST_EPISODE)
     print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
     print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
 
-bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))
+# bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))

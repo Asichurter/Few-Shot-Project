@@ -64,7 +64,7 @@ class HAPNet(nn.Module):
 
         embed_size = get_embed_size(input_size, encoder_depth)
         self.d = embed_size
-        encoders = [get_encoder_block(1,64) if i==0 else get_encoder_block(64,64) for i in range(encoder_depth)]
+        encoders = [get_encoder_block(1,64,stride=2) if i==0 else get_encoder_block(64,64) for i in range(encoder_depth)]
 
         # 图像的嵌入结构
         # 将整个batch整体输入
