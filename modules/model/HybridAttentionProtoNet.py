@@ -29,7 +29,7 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
 def get_embed_size(in_size, depth):
     assert math.log2(in_size) >= depth, "输入:%d 对深度%d过小"%(in_size,depth)
     for i in range(depth):
-        in_size  = math.floor(in_size/2)
+        in_size  = in_size//2
     return in_size
 
 class InstanceAttention(nn.Module):
