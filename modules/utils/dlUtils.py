@@ -2,7 +2,7 @@ import torch
 import math
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier as KNN
-from torch.nn.init import kaiming_normal_, xavier_normal_
+from torch.nn.init import kaiming_normal_, xavier_normal_, constant_
 
 def RN_labelize(support, query, k, n, type="float", expand=True):
     support = torch.LongTensor([support[i].item() for i in range(0,len(support),k)])
@@ -51,11 +51,21 @@ def RN_weights_init(m):
 def net_init(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
-        for par in m.parameters():
-            kaiming_normal_(par, nonlinearity="relu")
-    # elif classname.find("Linear") != -1:
-    #     for par in m.parameters():
-    #         xavier_normal_(par)
+        for name,par in m.named_parameters():
+            if name.find('weight') != -1:
+                kaiming_normal_(par, nonlinearity="relu")
+            elif name.find('bias') != -1:
+                constant_(par, 0)
+
+    elif classname.find("Linear") != -1:
+        for name,par in m.named_parameters():
+            if name.find('weight'):
+                try:
+                    xavier_normal_(par)
+                except ValueError:
+                    print(name)
+            elif name.find('bias') != -1:
+                constant_(par, 0)
 
 
 def RN_baseline_KNN(supports, queries, support_labels, query_labels, k):

@@ -15,7 +15,6 @@ class ProtoNet(nn.Module):
         self.qk = qk
         self.metric = metric
 
-        # 修改：考虑参考Resnet的实现，使用大卷积核和大的步伐
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 经过这层以后，尺寸除以4
         self.layer1 = nn.Sequential(
@@ -45,7 +44,7 @@ class ProtoNet(nn.Module):
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
-        self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
+        # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
     def forward(self, *x, save_embed=False):
         k = self.k
@@ -109,7 +108,7 @@ class ProtoNet(nn.Module):
         query = self.layer3(query)
         query = self.layer4(query)
 
-        support = self.Transformer(support.view(self.n, self.k, -1))
+        # support = self.Transformer(support.view(self.n, self.k, -1))
 
         if save_embed:
             return support.view(self.n, self.k, -1),query.view(self.n, self.qk, -1)

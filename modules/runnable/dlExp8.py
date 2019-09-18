@@ -52,9 +52,9 @@ qk = 15
 # 一个类总共多少个样本
 N = 20
 # 学习率
-lr = 1e-3
+lr = 1e-1
 
-version = 25
+version = 26
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
@@ -65,7 +65,7 @@ CROP_SIZE = 224
 
 inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
-margin = 0
+margin = 1
 
 # 训练和测试中类的总数
 train_classes = len(os.listdir(TRAIN_PATH))
@@ -85,7 +85,7 @@ train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
 
 net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
-# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
+net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,22)))
 net = net.cuda()
 
 num_of_params = 0
@@ -145,7 +145,8 @@ for episode in range(MAX_ITER):
     loss = nll(outs, labels)
     inner_var_loss = inner_var_alpha*net.forward_inner_var
     outer_var_loss = -outer_var_alpha*net.forward_outer_var
-    total_loss = loss + inner_var_loss + outer_var_loss + margin
+    total_loss = inner_var_loss + outer_var_loss + margin
+    # total_loss = loss + inner_var_loss + outer_var_loss + margin
 
     total_loss.backward()
 
@@ -158,8 +159,8 @@ for episode in range(MAX_ITER):
 
     print("train acc: ", acc)
     print("train loss: ", loss_val)
-    print("loss component:\n nll:%f\ninner:%f\nouter:%f"%
-          (loss.item(),inner_var_loss.item(),outer_var_loss.item()))
+    print("loss component:、\nnll: %f\ninner:%f\nouter:%f"%
+          (loss.item(), inner_var_loss.item(),outer_var_loss.item()))
     print('----------------------------------------------')
 
     train_acc_his.append(acc)
@@ -208,7 +209,7 @@ for episode in range(MAX_ITER):
                 val_nll_loss = nll(test_relations, test_labels)
                 val_inner_var_loss = inner_var_alpha * net.forward_inner_var
                 val_outer_var_loss = -outer_var_alpha * net.forward_outer_var
-                val_total_loss = val_nll_loss + val_inner_var_loss + val_outer_var_loss + margin
+                val_total_loss = val_inner_var_loss + val_outer_var_loss + margin
 
                 test_loss += val_total_loss.item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)

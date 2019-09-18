@@ -67,6 +67,10 @@ N = 20
 # 学习率
 lr = 1e-3
 
+inner_var_alpha = 1e-2
+outer_var_alpha = 1e-2*(k-1)*n
+margin = 1
+
 version = 1
 
 TEST_EPISODE = 600
@@ -212,7 +216,11 @@ for episode in range(TEST_EPISODE):
             net.zero_grad()
             outs = net(samples, samples)
 
-            loss = entro(outs, labels)
+            # loss = entro(outs, labels)
+            inner_var_loss = inner_var_alpha * net.forward_inner_var
+            outer_var_loss = -outer_var_alpha * net.forward_outer_var
+
+            loss  = margin + inner_var_loss + outer_var_loss
 
             loss.backward()
 

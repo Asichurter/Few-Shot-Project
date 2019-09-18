@@ -21,7 +21,7 @@ from modules.model.datasets import FewShotRNDataset, get_RN_sampler
 TRAIN_PATH = "D:/peimages/New/test/train/"
 TEST_PATH = "D:/peimages/New/test/validate/"
 MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 
 input_size = 256
 
@@ -65,7 +65,8 @@ net = HAPNet(CROP_SIZE, k=k, n=n, qk=qk)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
 net = net.cuda()
 
-net.apply(RN_weights_init)
+net.apply(net_init)
+# net.apply(RN_weights_init)
 
 num_of_params = 0
 for par in net.parameters():
