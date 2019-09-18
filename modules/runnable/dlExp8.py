@@ -46,20 +46,20 @@ hidder_size = 8
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 10
 # 测试时每个类多少个样本
-qk = 15
+qk = 10
 # 一个类总共多少个样本
 N = 20
 # 学习率
-lr = 1e-1
+lr = 1e-3
 
 version = 26
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
 TEST_EPISODE = 100
-ASK_CYCLE = 50000
+ASK_CYCLE = 5000
 ASK_THRESHOLD = 50000
 CROP_SIZE = 224
 
@@ -85,7 +85,7 @@ train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
 
 net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
-net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,22)))
+# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,22)))
 net = net.cuda()
 
 num_of_params = 0
@@ -143,24 +143,24 @@ for episode in range(MAX_ITER):
     outs = net(samples, queries)
 
     loss = nll(outs, labels)
-    inner_var_loss = inner_var_alpha*net.forward_inner_var
-    outer_var_loss = -outer_var_alpha*net.forward_outer_var
-    total_loss = inner_var_loss + outer_var_loss + margin
+    # inner_var_loss = inner_var_alpha*net.forward_inner_var
+    # outer_var_loss = -outer_var_alpha*net.forward_outer_var
+    # total_loss = inner_var_loss + outer_var_loss + margin
     # total_loss = loss + inner_var_loss + outer_var_loss + margin
 
-    total_loss.backward()
+    loss.backward()
 
     # 使用了梯度剪裁
     # t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
     opt.step()
 
     acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
-    loss_val = total_loss.item()
+    loss_val = loss.item()
 
     print("train acc: ", acc)
     print("train loss: ", loss_val)
-    print("loss component:、\nnll: %f\ninner:%f\nouter:%f"%
-          (loss.item(), inner_var_loss.item(),outer_var_loss.item()))
+    # print("loss component:、\nnll: %f\ninner:%f\nouter:%f"%
+    #       (loss.item(), inner_var_loss.item(),outer_var_loss.item()))
     print('----------------------------------------------')
 
     train_acc_his.append(acc)
@@ -207,15 +207,15 @@ for episode in range(MAX_ITER):
                 test_relations = net(supports, tests)
 
                 val_nll_loss = nll(test_relations, test_labels)
-                val_inner_var_loss = inner_var_alpha * net.forward_inner_var
-                val_outer_var_loss = -outer_var_alpha * net.forward_outer_var
-                val_total_loss = val_inner_var_loss + val_outer_var_loss + margin
+                # val_inner_var_loss = inner_var_alpha * net.forward_inner_var
+                # val_outer_var_loss = -outer_var_alpha * net.forward_outer_var
+                # val_total_loss = val_inner_var_loss + val_outer_var_loss + margin
 
-                test_loss += val_total_loss.item()
+                test_loss += val_nll_loss.item()
                 test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
 
-                test_inner += val_inner_var_loss.item()
-                test_outer += val_outer_var_loss.item()
+                # test_inner += val_inner_var_loss.item()
+                # test_outer += val_outer_var_loss.item()
                 test_nll += val_nll_loss.item()
 
             test_acc_his.append(test_acc/TEST_EPISODE)
@@ -263,10 +263,10 @@ for episode in range(MAX_ITER):
             print("train acc: ", current_train_loss)
             print("----------------------------------------")
             print("val acc: ", test_acc/TEST_EPISODE)
-            print("val total loss: ", test_loss/TEST_EPISODE)
-            print("val nll loss: ", test_nll/TEST_EPISODE)
-            print("val inner loss: ", test_inner/TEST_EPISODE)
-            print("val outer loss: ", test_outer/TEST_EPISODE)
+            print("val loss: ", test_loss/TEST_EPISODE)
+            # print("val nll loss: ", test_nll/TEST_EPISODE)
+            # print("val inner loss: ", test_inner/TEST_EPISODE)
+            # print("val outer loss: ", test_outer/TEST_EPISODE)
             if test_acc/TEST_EPISODE > best_acc:
                 t.save(net.state_dict(),
                        MODEL_SAVE_PATH + "ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5" % (k, n, version))
