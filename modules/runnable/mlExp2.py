@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
-class_path = "virus"
+class_path = "trojan"
 super_class_path = "ExtClassOneDefaultTestSplit"
 TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/%s/%s/train_data_raw.npy" % (super_class_path,class_path)
 TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/%s/%s/train_label_raw.npy" % (super_class_path,class_path)

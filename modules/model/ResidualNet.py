@@ -8,6 +8,7 @@ import numpy as np
 from modules.model.AttentionLayer import AttentionLayer
 
 from sklearn.manifold import MDS, t_sne
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, keep_dim=False):
@@ -194,6 +195,7 @@ class ResidualNet(nn.Module):
 
         n = self.pars['n']
         k = self.pars['k']
+        qk = self.pars['qk']
 
         support = self.Layer1(support)
         support = self.Layer2(support)
@@ -206,11 +208,17 @@ class ResidualNet(nn.Module):
         support_size = support.size(0)
 
         merge = t.cat((support,query), dim=0).cpu().detach().numpy()
+        support_np = support.cpu().detach().numpy()
+        support_labels = np.array([[i for j in range(k)] for i in range(n)]).reshape(-1)
 
         if metric == "MDS":
             reducer = MDS(n_components=2, verbose=True)
         elif metric == "tSNE":
             reducer = t_sne.TSNE(n_components=2)
+        elif metric == 'LDA':
+            reducer = LinearDiscriminantAnalysis(n_components=2)
+            transformed = reducer.fit_transform(support_np, support_labels)
+            return transformed
         else:
             assert False, "无效的metric"
         merge_transformed = reducer.fit_transform(merge)
