@@ -86,7 +86,21 @@ import re
 #
 # attented = (attention*dis).sum(dim=2)
 
-a = t.Tensor([[1,2],[3,4]])
+# cs = [i for i in range(1,101)]
+# val = []
+# f = 10
+# for c in cs:
+#     a = [-c]*f
+#     a[0] = f
+#     a = t.Tensor(a)
+#     val.append(t.softmax(a, dim=0)[0].item())
+#
+# plt.plot(cs, val)
+# plt.show()
+
+a = t.Tensor([[[1,1]],[[3,2]]])
+b = t.Tensor([[[1,1]],[[-1,0]]])
+
 
 
 

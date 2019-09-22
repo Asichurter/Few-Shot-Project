@@ -18,10 +18,11 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 # 实验1所使用的数据路径
-TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/raw_train_data.npy"
-TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/train_label.npy"
-TEST_DATA_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/raw_test_data.npy"
-TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/ExtClassEach200/test_label.npy"
+folder = "ExtClassOneDefault/virus" #ExtClassEach200
+TRAIN_DATA_SAVE = "D:/Few-Shot-Project/data/%s/train_data_raw.npy" % folder
+TRAIN_LABEL_SAVE = "D:/Few-Shot-Project/data/%s/train_label_raw.npy"% folder
+TEST_DATA_SAVE = "D:/Few-Shot-Project/data/%s/test_data_raw.npy"% folder
+TEST_LABEL_SAVE = "D:/Few-Shot-Project/data/%s/test_label_raw.npy"% folder
 # -----------------------------------------------------------------------------------------
 
 # 实验2使用的数据路径
