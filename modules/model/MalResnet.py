@@ -59,7 +59,7 @@ class ResLayer(t.nn.Module):
 class ResNet(t.nn.Module):
     '''自己实现的ResNet18'''
 
-    def __init__(self, channel, out=2, dropout=None):
+    def __init__(self, channel, out=2, dropout=None, channels=[64,128,256,512,512]):
         super(ResNet, self).__init__()
         # 前置的卷积网络不是残差块，卷积网络的stride让尺寸减半，最大池化也让尺寸减半
         # 因此前置网络将尺寸减半两次
@@ -70,10 +70,10 @@ class ResNet(t.nn.Module):
         self.Ahead.add_module('maxpool', MaxPool2d(3, 2, 1))
         if dropout is not None:
             self.Ahead.add_module('dropout0', Dropout2d(dropout))
-        self.Layer1 = ResLayer(2, 64, 128, dropout=dropout)
-        self.Layer2 = ResLayer(2, 128, 256, stride=2, dropout=dropout)
-        self.Layer3 = ResLayer(2, 256, 512, stride=2, dropout=dropout)
-        self.Layer4 = ResLayer(2, 512, 512, stride=2, dropout=dropout)
+        self.Layer1 = ResLayer(2, channels[0], channels[1], dropout=dropout)
+        self.Layer2 = ResLayer(2, channels[1], channels[2], stride=2, dropout=dropout)
+        self.Layer3 = ResLayer(2, channels[2], channels[3], stride=2, dropout=dropout)
+        self.Layer4 = ResLayer(2, channels[3], channels[4], stride=2, dropout=dropout)
         self.Dense = Linear(512, out)
         self.Dropout = Dropout('dropout1', dropout) if dropout is not None else None
         self.initialize()

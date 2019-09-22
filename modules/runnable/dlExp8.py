@@ -27,9 +27,11 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-TRAIN_PATH = "D:/peimages/New/test/train/"
-TEST_PATH = "D:/peimages/New/test/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
+data_folder = "50_samples"
+
+TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
+TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
+MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
 LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
@@ -46,21 +48,21 @@ hidder_size = 8
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 10
+n = 5
 # 测试时每个类多少个样本
-qk = 10
+qk = 15
 # 一个类总共多少个样本
-N = 20
+N = 50
 # 学习率
 lr = 1e-3
 
-version = 26
+version = 31
 
 TEST_CYCLE = 100
-MAX_ITER = 40000
+MAX_ITER = 60000
 TEST_EPISODE = 100
-ASK_CYCLE = 5000
-ASK_THRESHOLD = 50000
+ASK_CYCLE = 60000
+ASK_THRESHOLD = 20000
 CROP_SIZE = 224
 
 inner_var_alpha = 1e-2
@@ -84,8 +86,8 @@ loss_names = ["train loss", "validate loss"]
 train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
 
-net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
-# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,22)))
+net = ProtoNet(feature_in=64, feature_out=64)
+# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
 net = net.cuda()
 
 num_of_params = 0
@@ -93,11 +95,11 @@ for par in net.parameters():
     num_of_params += par.numel()
 print('params:', num_of_params)
 
-net.apply(RN_weights_init)
+net.apply(net_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
-scheduler = StepLR(opt, step_size=10000 , gamma=0.5)
+scheduler = StepLR(opt, step_size=20000 , gamma=0.1)
 nll = NLLLoss().cuda()
 
 train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()
@@ -106,6 +108,7 @@ test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%v
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
 
 best_acc = 0.
+best_epoch = 0
 previous_stamp = time.time()
 rd.seed(time.time()%10000000)
 
@@ -140,7 +143,7 @@ for episode in range(MAX_ITER):
 
     labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
 
-    outs = net(samples, queries)
+    outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), queries.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
     loss = nll(outs, labels)
     # inner_var_loss = inner_var_alpha*net.forward_inner_var
@@ -204,7 +207,7 @@ for episode in range(MAX_ITER):
                 test_labels = test_labels.cuda()
 
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-                test_relations = net(supports, tests)
+                test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
                 val_nll_loss = nll(test_relations, test_labels)
                 # val_inner_var_loss = inner_var_alpha * net.forward_inner_var
@@ -292,7 +295,8 @@ train_loss_plot = np.array(train_loss_his).reshape(-1,TEST_CYCLE).mean(axis=1).r
 plt.title('%d-shot %d-way Prototypical Net Accuracy'%(k,n))
 plt.plot(train_x, train_acc_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
-plt.plot(train_x, [1/k]*len(train_x), linestyle='--', color="black", label="baseline")
+plt.plot(train_x, [1/n]*len(train_x), linestyle='-', color="green", label="baseline")
+plt.grid(True, axis='y', color='black' ,linestyle='--')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
@@ -300,6 +304,7 @@ plt.show()
 plt.title('%d-shot %d-way Prototypical Net Loss'%(k,n))
 plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
+plt.grid(True, axis='y', color='black' ,linestyle='--')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_loss.png'%version)
 plt.show()

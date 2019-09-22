@@ -111,8 +111,10 @@ class FewShotRNDataset(Dataset):
             for instance in os.listdir(base+c+"/"):
                 self.Data.append(base+c+"/"+instance)
             self.Label += [i]*len(os.listdir(base+c+"/"))
-        self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
-
+        self.Transform = transform if transform is not None else T.Compose(
+            [T.ToTensor(),
+             T.Normalize([0.3934904], [0.10155067])]
+        )  # mean=0.3934904, std=0.10155067)
     def __getitem__(self, index):
         img = Image.open(self.Data[index])
         if self.RandomCrop is not None:
@@ -129,38 +131,38 @@ class FewShotRNDataset(Dataset):
     def __len__(self):
         return len(self.Data)
 
-class FewShotClassDataset(Dataset):
-    def __init__(self, base, n, N, transform=None):
-        self.Data = []
-        self.Label = []
-        SubClassCounter = []
-        self.N = N
-        class_index = 0
-        for i,c in enumerate(os.listdir(base)):
-            sub_class_num = len(os.listdir(base+c+"/"))
-            assert sub_class_num >= n, str(base+c+"/")+"大类中的子类数量%d少于n=%d"%(sub_class_num,n)
-            SubClassCounter.append(sub_class_num)
-            for j,sub_c in enumerate(os.listdir(base+c+"/")):
-                assert len(os.listdir(base+c+"/"+sub_c))==n, \
-                    str(base+c+"/"+sub_c)+"中的样本数量%d不为指定的N=%d"%(len(os.listdir(base+c+"/"+sub_c)),N)
-                for instance in os.listdir(base+c+"/"+sub_c):
-                    self.Data.append(base+c+"/"+sub_c+"/"+instance)
-                    self.Label.append(class_index)
-                class_index += 1
-        self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.5], [0.5])])
-        self.SubClassCounter = SubClassCounter
-
-    def __getitem__(self, index):
-        img = Image.open(self.Data[index])
-        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
-        rotation = rd.choice([0,90,180,270])
-        img = img.rotate(rotation)
-        img = self.Transform(img)
-        label = self.Label[index]
-        return img,label
-
-    def __len__(self):
-        return len(self.Data)
+# class FewShotClassDataset(Dataset):
+#     def __init__(self, base, n, N, transform=None):
+#         self.Data = []
+#         self.Label = []
+#         SubClassCounter = []
+#         self.N = N
+#         class_index = 0
+#         for i,c in enumerate(os.listdir(base)):
+#             sub_class_num = len(os.listdir(base+c+"/"))
+#             assert sub_class_num >= n, str(base+c+"/")+"大类中的子类数量%d少于n=%d"%(sub_class_num,n)
+#             SubClassCounter.append(sub_class_num)
+#             for j,sub_c in enumerate(os.listdir(base+c+"/")):
+#                 assert len(os.listdir(base+c+"/"+sub_c))==n, \
+#                     str(base+c+"/"+sub_c)+"中的样本数量%d不为指定的N=%d"%(len(os.listdir(base+c+"/"+sub_c)),N)
+#                 for instance in os.listdir(base+c+"/"+sub_c):
+#                     self.Data.append(base+c+"/"+sub_c+"/"+instance)
+#                     self.Label.append(class_index)
+#                 class_index += 1
+#         self.Transform = transform if transform is not None else T.Compose([T.ToTensor(), T.Normalize([0.3934904], [0.10155067])]) #mean=0.3934904, std=0.10155067)
+#         self.SubClassCounter = SubClassCounter
+#
+#     def __getitem__(self, index):
+#         img = Image.open(self.Data[index])
+#         # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
+#         rotation = rd.choice([0,90,180,270])
+#         img = img.rotate(rotation)
+#         img = self.Transform(img)
+#         label = self.Label[index]
+#         return img,label
+#
+#     def __len__(self):
+#         return len(self.Data)
 
 class ClassSampler(Sampler):
     def __init__(self, cla, sub_classes, counter, num_per_class, shuffle, k, qk=None):

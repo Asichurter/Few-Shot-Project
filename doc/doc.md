@@ -104,8 +104,97 @@ def normalize_data(data):
 #### 1.1.4 某个大类的样本缺失时对该类恶意样本进行分类
 
 考虑对于Virus，Trojan,Worm等大类的一个极限0-shot情况：训练样本中不包含这些大类的
-样本，但是测试样本中的恶意代码样本均来自这些大类中。这种设定的目的是检验能否在没有见
-过
+样本，但是测试样本中的恶意代码样本均来自这些大类中。这种设定的目的是检验模型能否在没有见
+过某种恶意代码的情况下将其识别出来，称“大类缺省实验”。在实验中，分别选择backdoor，email，
+net-worm，trojan和virus作为缺省大类，分别使用不包含这些类的样本的其他类别的数据集训练kNN，
+SVM等。同时，遵循1.1.3中阐述的原则，没有对特征进行标准化。训练时，同样使用相同数量的良性样本
+同时输入到模型中，良性样本来自Windows。从恶意样本中抽样时，大致依然按照每个文件200个样本的规律。
+
+Backdoor：
+![](../doc/ml_default_exp/backdoor/knn.png)
+![](../doc/ml_default_exp/backdoor/knn_confusion_matrix.png)
+![](../doc/ml_default_exp/backdoor/svm.png)
+![](../doc/ml_default_exp/backdoor/svm_confusion_matrix.png)
+
+Email：
+![](../doc/ml_default_exp/email/knn.png)
+![](../doc/ml_default_exp/email/knn_confusion_matrix.png)
+![](../doc/ml_default_exp/email/svm.png)
+![](../doc/ml_default_exp/email/svm_confusion_matrix.png)
+
+Net-Worm：
+![](../doc/ml_default_exp/net-worm/knn.png)
+![](../doc/ml_default_exp/net-worm/knn_confusion_matrix.png)
+![](../doc/ml_default_exp/net-worm/svm.png)
+![](../doc/ml_default_exp/net-worm/svm_confusion_matrix.png)
+
+Trojan：
+![](../doc/ml_default_exp/trojan/knn.png)
+![](../doc/ml_default_exp/trojan/knn_confusion_matrix.png)
+![](../doc/ml_default_exp/trojan/svm.png)
+![](../doc/ml_default_exp/trojan/svm_confusion_matrix.png)
+
+Virus:
+![](../doc/ml_default_exp/virus/knn.png)
+![](../doc/ml_default_exp/virus/knn_confusion_matrix.png)
+![](../doc/ml_default_exp/virus/svm.png)
+![](../doc/ml_default_exp/virus/svm_confusion_matrix.png)
+
+由实验结果可见：
+- kNN的正确率依然十分高，平均约97%，这说明恶意代码大类之间在代码特征上存在
+相似性，使得能够没有见过某种大类。但是，考虑另外一种可能性，由于只使用了Windows
+的良性样本作为正例，可能会因为良性样本的种类过于单一，使得模型只是学会了“分辨是否是
+Windows样本”。因此，后续实验中应该考虑使用更多种类的良性样本
+
+- SVM的正确率依旧保持在接近5成左右，说明SVM确实对高维数据和数据间尺度差距过大难以
+进行拟合。**因此在后续实验中将不会再展示SVM的效果，只展示kNN的效果**
+
+#### 1.1.5 良性数据集分离的大类缺省
+
+综合1.1.4中提出的可能性，因此考虑将训练时的良性数据集和测试时的良性数据集进行分离。
+实验中又从C:/Program Files目录（该目录下大部分都是Windows工具程序或者驱动）下提
+取了一定数量的良性样本，将Windows良性样本作为训练时的正例，将新的良性数据作为测试时
+的正例，重新进行1.1.3的实验。结果如下（模型只使用了kNN）：
+
+Backdoor：
+![](../doc/ml_default_test_split_exp/backdoor/knn.png)
+
+Email：
+![](../doc/ml_default_test_split_exp/email/knn.png)
+
+Net-Worm：
+![](../doc/ml_default_test_split_exp/net-worm/knn.png)
+
+Trojan：
+![](../doc/ml_default_test_split_exp/trojan/knn.png)
+
+Virus:
+![](../doc/ml_default_test_split_exp/virus/knn.png)
+
+测试结果的混淆矩阵显示，恶意样本的识别几乎没有收到任何影响，正确率保持在96%~97%
+左右；但是良性样本的识别正确率发生大幅度下降：从96%下降到75%左右，下滑了接近20%。
+这说明不同背景的良性数据集确实存在差异，而且模型不能够很好地在这种差异上泛化。由于
+良性样本的性能下降，使得模型整体的
+
+
+#### 1.1.6 对良性样本数据的思考
+
+如果要进行恶意代码的识别的话，为了适用在多种环境中，势必需要对各种良性样本都要有很好
+的泛化。**因此模型学习应该朝“样本是否是恶意样本”的方向进行**：如果样本的特征接近恶意样本，
+结果判定为恶意样本；如果样本在一定的间隔下不接近于恶意样本，则判定为良性样本。即模型
+应该只识别恶意样本，不识别良性样本，这样的话应该就能对多种不同环境下的良性样本有更好的
+泛化。
+
+但是这个目标很难达到，能想到的唯一的办法就是增加良性样本的多样性，将多种环境下的良性样本输入
+模型进行训练。但是问题的核心便落在了数据收集上。从这一点上来看，识别恶意代码的工作远比想象中
+复杂得多。
+
+#### 1.1.7 良性样本分离的小样本恶意代码识别
+
+
+
+
+
 
 
 

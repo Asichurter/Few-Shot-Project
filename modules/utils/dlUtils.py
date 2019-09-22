@@ -1,6 +1,9 @@
 import torch
 import math
 import numpy as np
+import os
+import PIL.Image as Image
+import torchvision.transforms as T
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from torch.nn.init import kaiming_normal_, xavier_normal_, constant_
 
@@ -96,6 +99,27 @@ def cos_sim(x,y,dim):
     dot = torch.mul(x,y).sum(dim=dim)
     cos = dot/(x_length*y_length)*0.5 + 0.5
     return cos
+
+def calculate_data_mean_std(base, split=True, excepts=['models']):
+    data = []
+    transformer = T.ToTensor()
+    for c_o in os.listdir(base) if split else [base]:
+        if c_o in excepts:
+            continue
+        path = base + c_o + "/" if split else base
+        for c_i in os.listdir(path):
+            print(c_o,c_i)
+            inner_path = path + c_i + "/"
+            for image in os.listdir(inner_path):
+                image = Image.open(inner_path+image)
+                image = transformer(image)
+                data.append(image.sum()/(256*256))
+
+    return np.mean(data),np.std(data)
+
+if __name__ == "__main__":
+    print(calculate_data_mean_std('D:/peimages/New/test/train/', split=False))
+
 
 
 

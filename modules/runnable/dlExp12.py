@@ -19,10 +19,28 @@ from sklearn.manifold import MDS
 
 from modules.model.ResidualNet import ResidualNet
 from modules.model.PrototypicalNet import ProtoNet
+from modules.model.ResProtoNet import ResProtoNet
 from modules.model.RelationNet import RN
 from modules.model.SiameseNet import SiameseNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
+
+input_size = 256
+
+# 每个类多少个样本，即k-shot
+k = 5
+# 训练时多少个类参与，即n-way
+n = 5
+# 测试时每个类多少个样本
+qk = 15
+# 一个类总共多少个样本
+N = 20
+# 学习率
+lr = 1e-3
+CROP_SIZE = 224
+
+version = 30
+type = "ProtoNet"
 
 def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2):
     bin_interval = 1/bins
@@ -30,7 +48,7 @@ def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2
     x_label = (x-bar_width/2)
     x_label = np.append(x_label, x_label[-1]+bar_width)
     x_ticks = [round(i*bin_interval, precision) for i in range(bins+1)]
-    print(x, x_label, x_ticks, sep='\n')
+    # print(x, x_label, x_ticks, sep='\n')
     data = np.floor(np.array(data)/bin_interval)
     frequency = [0]*bins
     for i in data:
@@ -48,35 +66,21 @@ VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v24.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"%s_best_acc_model_%dshot_%dway_v%d.0.h5"%(type,k,n,version)
+# MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n, version)
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v27.0.h5"
 
-input_size = 256
-
-# 每个类多少个样本，即k-shot
-k = 5
-# 训练时多少个类参与，即n-way
-n = 5
-# 测试时每个类多少个样本
-qk = 15
-# 一个类总共多少个样本
-N = 20
-# 学习率
-lr = 1e-3
-
 inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-version = 1
-
 TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
-if_finetuning = True
+if_finetuning = False
 
 embed_size = 7
 hidden_size = 8
@@ -117,7 +121,8 @@ def validate(model, loss, classes, seed=None):
 
             # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
             test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-            test_relations = net(supports, tests)
+            test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(qk*n,1,CROP_SIZE,CROP_SIZE))
+            # test_relations = net(supports, tests)
 
             l = loss(test_relations, test_labels).item()
             a = (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
@@ -134,7 +139,8 @@ def validate(model, loss, classes, seed=None):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto', block_num=5)
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
-net = ProtoNet(k=k, n=n, qk=qk, feature_in=64, feature_out=64)
+# net = ResProtoNet()
+net = ProtoNet(feature_in=64, feature_out=64)
 # net = ProtoNet(k=k, n=n, qk=qk)
 # net = SiameseNet(input_size=input_size, k=k, n=n)
 states = t.load(MODEL_LOAD_PATH)
@@ -150,14 +156,14 @@ entro = nn.NLLLoss().cuda()
 # net.Layer1.requires_grad_(False)
 # net.Layer2.requires_grad_(False)
 
-for name,par in net.named_parameters():
-    # print(name)
-    if name.find("Transformer") != -1:
-        par.requires_grad_(True)
-        print("---%s---"%name)
-    else:
-        par.requires_grad_(False)
-        print("***%s***" % name)
+# for name,par in net.named_parameters():
+#     # print(name)
+#     if name.find("Transformer") != -1:
+#         par.requires_grad_(True)
+#         print("---%s---"%name)
+#     else:
+#         par.requires_grad_(False)
+#         print("***%s***" % name)
 
 before_acc_total = 0.
 before_loss_total = 0.
@@ -262,4 +268,4 @@ if if_finetuning:
     print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
     print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
 
-# bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))
+bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))

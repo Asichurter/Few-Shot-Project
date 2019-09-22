@@ -7,12 +7,9 @@ from modules.utils.dlUtils import RN_repeat_query_instance
 
 # 基于卷积神经网络的图像嵌入网络
 class ProtoNet(nn.Module):
-    def __init__(self, n, k, qk, metric="SqEuc", **kwargs):
+    def __init__(self, metric="SqEuc", **kwargs):
         super(ProtoNet, self).__init__()
 
-        self.n = n
-        self.k = k
-        self.qk = qk
         self.metric = metric
 
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
@@ -46,10 +43,16 @@ class ProtoNet(nn.Module):
             nn.MaxPool2d(2))
         # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
-    def forward(self, *x, save_embed=False):
-        k = self.k
-        qk = self.qk
-        n = self.n
+    def forward(self, support, query, save_embed=False):
+        assert len(support.size()) == 5 and len(query.size()) == 4, \
+            "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
+        k = support.size(1)
+        qk = query.size(0)
+        n = support.size(0)
+        w = support.size(3)
+
+        support = support.view(n*k, 1, w, w)
+        query = query.view(qk, 1, w, w)
 
         self.forward_inner_var = None
         self.forward_outer_var = None
@@ -96,14 +99,14 @@ class ProtoNet(nn.Module):
 
         # 每一层都是以上一层的输出为输入，得到新的输出、
         # 支持集输入是N个类，每个类有K个实例
-        support = self.layer1(x[0])
+        support = self.layer1(support)
         support = self.layer2(support)
         support = self.layer3(support)
         support = self.layer4(support)
 
         # 查询集的输入是N个类，每个类有qk个实例
         # 但是，测试的时候也需要支持单样本的查询
-        query = self.layer1(x[1])
+        query = self.layer1(query)
         query = self.layer2(query)
         query = self.layer3(query)
         query = self.layer4(query)
@@ -111,18 +114,17 @@ class ProtoNet(nn.Module):
         # support = self.Transformer(support.view(self.n, self.k, -1))
 
         if save_embed:
-            return support.view(self.n, self.k, -1),query.view(self.n, self.qk, -1)
-
-        query_size = query.size(0)
+            return support.view(n, k, -1),query.view(n, qk/n, -1)
 
         # 计算类的原型向量
         # shape: [n, k, d]
-        support = support.view(self.n, self.k, -1)
+        support = support.view(n, k, -1)
         d = support.size(2)
 
         # proto shape: [n, d]
-        proto = proto_mean(support)
-        self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1, k, 1)) ** 2).sum()
+        proto = proto_correct_attention(support)
+        # proto = proto_mean(support)
+        self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
         self.forward_outer_var = proto.var(dim=0).sum()
         support = proto
 
@@ -162,9 +164,9 @@ class ProtoNet(nn.Module):
 
         # 将原型向量与查询集打包
         # shape: [n,d]->[qk, n, d]
-        support = support.repeat((query_size,1,1)).view(query_size,self.n,-1)
+        support = support.repeat((qk,1,1)).view(qk,n,-1)
 
-        query = query.repeat(self.n,1,1,1,1).transpose(0,1).contiguous().view(query_size,self.n, -1)
+        query = query.repeat(n,1,1,1,1).transpose(0,1).contiguous().view(qk,n,-1)
 
         # query = RN_repeat_query_instance(query, self.n).view(-1,self.n,support.size(1),support.size(2),support.size(3))
 
@@ -172,5 +174,11 @@ class ProtoNet(nn.Module):
             # 由于pytorch中的NLLLoss需要接受对数概率，根据官网上的提示最后一层改为log_softmax
             # 已修正：以负距离输入到softmax中,而不是距离
             posterior = F.log_softmax(t.sum((query-support)**2, dim=2).neg(),dim=1)
+
+        elif self.metric == 'cos':
+            # 在原cos相似度的基础上添加放大系数
+            scale = 10
+            posterior = F.cosine_similarity(query, support, dim=2)*scale
+            posterior = F.log_softmax(posterior, dim=1)
 
         return posterior
