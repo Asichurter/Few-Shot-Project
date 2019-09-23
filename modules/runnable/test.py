@@ -98,7 +98,9 @@ import re
 # plt.plot(cs, val)
 # plt.show()
 
-a = t.randn((2,3))
+a = t.randn((2,3,4))
+b = t.Tensor([[1,2],[3,4]])
+
 
 
 

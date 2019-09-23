@@ -20,17 +20,19 @@ import time
 
 from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
+from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
 # TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 # TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "50_samples"
+data_folder = "test"
 
-TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
+# TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
+# TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
+TRAIN_PATH = "D:/peimages/New/%s/train.t" %data_folder
+TEST_PATH = "D:/peimages/New/%s/validate.t"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
@@ -52,11 +54,11 @@ n = 5
 # 测试时每个类多少个样本
 qk = 15
 # 一个类总共多少个样本
-N = 50
+N = 20
 # 学习率
 lr = 1e-3
 
-version = 31
+version = 32
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -70,8 +72,8 @@ outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = len(os.listdir(TRAIN_PATH))
-test_classes = len(os.listdir(TEST_PATH))
+train_classes = 300#len(os.listdir(TRAIN_PATH))
+test_classes = 57#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -83,8 +85,10 @@ acc_names = ["train acc", "validate acc"]
 loss_names = ["train loss", "validate loss"]
 
 
-train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
+# train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
+# test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=300, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=57, rd_crop_size=CROP_SIZE)
 
 net = ProtoNet(feature_in=64, feature_out=64)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))

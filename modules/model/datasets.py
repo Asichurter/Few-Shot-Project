@@ -1,4 +1,5 @@
 import os
+import torch as t
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms as T
@@ -124,6 +125,37 @@ class FewShotRNDataset(Dataset):
             rotation = rd.choice([0,90,180,270])
             img = img.rotate(rotation)
         img = self.Transform(img)
+        label = self.Label[index]
+
+        return img,label
+
+    def __len__(self):
+        return len(self.Data)
+
+class FewShotFileDataset(Dataset):
+    # 直接指向support set或者query set路径下
+    def __init__(self, base, n, class_num, rd_crop_size=None, rotate=True):
+        self.Data = t.load(base)
+        self.Label = []
+        self.CropSize = rd_crop_size
+        self.Rotate = rotate
+        self.Width = self.Data.size(2)
+        # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
+        for i in range(class_num):
+            self.Label += [i]*n
+        assert len(self.Label)==self.Data.size(0), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),self.Data.size(0))
+    def __getitem__(self, index):
+        w = self.Width
+        crop = self.CropSize
+        img = self.Data[index]
+        if crop is not None:
+            bound_width = w-crop
+            x_rd,y_rd = rd.randint(0,bound_width),rd.randint(0,bound_width)
+            img = img[:, x_rd:x_rd+crop, y_rd:y_rd+crop]
+        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
+        if self.Rotate:
+            rotation = rd.choice([0,1,2,3])
+            img = t.rot90(img, k=rotation, dims=(1,2))
         label = self.Label[index]
 
         return img,label

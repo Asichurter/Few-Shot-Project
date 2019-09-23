@@ -173,7 +173,7 @@ class ProtoNet(nn.Module):
         if self.metric == "SqEuc":
             # 由于pytorch中的NLLLoss需要接受对数概率，根据官网上的提示最后一层改为log_softmax
             # 已修正：以负距离输入到softmax中,而不是距离
-            posterior = F.log_softmax(t.sum((query-support)**2, dim=2).neg(),dim=1)
+            posterior = F.log_softmax(t.sum((query-support)**2, dim=2).sqrt().neg(),dim=1)
 
         elif self.metric == 'cos':
             # 在原cos相似度的基础上添加放大系数

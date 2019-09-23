@@ -366,7 +366,13 @@ def check_data_is_valid(base, size, remove_invalid=False, remove_dest=None):
 def integrate_images_to_datas(base, dest, transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
     datas = []
     for c in os.listdir(base):
-        for item in
+        print(c)
+        for item in os.listdir(base+c):
+            img = Image.open(base+c+'/'+item)
+            img = transform(img)
+            datas.append(img.tolist())
+    datas = t.FloatTensor(datas)
+    t.save(datas, dest)
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -514,13 +520,16 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    split_datas(src="D:/peimages/New/50_samples/train/",
-                dest="D:/peimages/New/50_samples/test/",
-                ratio=40,
-                mode="x",
-                is_dir=True)
+    # split_datas(src="D:/peimages/New/50_samples/train/",
+    #             dest="D:/peimages/New/50_samples/test/",
+    #             ratio=40,
+    #             mode="x",
+    #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
     # make_few_shot_datas(50, "D:/peimages/New/50_samples/train/")
     # check_data_is_valid("D:/peimages/New/test/train/", 20)
+
+    integrate_images_to_datas('D:/peimages/New/test/test/',
+                              'D:/peimages/New/test/test.t')
 
