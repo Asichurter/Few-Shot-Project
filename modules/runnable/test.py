@@ -98,8 +98,8 @@ import re
 # plt.plot(cs, val)
 # plt.show()
 
-a = t.Tensor([[[1,1]],[[3,2]]])
-b = t.Tensor([[[1,1]],[[-1,0]]])
+a = t.randn((2,3))
+
 
 
 

@@ -1,6 +1,7 @@
 import torch as t
 import numpy as np
 import PIL.Image as Image
+from torchvision import transforms as T
 import os
 from modules.utils.extract import extract_infos
 import random
@@ -361,6 +362,11 @@ def check_data_is_valid(base, size, remove_invalid=False, remove_dest=None):
     if remove_invalid:
         for c in invalid_list.keys():
             shutil.move(base+c+"/", remove_dest)
+
+def integrate_images_to_datas(base, dest, transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
+    datas = []
+    for c in os.listdir(base):
+        for item in
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
