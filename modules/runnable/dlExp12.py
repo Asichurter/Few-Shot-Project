@@ -23,7 +23,7 @@ from modules.model.ResProtoNet import ResProtoNet
 from modules.model.RelationNet import RN
 from modules.model.SiameseNet import SiameseNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, get_RN_sampler
+from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
 input_size = 256
 
@@ -39,7 +39,7 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 30
+version = 32
 type = "ProtoNet"
 
 def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2):
@@ -62,7 +62,8 @@ def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2
     plt.legend()
     plt.show()
 
-VALIDATE_PATH = "D:/peimages/New/test/test/"
+VALIDATE_PATH = "D:/peimages/New/test/test.t"
+# VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
@@ -85,10 +86,11 @@ if_finetuning = False
 embed_size = 7
 hidden_size = 8
 
-test_classes = len(os.listdir(VALIDATE_PATH))
+test_classes = 50#len(os.listdir(VALIDATE_PATH))
 TEST_CLASSES = [i for i in range(test_classes)]
 
-dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
+dataset = FewShotFileDataset(VALIDATE_PATH, N, 50, rd_crop_size=224, rotate=False)
+# dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 
 acc_hist = []
 loss_hist = []

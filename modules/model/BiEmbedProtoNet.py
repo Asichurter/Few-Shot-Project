@@ -18,14 +18,16 @@ def get_block(in_feature, out_feature, stride=1, relu=True, bn=True, pool=2):
 
 class BiEmbedProtoNet(nn.Module):
     def __init__(self, induction='mean', in_channel=1):
+        super(BiEmbedProtoNet, self).__init__()
         strides = [2,1,1,1]
         channels = [in_channel,64,64,64,64]
         encoder = [get_block(channels[i], channels[i+1], stride=strides[i]) for i in range(len(strides))]
         self.Encoder = nn.Sequential(*encoder)
 
         relus = [True, True, True, False]
-        pools = [None, None, 2, 2]
-        self.Embedder = [get_block(64, 64, relu=relus[i], pool=pools[i]) for i in range(len(strides))]
+        pools = [None, 2, 2, 2]
+        embedder = [get_block(64, 64, relu=relus[i], pool=pools[i]) for i in range(len(pools))]
+        self.Embedder = nn.Sequential(*embedder)
 
         self.Induction = induction
 
@@ -40,7 +42,7 @@ class BiEmbedProtoNet(nn.Module):
         support = support.view(n*k, 1, w, w)
         query = query.view(qk, 1, w, w)
 
-        support = self.Encoder(support)
+        support = self.Encoder(support).view(n,k,64,7,7)
         query = self.Encoder(query)
 
         # input shape: [n, k, c, w, w]->[n,c,w,w]
@@ -88,7 +90,8 @@ class BiEmbedProtoNet(nn.Module):
         # shape: [n,c,w,w]
         support = proto_mean(support)
 
-        support = self.Embedder(support).view(n,64)
+        support = self.Embedder(support)
+        support = support.view(n,64)
         query = self.Embedder(query).view(qk,64)
 
         # support shape: [n,d]->[qk,n,d]

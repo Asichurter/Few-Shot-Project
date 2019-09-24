@@ -122,8 +122,8 @@ class ProtoNet(nn.Module):
         d = support.size(2)
 
         # proto shape: [n, d]
-        proto = proto_correct_attention(support)
-        # proto = proto_mean(support)
+        # proto = proto_correct_attention(support)
+        proto = proto_mean(support)
         self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
         self.forward_outer_var = proto.var(dim=0).sum()
         support = proto
