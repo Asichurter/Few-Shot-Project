@@ -27,7 +27,7 @@ from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "test"
+data_folder = "fuzzy"
 
 # TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
 # TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
@@ -58,7 +58,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 32
+version = 33
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -103,7 +103,7 @@ net.apply(net_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
-scheduler = StepLR(opt, step_size=20000 , gamma=0.1)
+scheduler = StepLR(opt, step_size=15000 , gamma=0.1)
 nll = NLLLoss().cuda()
 
 train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()

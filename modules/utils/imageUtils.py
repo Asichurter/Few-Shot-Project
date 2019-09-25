@@ -59,7 +59,7 @@ def get_benign_exe_abspath(base=BENIGN_BASE):
 
 def convert_to_images(base, destination, mode='file', method='normal',
                       padding=False, num_constrain=None, sample=False,
-                      cluster=None, size_range=None,verbose=True):
+                      cluster=None, size_range=None, fuzzy=None, verbose=True):
     '''
     base:目标文件或者目标所在的文件夹\n
     destination:转换后存储的文件夹\n
@@ -91,7 +91,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
             # 为了不在相同名字的文件下重复覆盖来无意义增加num，添加时判断是否同名者已经存在
             if os.path.exists(str(destination + benign_name + '.jpg')):
                 continue
-            im = convert(benign_path, method, padding)
+            im = convert(benign_path, method, padding, fuzzy)
             im.save(destination + benign_name + '.jpg', 'JPEG')
             num += 1
         return
@@ -116,7 +116,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
             if verbose:
                 print(num)
             # 按照文件大小进行过滤
-            im = convert(base + one, method, padding)
+            im = convert(base + one, method, padding, fuzzy)
             im.save(destination + one + '.jpg', 'JPEG')
             num += 1
 
@@ -129,7 +129,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
 
 
 #
-def convert(path, method, padding):
+def convert(path, method, padding, fuzzy=None):
     '''
     单个图像的转换函数，返回Image对象\n
     path:文件的路径\n
@@ -155,6 +155,8 @@ def convert(path, method, padding):
         if padding and crop_w < WIDTH:
             image = np.pad(image, (WIDTH - crop_w), 'constant', constant_values=(0))
         im = Image.fromarray(image)
+        if fuzzy is not None:
+            im = im.resize((fuzzy, fuzzy), Image.ANTIALIAS)
         im = im.resize((WIDTH, WIDTH), Image.ANTIALIAS)
     file.close()
     return im
@@ -273,7 +275,7 @@ def formalize_class_name(x):
     # return ".".join(x)
     return ".".join(x.split(".")[:3])
 
-def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=None):
+def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=None, fuzzy=None):
     '''
     用于生成子类分类
     :param num_per_class: 每一个子类的数量
@@ -323,6 +325,7 @@ def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=No
                                   cluster=name,
                                   sample=True,
                                   size_range=size_range,
+                                  fuzzy=fuzzy,
                                   verbose=False)
                 dir_index += 1
         # for name in satisfies_names:
@@ -520,16 +523,16 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/50_samples/train/",
-    #             dest="D:/peimages/New/50_samples/test/",
-    #             ratio=40,
+    # split_datas(src="D:/peimages/New/fuzzy/train/",
+    #             dest="D:/peimages/New/fuzzy/test/",
+    #             ratio=50,
     #             mode="x",
     #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
-    # make_few_shot_datas(50, "D:/peimages/New/50_samples/train/")
+    # make_few_shot_datas(20, "D:/peimages/New/fuzzy/train/", fuzzy=128)
     # check_data_is_valid("D:/peimages/New/test/train/", 20)
 
-    integrate_images_to_datas('D:/peimages/New/test/test/',
-                              'D:/peimages/New/test/test.t')
+    integrate_images_to_datas('D:/peimages/New/fuzzy/test/',
+                              'D:/peimages/New/fuzzy/test.t')
 

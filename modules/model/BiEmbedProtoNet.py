@@ -14,8 +14,6 @@ def get_block(in_feature, out_feature, stride=1, relu=True, bn=True, pool=2):
 
     return nn.Sequential(*components)
 
-
-
 class BiEmbedProtoNet(nn.Module):
     def __init__(self, induction='mean', in_channel=1):
         super(BiEmbedProtoNet, self).__init__()

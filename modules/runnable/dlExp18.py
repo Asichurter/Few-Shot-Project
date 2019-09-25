@@ -1,4 +1,4 @@
-# 本实验用于测试原型网络
+# 本实验用于测试BiEmbedNet
 
 import torch as t
 import torch.nn as nn

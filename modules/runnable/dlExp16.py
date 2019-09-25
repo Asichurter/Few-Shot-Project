@@ -16,10 +16,10 @@ import time
 
 from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, get_RN_sampler
+from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
-TRAIN_PATH = "D:/peimages/New/test/train/"
-TEST_PATH = "D:/peimages/New/test/validate/"
+TRAIN_PATH = "D:/peimages/New/test/train.t"
+TEST_PATH = "D:/peimages/New/test/validate.t"
 MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 
@@ -43,10 +43,11 @@ TEST_EPISODE = 100
 ASK_CYCLE = 100000
 ASK_THRESHOLD = 50000
 CROP_SIZE = 224
+FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
-train_classes = len(os.listdir(TRAIN_PATH))
-test_classes = len(os.listdir(TEST_PATH))
+train_classes = 300#len(os.listdir(TRAIN_PATH))
+test_classes = 57#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -58,8 +59,10 @@ acc_names = ["train acc", "validate acc"]
 loss_names = ["train loss", "validate loss"]
 
 
-train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
+# train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
+# test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_PATH, N, train_classes, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_PATH, N, test_classes, rd_crop_size=CROP_SIZE)
 
 net = HAPNet(CROP_SIZE, k=k, n=n, qk=qk)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
@@ -152,7 +155,7 @@ for episode in range(MAX_ITER):
     loss = nll(outs, labels)
     loss.backward()
 
-    print("grad norm:", grads)
+    # print("grad norm:", grads)
 
     # 使用了梯度剪裁
     # t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
@@ -187,7 +190,7 @@ for episode in range(MAX_ITER):
                                 xlabel="Iterations",
                                 ylabel="Gradient Norm"
                             ),
-                            update=None if episode == 0 else "append")
+                            update=None if episode%FRESH_CYCLE==0 else "append")
     feature_line = vis.line(X=plot_grad_x,
                             Y=plot_feature_grad,
                             win="feature_attention_grad",
@@ -196,7 +199,7 @@ for episode in range(MAX_ITER):
                                 xlabel="Iterations",
                                 ylabel="Gradient Norm"
                             ),
-                            update=None if episode == 0 else "append")
+                            update=None if episode%FRESH_CYCLE==0 else "append")
     instance_line = vis.line(X=plot_grad_x,
                              Y=plot_instance_grad,
                              win="instance_attention_grad",
@@ -205,7 +208,7 @@ for episode in range(MAX_ITER):
                                  xlabel="Iterations",
                                  ylabel="Gradient Norm"
                              ),
-                             update=None if episode == 0 else "append")
+                             update=None if episode%FRESH_CYCLE==0 else "append")
 
     if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")
@@ -307,6 +310,7 @@ plt.title('%d-shot %d-way Prototypical Net Accuracy'%(k,n))
 plt.plot(train_x, train_acc_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
 plt.plot(train_x, [1/k]*len(train_x), linestyle='--', color="black", label="baseline")
+plt.grid(True, axis='y', color='black' ,linestyle='--')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
@@ -314,6 +318,7 @@ plt.show()
 plt.title('%d-shot %d-way Prototypical Net Loss'%(k,n))
 plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
+plt.grid(True, axis='y', color='black' ,linestyle='--')
 plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_loss.png'%version)
 plt.show()
