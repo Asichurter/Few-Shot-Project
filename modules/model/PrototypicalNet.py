@@ -15,30 +15,30 @@ class ProtoNet(nn.Module):
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 经过这层以后，尺寸除以4
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(64, affine=True),
+            nn.Conv2d(1, 32, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(32, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
         # 第二层是一个64输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 卷积核的宽度为3,13变为10，再经过宽度为2的pool变为5
         # 经过这层以后，尺寸除以4
         self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=2, bias=False),
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
         # 第三层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数,的卷积层
         # 经过这层以后，尺寸除以2
         self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(64, affine=True),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(128, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
         # 第四层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数的卷积层
         # 经过这层以后，尺寸除以2
         self.layer4 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(64, affine=True),
+            nn.Conv2d(128, 256, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.BatchNorm2d(256, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
         # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])

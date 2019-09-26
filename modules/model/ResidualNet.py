@@ -94,15 +94,21 @@ class ResidualNet(nn.Module):
             self.fc1 = nn.Linear(out_size,kwargs['hidden_size'])
             self.fc2 = nn.Linear(kwargs['hidden_size'],1)
 
-    def forward(self, *x):
-        n = self.pars['n']
-        k = self.pars['k']
-        qk = self.pars['qk']
+    def forward(self, support, query):
+        assert len(support.size()) == 5 and len(query.size()) == 4, \
+            "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
+        k = support.size(1)
+        qk = query.size(0)
+        n = support.size(0)
+        w = support.size(3)
+
+        support = support.view(n*k, 1, w, w)
+        query = query.view(qk, 1, w, w)
         channel = self.pars['channel']
         block_num = self.pars['block_num']
 
-        support = self.Layer1(x[0])
-        query = self.Layer1(x[1])
+        support = self.Layer1(support)
+        query = self.Layer1(query)
         support = self.Layer2(support)
         query = self.Layer2(query)
         # support,query = self.Attentions[0](support,query) \
@@ -118,16 +124,13 @@ class ResidualNet(nn.Module):
         # query = self.Layer1(x[1])
         # query = self.Layer2(query)
 
-        query_size = query.size(0)
-        support_size = support.size(0)
-
         if self.metric == "Siamese":
             # shape: [qk,n,k,d]
-            support = support.view(n,k,-1).repeat(query_size,1,1,1)
+            support = support.view(n,k,-1).repeat(qk,1,1,1)
             query = query.view(qk,-1).repeat(k*n,1,1).transpose(0,1).contiguous().view(query_size,n,k,-1)
         elif self.metric=="Proto":
-            support = support.view(support_size,-1)
-            query = query.view(query_size,-1)
+            # support = support.view(support_size,-1)
+            # query = query.view(query_size,-1)
 
             # 新增的feature转换matrix
             # support = self.Transformer(support)
@@ -137,43 +140,43 @@ class ResidualNet(nn.Module):
             support = support.view(n,k,-1)
             self.forward_inner_var = support.var(dim=1).sum()
 
-            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
-            # 类均值向量
-            # centers shape: [n,k,d]->[n,d]->[n,k,d]
-            support_center = support.sum(dim=1).div(k).repeat(1,k).reshape(n,k,-1)
-            # 支持集与均值向量的欧式平方距离
-            # dis shape: [n,k,d]->[n]->[n,k]
-            support_dis_sum = ((support-support_center)**2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,k)
-            # attention shape: [n,k,d]
-            # 类内对每个向量的注意力映射，由负距离输入到softmax生成
-            d = support.size(2)
-            attention_map = t.softmax((((support-support_center)**2).sum(dim=2)/support_dis_sum).neg(), dim=1)
-            # [n,k]->[n,k,d]
-            # 将向量的注意力系数重复到每个位置
-            attention_map = attention_map.unsqueeze(dim=2).repeat(1,1,d)
-            # support: [n,k,d]->[n,d]
-            # 注意力映射后的支持集中心向量
-            support = t.mul(support, attention_map).sum(dim=1).squeeze()
+            # # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # # 类均值向量
+            # # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            # support_center = support.sum(dim=1).div(k).repeat(1,k).reshape(n,k,-1)
+            # # 支持集与均值向量的欧式平方距离
+            # # dis shape: [n,k,d]->[n]->[n,k]
+            # support_dis_sum = ((support-support_center)**2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,k)
+            # # attention shape: [n,k,d]
+            # # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+            # d = support.size(2)
+            # attention_map = t.softmax((((support-support_center)**2).sum(dim=2)/support_dis_sum).neg(), dim=1)
+            # # [n,k]->[n,k,d]
+            # # 将向量的注意力系数重复到每个位置
+            # attention_map = attention_map.unsqueeze(dim=2).repeat(1,1,d)
+            # # support: [n,k,d]->[n,d]
+            # # 注意力映射后的支持集中心向量
+            # support = t.mul(support, attention_map).sum(dim=1).squeeze()
 
-            # support = support.sum(dim=1).div(k).squeeze(1)
+            support = support.mean(dim=1).squeeze()
 
             self.forward_outer_var = support.var(dim=0).sum()
             # shape: [n,k,d]->[qk,n,d]
-            support = support.repeat(query_size,1,1)
+            support = support.repeat(qk,1,1)
             # shape: [qk,d]->[qk,n,d]
-            query = query.view(query_size,-1).repeat(n,1,1).transpose(0,1)
+            query = query.view(qk,-1).repeat(n,1,1).transpose(0,1).contiguous()
         elif self.metric == "Relation":
             # shape: [n*k,channel,d,d]->[qk,n,channel,d,d]
             d = support.size(2)
-            support = support.view(n,k,channel,d,d).sum(dim=1).div(k).squeeze(1).repeat(query_size,1,1,1,1)
+            support = support.view(n,k,channel,d,d).sum(dim=1).div(k).squeeze(1).repeat(qk,1,1,1,1)
 
             # shape: [qk,channel,d,d]->[qk,n,channel,d,d]
-            query = query.view(query_size,channel,d,d).repeat(n,1,1,1,1).transpose(0,1)
+            query = query.view(qk,channel,d,d).repeat(n,1,1,1,1).transpose(0,1)
 
             relation_input = t.cat((support,query), dim=2).view(-1,channel*2,d,d)
 
         if self.metric == "Siamese":
-            out = t.abs(support-query_size)
+            out = t.abs(support-query)
             # shape: [qk,n,k]
             out = self.fc1(out)
             # shape: [qk,n]
@@ -187,7 +190,7 @@ class ResidualNet(nn.Module):
             relations = self.relation(relation_input).view(relation_input.size(0),-1)
             relations = self.fc1(relations)
             relations = self.fc2(relations)
-            relations = relations.view(query_size,n)
+            relations = relations.view(qk,n)
             return t.sigmoid(relations)
 
     def proto_embed_reduction(self, support, query, metric="MDS"):

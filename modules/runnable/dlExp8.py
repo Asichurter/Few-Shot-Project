@@ -58,7 +58,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 33
+version = 34
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
