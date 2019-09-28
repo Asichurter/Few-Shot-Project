@@ -11,6 +11,7 @@ import warnings
 import sklearn
 import random as rd
 import re
+import time
 
 HOME = r'C:/Users/10904/Desktop/'
 EXES = ['exe', 'dll', 'ocx', 'sys', 'com']
@@ -340,6 +341,55 @@ def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=No
         #         image.save(dest + str(dir_index) + "/" + s_file + '.jpg', 'JPEG')
         #     dir_index += 1
 
+def make_few_shot_data_by_cluster(clusters, dest, num_per_class=20, base=MALWARE_BASE):
+    def extract_class_name(name):
+        return '.'.join(name.split('.')[:3])
+
+    rd.seed(time.time()%10000000)
+    i = 0
+
+    del_class_name = []
+    del_class_index = []
+    # 先根据数量限制过滤聚类字典中的类簇
+    for class_name,cluster in clusters.items():
+        for cluster_index in clusters[class_name].keys():
+            if len(clusters[class_name][cluster_index]) < num_per_class:
+                print('delete %s with num=%d'%(class_name+str(cluster_index), len(clusters[class_name][cluster_index])))
+                # del clusters[class_name][cluster_index]
+                del_class_name.append(class_name)
+                del_class_index.append(cluster_index)
+
+    for n,c in zip(del_class_name, del_class_index):
+        del clusters[n][c]
+
+    for super_c in os.listdir(base):
+        classes = set(map(extract_class_name,os.listdir(base+super_c)))
+        for class_name,cluster in clusters.items():
+            # 如果本个文件夹中没有该类，则跳过
+            if  class_name not in classes:
+                continue
+            # 避免重复创建文件夹
+            if os.path.exists(dest+class_name+'/'):
+                continue
+            print(i, class_name)
+            i += 1
+            os.mkdir(dest+class_name)
+            candidate_cluster = rd.choice(list(cluster.keys()))
+            candidate_instances = rd.sample(cluster[candidate_cluster], num_per_class)
+            # 避免同类名在不正确的文件夹中出现
+            try:
+                print(candidate_instances)
+                for each_inst in candidate_instances:
+                    img = convert(each_inst, method='normal', padding=False)
+                    file_name = each_inst.split('/')[-1]
+                    img.save(dest+class_name+'/'+file_name+'.jpg', 'JPEG')
+            except OSError:
+                # for del_inst in os.listdir(dest+class_name+'/'):
+                #     os.remove(dest+class_name+'/'+del_inst)
+                print(dest+class_name+'/')
+                shutil.rmtree(dest+class_name+'/')
+                # os.removedirs()
+                # os.remove(dest+class_name+'/')
 
 def check_data_is_valid(base, size, remove_invalid=False, remove_dest=None):
     invalid_list = {}
@@ -523,16 +573,17 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/fuzzy/train/",
-    #             dest="D:/peimages/New/fuzzy/test/",
+    # split_datas(src="D:/peimages/New/cluster/train/",
+    #             dest="D:/peimages/New/cluster/test/",
     #             ratio=50,
     #             mode="x",
     #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
     # make_few_shot_datas(20, "D:/peimages/New/fuzzy/train/", fuzzy=128)
-    # check_data_is_valid("D:/peimages/New/test/train/", 20)
+    # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
+    # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster/train/')
+    # check_data_is_valid("D:/peimages/New/cluster/train/", 20)
 
-    integrate_images_to_datas('D:/peimages/New/fuzzy/test/',
-                              'D:/peimages/New/fuzzy/test.t')
-
+    # integrate_images_to_datas('D:/peimages/New/cluster/test/',
+    #                           'D:/peimages/New/cluster/test.t')

@@ -10,7 +10,7 @@ import torch.nn as nn
 import math
 from sklearn.preprocessing import label_binarize
 import random as rd
-from modules.model.RelationNet import EmbeddingNet
+# from modules.model.RelationNet import EmbeddingNet
 import inspect
 from sklearn.neighbors import KNeighborsClassifier as KNN
 import torch.nn.functional as F
@@ -98,11 +98,16 @@ import re
 # plt.plot(cs, val)
 # plt.show()
 
-a = t.randn((2,3,4))
-b = t.Tensor([[1,2],[3,4]])
+# d = {1:1, 2:4, 3:9, 4:16}
+# np.save('D:/Few-Shot-Project/data/dict.npy', d)
 
+# d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True)
+# d = d.item()
+# for key,val in d.items():
+#     print(key, 'cluster num: %d'%len(val))
+# print(len(d))]
 
-
+print(os.path.exists('D:/Few-Shot-Project/data/cluster_plot/'))
 
 
 

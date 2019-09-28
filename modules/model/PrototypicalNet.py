@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 from modules.utils.dlUtils import RN_repeat_query_instance
 
-
 # 基于卷积神经网络的图像嵌入网络
 class ProtoNet(nn.Module):
     def __init__(self, metric="SqEuc", **kwargs):
@@ -122,8 +121,8 @@ class ProtoNet(nn.Module):
         d = support.size(2)
 
         # proto shape: [n, d]
-        # proto = proto_correct_attention(support)
-        proto = proto_mean(support)
+        proto = proto_correct_attention(support)
+        # proto = proto_mean(support)
         self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
         self.forward_outer_var = proto.var(dim=0).sum()
         support = proto
