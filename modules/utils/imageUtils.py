@@ -29,6 +29,21 @@ UNIT = 1 / 25
 next_times = 0
 return_times = 0
 
+size_table = {10:32,
+              30:64,
+              60:128,
+              100:256,
+              200:384,
+              500:512,
+              1000:768,
+              1000000:1024}
+
+def get_width(size):
+    for k in size_table.keys():
+        if size <= k:
+            return size_table[k]
+    assert False, '文件大小超过了最大限制！'
+
 #检查一个地址的文件扩展名是否是可执行文件
 def check_if_executable(path, size_thre=SIZE_RANGE):
     try:
@@ -148,7 +163,7 @@ def convert(path, method, padding, fuzzy=None):
         image = image.reshape((-1, WIDTH))
         image = np.uint8(image)
         im = Image.fromarray(image)
-    else:
+    elif method=='normal':
         crop_w = int(image.shape[0] ** 0.5)
         image = image[:crop_w ** 2]
         image = image.reshape((crop_w, crop_w))
@@ -159,6 +174,17 @@ def convert(path, method, padding, fuzzy=None):
         if fuzzy is not None:
             im = im.resize((fuzzy, fuzzy), Image.ANTIALIAS)
         im = im.resize((WIDTH, WIDTH), Image.ANTIALIAS)
+    elif method == 'fix':
+        try:
+            width = get_width(int(os.path.getsize(path)/1024))
+            height = image.shape[0] // width
+            image = image[:width*height]
+            image = np.uint8(image.reshape((height,width)))
+            im = Image.fromarray(image)
+            print(image.shape, im.size)
+        except :
+            print('convery error!')
+
     file.close()
     return im
 
@@ -341,7 +367,7 @@ def make_few_shot_datas(num_per_class, dest, head_constraint=None, size_range=No
         #         image.save(dest + str(dir_index) + "/" + s_file + '.jpg', 'JPEG')
         #     dir_index += 1
 
-def make_few_shot_data_by_cluster(clusters, dest, num_per_class=20, base=MALWARE_BASE):
+def make_few_shot_data_by_cluster(clusters, dest, fix_width=False, num_per_class=20, base=MALWARE_BASE):
     def extract_class_name(name):
         return '.'.join(name.split('.')[:3])
 
@@ -380,7 +406,8 @@ def make_few_shot_data_by_cluster(clusters, dest, num_per_class=20, base=MALWARE
             try:
                 print(candidate_instances)
                 for each_inst in candidate_instances:
-                    img = convert(each_inst, method='normal', padding=False)
+                    method = 'fix' if fix_width else 'normal'
+                    img = convert(each_inst, method=method, padding=False)
                     file_name = each_inst.split('/')[-1]
                     img.save(dest+class_name+'/'+file_name+'.jpg', 'JPEG')
             except OSError:
@@ -573,8 +600,8 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/cluster/train/",
-    #             dest="D:/peimages/New/cluster/test/",
+    # split_datas(src="D:/peimages/New/cluster_fix_width/train/",
+    #             dest="D:/peimages/New/cluster_fix_width/test/",
     #             ratio=50,
     #             mode="x",
     #             is_dir=True)
@@ -582,8 +609,9 @@ if __name__ == "__main__":
     #                  num=450, prefix="gauss_noise_", mode="gauss")
     # make_few_shot_datas(20, "D:/peimages/New/fuzzy/train/", fuzzy=128)
     # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
-    # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster/train/')
-    # check_data_is_valid("D:/peimages/New/cluster/train/", 20)
+    # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_fix_width/train/', fix_width=True)
+    # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
 
     # integrate_images_to_datas('D:/peimages/New/cluster/test/',
-    #                           'D:/peimages/New/cluster/test.t')
+    #                           'D:/peimages/New/cluster/test.t',
+    #                           T.Compose([T.ToTensor(),T.Normalize([0.40118653], [0.097657144])]))

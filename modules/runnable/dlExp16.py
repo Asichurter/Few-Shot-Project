@@ -18,9 +18,10 @@ from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
 from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
-TRAIN_PATH = "D:/peimages/New/test/train.t"
-TEST_PATH = "D:/peimages/New/test/validate.t"
-MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
+folder = 'cluster'
+TRAIN_PATH = "D:/peimages/New/%s/train.t" % folder
+TEST_PATH = "D:/peimages/New/%s/validate.t"%folder
+MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 
 input_size = 256
@@ -46,8 +47,8 @@ CROP_SIZE = 224
 FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
-train_classes = 300#len(os.listdir(TRAIN_PATH))
-test_classes = 57#len(os.listdir(TEST_PATH))
+train_classes = 100#len(os.listdir(TRAIN_PATH))
+test_classes = 58#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]

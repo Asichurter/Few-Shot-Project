@@ -10,6 +10,7 @@ class ProtoNet(nn.Module):
         super(ProtoNet, self).__init__()
 
         self.metric = metric
+        self.ProtoNorm = None
 
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 经过这层以后，尺寸除以4
@@ -123,6 +124,8 @@ class ProtoNet(nn.Module):
         # proto shape: [n, d]
         proto = proto_correct_attention(support)
         # proto = proto_mean(support)
+        proto_norm = proto.detach().norm(dim=1).sum().item()
+        self.ProtoNorm = proto_norm
         self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
         self.forward_outer_var = proto.var(dim=0).sum()
         support = proto

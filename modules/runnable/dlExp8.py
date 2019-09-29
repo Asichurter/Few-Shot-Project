@@ -66,6 +66,7 @@ TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
 CROP_SIZE = 224
+FRESH_CYCLE = 1000
 
 inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
@@ -110,6 +111,8 @@ train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train
 train_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss_train.npy"%version).tolist()
 test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%version).tolist()
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
+proto_norms = []
+time_consuming = []
 
 best_acc = 0.
 best_epoch = 0
@@ -227,10 +230,12 @@ for episode in range(MAX_ITER):
 
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)
+            proto_norms.append(net.ProtoNorm)
 
             current_length = TEST_CYCLE if len(train_acc_his) >= TEST_CYCLE else 1
             current_train_acc = np.mean(train_acc_his[-1*current_length:])
             current_train_loss = np.mean(train_loss_his[-1*current_length:])
+            current_norm = np.mean(proto_norms[-1*current_length:])
 
             # writer.add_scalars("Accuracy",
             #                    {"train":current_train_acc,"validate":test_acc/TEST_EPISODE},
@@ -262,6 +267,31 @@ for episode in range(MAX_ITER):
                                     ylabel="Loss"
                                 ),
                                 update=None if episode==0 else "append")
+            plot_norm = np.array([current_norm])
+            plot_norm_x = np.array([1]) * episode
+            norm_line = vis.line(X=plot_norm_x,
+                                 Y=plot_norm,
+                                 win="Proto Norm",
+                                 opts=dict(
+                                     title="ProtoNorm",
+                                     xlabel="Iterations",
+                                     ylabel="Norm"
+                                 ),
+                                 # update=None if episode == 0 else "append")
+                                 update=None if episode == 0 else "append")
+            now_stamp = time.time()
+            time_consuming.append(now_stamp - previous_stamp)
+            plot_time = np.array([time_consuming[-1]])
+            time_line = vis.line(X=plot_norm_x,
+                                 Y=plot_time,
+                                 win="time",
+                                 opts=dict(
+                                     title="Time Consuming",
+                                     xlabel="Iterations",
+                                     ylabel="seconds"
+                                 ),
+                                 # update=None if episode == 0 else "append")
+                                 update=None if episode == 0 else "append")
 
             global_step += TEST_CYCLE
 
@@ -282,7 +312,6 @@ for episode in range(MAX_ITER):
                 best_epoch = episode
             print("best val acc: ", best_acc)
             print("best epoch: %d"%best_epoch)
-            now_stamp = time.time()
             print(TEST_CYCLE,"episode time consume:",now_stamp-previous_stamp)
             print("****************************************")
             previous_stamp = now_stamp

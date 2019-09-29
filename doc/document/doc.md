@@ -1,8 +1,9 @@
 # 实验文档
 
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 ## 最近更新时间：2019.09.27
 
-[toc]
+[TOC]
 
 ## 1.恶意代码检测(detection)
 
@@ -364,7 +365,7 @@ trojan.Zlob：
  200-500KB | 512
  500-100KB | 768
  \>1000KB | 1024
- 
+
 该论文中使用了GIST特征对图像进行小波分解以提取图像的纹理特征，然后将提取的特征输入到欧式
 距离的kNN进行分类。参考这种方法，后续有很多实验围绕恶意代码图像进行：
 
@@ -674,42 +675,143 @@ def extract_class_name(name):
 恶意代码图像让图像损失了部分细节，但是由于主要的特征在scale仍然能够保留，因此利用灰度图像
 进行分类仍然是可行的
 
-### 2.3 深度学习方法的小样本恶意代码检测
+### 2.3 小样本学习
 
 小样本学习是指需要学习的分类或者回归任务中只有少量的的样本（通常为1~20）可供训练。众所周知，
 现代的深度网络需要大量的数据以拟合网络内部大量的参数，少量的训练样本必定会造成严重的过拟合。
 因此小样本学习从训练模式到网络结构都需要被精细地设计。
 
+一般来说，如果学习任务是n分类问题，则称为n-way；如果每个类别只有k个样本，则称为k-shot。
+
 从[Wang et.al(2019)](Few-shot%20Learning—%20A%20Survey.pdf)的综述和
 [Chen,Liu et.al(2019)](A%20Closer%20Look%20At%20Few-Shot%20Classification.pdf)
 的Related Work部分都能够了解到小样本学习的基本方法和途径。大部分文献中都将小样本学习划分
-为4个子类：
+为4个子类。
 
-1. Initialization Based: 该方法意图学习模型参数的一个较好的初始值，从而模型能在仅使用少量数据的情况下就能迅速泛化到对应的任务上。
+#### 2.3.1 Initialization Based
 
-    对应的论文有[Finn et.al(2017)](5.ICML-2017%20Model-Agnostic%20Meta-Learning%20for%20Fast%20Adaption%20of%20Deep%20Networks.pdf)。该文章提出了一种基于梯度下降的元学习（meta-learning）的框架MAML，该框架在任何模型下均可以使用：在每一次训练中采集
-    一批量的任务$T_i$，模型参数、
-    $\theta$基于$T_i$中的数据进行一次或者多次梯度下降得到更新后的参数$\theta'$，然后再
-    在任务$T_i$上根据更新后的参数$\theta'$计算出损失值，利用该损失值更新更新原参数值
-    $\theta$。更新公式：
+该方法意图学习模型参数的一个较好的初始值，从而模型能在仅使用少量数据的情况下就能迅速泛化到对应的任务上。
 
-    $\theta\gets\theta-\beta\nabla_\theta\sum_{T_i\sim p(T)}L_{T_i}(f_{\theta'})$
+对应的论文有[Finn et.al(2017)](5.ICML-2017%20Model-Agnostic%20Meta-Learning%20for%20Fast%20Adaption%20of%20Deep%20Networks.pdf)等。该文章提出了一种基于梯度下降的元学习（meta-learning）的框架MAML，该框架在任何模型下均可以使用：在每一次训练中采集
+一批量的任务$T_i$，模型参数、
+$\theta$基于$T_i$中的数据进行一次或者多次梯度下降得到更新后的参数$\theta'$，然后再
+在任务$T_i$上根据更新后的参数$\theta'$计算出损失值，利用该损失值更新更新原参数值
+$\theta$。更新公式： 
 
-    其中，$\theta' = \theta - \alpha \nabla_\theta L_{T_i}(\theta)$
+$\theta\gets\theta-\beta\nabla_\theta\sum_{T_i\sim p(T)}L_{T_i}(f_{\theta'})$
 
-    该方法通过利用梯度的梯度，即二阶梯度优化模型，将会将参数逐步调整一个平衡点，参数
-    在改点处对于各个任务都有较高的敏感度(sensitivity)，使得经过少量的梯度下降步骤
-    便能够让参数快速适应对应的任务。
+其中，$\theta' = \theta - \alpha \nabla_\theta L_{T_i}(\theta)$
 
-2. Distance-Metric based: 该方法意图学习一个能够在任务之间泛化的的比较模型，该模型
-能够计算两个两个样本的相似度(similarity)。这种模型的模式一般都是先将样本嵌入到嵌入
-空间（embedding space）中，然后在该空间中利用距离函数计算样本之间的距离，利用距离得出样本之间的相似度。
+该方法通过利用梯度的梯度，即二阶梯度优化模型，将会将参数逐步调整一个平衡点，参数
+在改点处对于各个任务都有较高的敏感度(sensitivity)，使得经过少量的梯度下降步骤
+便能够让参数快速适应对应的任务。
+
+#### 2.3.2 Distance-Metric based
+该方法意图学习一个能够在任务之间泛化的的比较模型，该模型
+能够计算两个两个样本的相似度(similarity)。这种模型的模式一般都是先将样本嵌入到嵌入空间（embedding space）中，使得同类的样本能够尽量挨近，而不相同的样本能够很好
+地间隔开，然后在该空间中利用距离函数计算样本之间的距离，利用距离得出样本之间的相似
+度。由于距离比较方法通常是非参数的(non-parametric),因此距离度量的方法通常具有较好的泛化性，并且收敛的速度更快。不同的学习方法将会采用不同的训练方式。有的算法通过构造属于同类和不
+属于同类的样本对(pair)
+输入到网络中根据对应的标签获得损失值来训练网络；有的算法通过在不同的任务（Task）上的训练从而
+让模型天生拥有在不同的任务上泛化的能力，该模型能够直接在不重新训练的情况下用在没有见过的任务中；
+还有的算法将两者结合在一起：模型先在不同的任务上训练以获得在任务间的泛化能力（cross-task），
+然后利用任务相关（task-specific）信息将模型迅速泛化到相关的任务上。[Wang et.al(2019)](Few-shot%20Learning—%20A%20Survey.pdf)
+在4.2节详细讨论了这三者。
+
+第一个的设定类似于度量学习（metric learning）中的训练策略。度量学习的目的是通过样本让模型学会
+如何将相似的样本嵌入和如何度量嵌入样本之间的距离从而让相似的样本尽量接近，而让不相似的样本以较大
+的间隔隔开，这种方法常用于图像和文本检索和分类任务中。度量学习过程中，通过使用训练样本$x_i$和
+与之相似的$y_i$还有与之不相似的样本$z_i$构造损失函数以进行正例和反例的学习。常用的损失函数有
+Triplet Loss，Contrastive loss，Magnet Loss等。以Triplet Loss为例，其形式如下：
+
+$L = \max ({d(x_i,y_i)-d(x_i,z_i)+margin, 0})$
+
+其中，$d(·,·)$ 是距离函数。该损失函数将会以pair的形式将相似的样本距离缩小，将不相似的样本的
+距离增大从而达到分隔的任务，使用的几乎都是NCA(Neignborhood Component Analysis)j作为分类
+器。具体参见两篇相关的论文: [Movshovitz-Attias et al.(2017)](No%20Fuss%20Distance%20Metric%20Learning%20using%20Proxies.pdf)和[Weinberger et al.](distance-metric-learning-for-large-margin-nearest-neighbor-classification.pdf)
+
+在实验中，使用的最多的设定是第三种设定，**即现在任务间训练以获得较好的泛化能力，然后利用任务具体信息使得模型在具体任务上能够快速适应**。
+一般来说，将模型适应到具体任务的方式有两种：一种是利用
+该任务的数据进行模型微调(fine-tuning)，另一种不对模型本身进行重新训练，而是直接将任务集数据输入后作为模型的一部分，例如分类用的权重向量，而大部分metric based方法都是将任务中的训练数据输入
+模型后得到一组类向量或者类原型(prototype)，然后利用类向量和类原型基于最近邻来进行分类。
+
+学习时，为了能够让嵌入函数和距离函数能够很好地泛化到未见过的任务上，因此采用了与测试时相同的few-shot设定：训练时从任务分布中抽取一个任务$T_i$，该任务中含有训练数据$D_{T_i}^{train}$和
+测试数据$D_{T_i}^{test}$，一般来说前者称为sample set，后者称为query set；测试时从任务分布
+中抽取一个不在训练时可获得的测试任务$T_i'$，其中也包含训练数据$D_{T_i'}^{train}$和测试数据
+$D_{T_i'}^{test}$，前者一般称为support set，后者一般称为test set。这种学习的方式称为
+episode training。在元学习设定中，训练
+任务中的数据也被称为meta train set，测试数据也被meta test set。
+
+#### 2.3.3 Meta-learning
+
+元学习方法强调learning to learn，目的是让模型能够学会如何泛化到具体的任务中。该学习算法中，
+一般将模型分为两个部分：一个称为base learner基学习器，其负责学习如何适应一个具体任务(adapt 
+to specific task)；一个称为meta learner元学习器，其负责学习如何指导base learner进行学习
+以适应不同的任务。
+
+元学习方法一般是基于算法进行优化，即利用meta learner来改进优化过程。因为meta learner用于
+指导base learner进行学习，因此本质上meta learner学习的就是优化的算法。典型的有：
+[Ravi et al.(2017)](6.ICLR-2017%20Optimization%20as%20a%20model%20for%20few-shot%20learning.pdf)
+和[Munkhdala,Yu(2017)](7.ICML-2017%20Meta%20networks.pdf)。前者从梯度下降的公式中
+得到启发，认为LSTM的cell输出公式与梯度下降的更新公式可以进行对应，具体的：
+
+梯度下降： $\theta' = \theta - \alpha \nabla_\theta L(\theta)$
+LSTM的cell输出: $c_t = f_t \bigodot c_{t-1} + i_t \bigodot \tilde{c}_{t}$
+如果$f_t=1$，$\theta=c_{t-1}$，$i_t=\alpha$，$\tilde{c}_{t}=-\nabla_\theta L(\theta)$，
+则可以将LSTM的输出视为参数，LSTM的待选cell作为梯度，让LSTM学会如何更新参数。具体地，在每一个
+元训练轮回中，base learner负责接收数据，然后将产生损失值和梯度传给meta learner用于产生新的
+参数，然后meta learner将新的参数传回给base learner。这样就完成了一次meta learning。该方法
+也称为LSTM meta learner。
+
+大部分的meta-learning的设定都与LSTM meta learner相似：为了提高任务间的泛化能力，先利用
+meta learner优化模型让其在一个具体的任务上进行学习，然后用另一个不同的任务进行测试产生损失值，
+再利用产生的这个meta loss优化meta learner。
+
+MetaNet的思路相似，只是meta learner的任务不再是优化base learner，而是根据memory为base 
+learner产生一个快速权重用于学习期快速泛化到新的具体任务中。
+
+虽然meta learning的想法十分诱人，但是其网络结构，学习策略都十分复杂，难以实现。因此在恶意代码
+的分类实验中，并**没有尝试使用任何的meta learning方法**，所有的实验或者基线都是基于metric 
+learning的。
+
+#### 2.3.4 Hallucination based
+
+这种方法实质上就是从小样本学习的本质难点入手，利用数据增强方法或者生成式模型产生新的数据以增大
+数据计数缓解因为样本过少带来的过拟合问题。这种方法虽然能从根本上解决小样本学习的困难，但是由于
+生成式模型本身训练的困难性，以及难以衡量合成的样本是否在特征分布上与源数据保持一致，因此这种
+方法对于性能没有保证，同时实现起来难度也很高。综上，小样本恶意代码分类实验中并没有实验任何该
+模型，也没有将该类模型作为基线。
+
+对应的论文有：
+[Chen,Fu et al.(2018)](17.ECCV-2018%20Semantic%20Feature%20Augmentation%20in%20Few-shot%20Learning.pdf)
+和[Wang,Girshick et al.(2018)](20.CVPR-2018%20Low-Shot%20Learning%20from%20Imaginary%20Data.pdf)
+
+
+### 2.4 小样本恶意代码分类
+
+本实验中复现或者实现的模型几乎都是metric based方法
+
+#### 2.4.1 Siamese Network
 [Koch et al.(2015)](10.ICML-2015%20Siamese%20Neural%20Networks%20for%20One-shot%20Image%20Recognition.pdf)提出了Siamese Network用于手写字符的小样本学习。该论文中利用
 孪生的若干堆叠的卷积+非线性变换+池化组合来将图像嵌入，然后将特征矩阵展开为特征向量，
-直接将同时输入的两个经过嵌入的样本特征向量求L1距离输入到FC层中，最后经过sigmoid输
-出
+直接将同时输入的两个经过嵌入的样本特征向量求**加权L1距离**输入到FC层中，最后经过sigmoid输
+出一个概率值来指示两个样本是否属于同类。
 
+![siamese](siamese_architecture.PNG)
 
+CNN结构中，随着尺寸逐渐减小，通道数逐渐增多，而且卷积核尺寸大小不一，均使用2x2最大池化和ReLU。
+这是后来的metric based方法的基础，后续的大部分模型大致延续这种结构。同时，两个作比较的样本输入到网络的两个孪生（twin）嵌入模块中，**两个孪生模块共享权重**。
+
+由于论文中的siamese网络只实验了1-shot的设定，没有5-shot，10-shot等更多样本的设定，因此
+不存在induction问题（将同个类若干样本归纳为一个类向量或者将多个样本的结果归纳为一个类结
+果）。所以在实验时，使用均值向量来将5个类样本向量生成为一个类向量，并与查询样本组成pair
+输出结果。
+
+#### 2.4.2 Matching Net
+
+这篇论文晚于Siamese Network，具体地提出了一些few-shot的设定。MN先对支持集support set
+和查询集query set使用了不同的嵌入，分别称为$g(x)$和$f(x)$，然后使用一个注意力核利用查询
+（Attention Kernel）
 
 的基础理念类似于迁移学习（transfer learning）和元学习（meta learning）
 

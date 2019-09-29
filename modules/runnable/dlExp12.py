@@ -39,17 +39,18 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 32
+version = 36
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-VALIDATE_PATH = "D:/peimages/New/test/test.t"
+folder = 'cluster'
+VALIDATE_PATH = "D:/peimages/New/%s/test.t"%folder
 # VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"%s_best_acc_model_%dshot_%dway_v%d.0.h5"%(type,k,n,version)
+MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_best_acc_model_%dshot_%dway_v%d.0.h5"%(type,k,n,version)
 # MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n, version)
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
@@ -90,7 +91,8 @@ def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2
         try:
             frequency[int(i)] += 1/len(data)
         except IndexError:
-            print(i)
+            if int(i)==10:
+                frequency[9] += 1/len(data)
     plt.title(title)
     plt.bar(x, frequency, alpha=0.5, width=bar_width, color=color, edgecolor='black', label="frequency", lw=3)
     plt.xticks(x_label, x_ticks)

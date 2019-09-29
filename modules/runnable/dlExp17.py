@@ -27,9 +27,10 @@ from modules.model.datasets import FewShotRNDataset, get_RN_modified_sampler, ge
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-TRAIN_PATH = "D:/peimages/New/test/train/"
-TEST_PATH = "D:/peimages/New/test/validate/"
-MODEL_SAVE_PATH = "D:/peimages/New/test/models/"
+folder = 'cluster'
+TRAIN_PATH = "D:/peimages/New/%s/train/" %folder
+TEST_PATH = "D:/peimages/New/%s/validate/"%folder
+MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResProto_exp/"
 
 input_size = 256
@@ -45,7 +46,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 1
+version = 2
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -57,8 +58,8 @@ REST_TIME = 120
 CROP_SIZE = 224
 
 # 训练和测试中类的总数
-train_classes = len(os.listdir(TRAIN_PATH))
-test_classes = len(os.listdir(TEST_PATH))
+train_classes = 100#len(os.listdir(TRAIN_PATH))
+test_classes = 58#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -284,7 +285,7 @@ test_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]
 train_acc_plot = np.array(train_acc_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
 train_loss_plot = np.array(train_loss_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
 
-plt.title('%d-shot %d-way Prototypical Net Accuracy'%(k,n))
+plt.title('%d-shot %d-way ResProtoNet Accuracy'%(k,n))
 plt.plot(train_x, train_acc_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
 plt.plot(train_x, [1/n]*len(train_x), linestyle='--', color="black", label="baseline")
@@ -292,7 +293,8 @@ plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
-plt.title('%d-shot %d-way Prototypical Net Loss'%(k,n))
+plt.title('%d-shot %d-way ResProto Net Loss'%(k,n))
+plt.ylim(0,2)
 plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.legend()
