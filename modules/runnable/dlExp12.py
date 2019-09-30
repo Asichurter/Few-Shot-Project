@@ -39,13 +39,13 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 36
+version = 35
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 
 folder = 'cluster'
-VALIDATE_PATH = "D:/peimages/New/%s/test.t"%folder
+VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 # VALIDATE_PATH = "D:/peimages/New/test/test/"
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"

@@ -10,12 +10,14 @@ import torch.nn as nn
 import math
 from sklearn.preprocessing import label_binarize
 import random as rd
-# from modules.model.RelationNet import EmbeddingNet
 import inspect
+
 from sklearn.neighbors import KNeighborsClassifier as KNN
 import torch.nn.functional as F
 import time
 import re
+
+from modules.model.datasets import FewShotFileDataset
 
 
 # train_datas = np.array([[0,0],[3,3]])
@@ -107,7 +109,9 @@ import re
 #     print(key, 'cluster num: %d'%len(val))
 # print(len(d))]
 
-print(os.path.exists('D:/Few-Shot-Project/data/cluster_plot/'))
+# a = [1, 'a', ['1', 2], t.Tensor([[1,2],[3,4]])]
+# np.save('test.npy', a)
+a = np.load('test.npy', allow_pickle=True)
 
 
 

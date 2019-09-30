@@ -397,7 +397,7 @@ def make_few_shot_data_by_cluster(clusters, dest, fix_width=False, num_per_class
             # 避免重复创建文件夹
             if os.path.exists(dest+class_name+'/'):
                 continue
-            print(i, class_name)
+            # print(i, class_name)
             i += 1
             os.mkdir(dest+class_name)
             candidate_cluster = rd.choice(list(cluster.keys()))
@@ -450,9 +450,20 @@ def integrate_images_to_datas(base, dest, transform=T.Compose([T.ToTensor(),T.No
         for item in os.listdir(base+c):
             img = Image.open(base+c+'/'+item)
             img = transform(img)
-            datas.append(img.tolist())
-    datas = t.FloatTensor(datas)
-    t.save(datas, dest)
+            datas.append(t.FloatTensor(img.tolist()).numpy())
+    # datas = t.FloatTensor(datas)
+    np.save(dest, datas)
+
+def compress_huge_image(base, threshold=256):
+    for folder in os.listdir(base):
+        print(folder)
+        for image_name in os.listdir(base+folder):
+            imgae_path = base + folder + '/' + image_name
+            img = Image.open(imgae_path)
+            if img.size[0] > threshold:
+                w_h_ratio = img.size[1]/img.size[0]
+                img = img.resize((threshold,int(threshold*w_h_ratio)), Image.ANTIALIAS)
+                img.save(imgae_path, 'JPEG')
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -612,6 +623,9 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_fix_width/train/', fix_width=True)
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
 
-    # integrate_images_to_datas('D:/peimages/New/cluster/test/',
-    #                           'D:/peimages/New/cluster/test.t',
-    #                           T.Compose([T.ToTensor(),T.Normalize([0.40118653], [0.097657144])]))
+    integrate_images_to_datas('D:/peimages/New/cluster_fix_width/train/',
+                              'D:/peimages/New/cluster_fix_width/train.npy',
+                              T.Compose([T.ToTensor(),T.Normalize([0.39177823], [0.11456729])]))
+                                #cluster_fix_width: 0.39177823, 0.11456729
+                                #cluster: [0.40118653], [0.097657144]
+    # compress_huge_image('D:/peimages/New/cluster_fix_width/train/')

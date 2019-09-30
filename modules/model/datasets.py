@@ -1,5 +1,6 @@
 import os
 import torch as t
+import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms as T
@@ -134,21 +135,22 @@ class FewShotRNDataset(Dataset):
 
 class FewShotFileDataset(Dataset):
     # 直接指向support set或者query set路径下
-    def __init__(self, base, n, class_num, rd_crop_size=None, rotate=True):
-        self.Data = t.load(base)
+    def __init__(self, base, n, class_num, rd_crop_size=None, rotate=True, squre=True):
+        self.Data = np.load(base, allow_pickle=True)
         self.Label = []
         self.CropSize = rd_crop_size
         self.Rotate = rotate
-        self.Width = self.Data.size(2)
+        self.Width = self.Data.shape[2] if squre else None
         # assert num_class==len(os.listdir(path)), "实际种类数目%d与输入种类数目不一致！"%(num_class, len(os.listdir(path)))
         for i in range(class_num):
             self.Label += [i]*n
-        assert len(self.Label)==self.Data.size(0), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),self.Data.size(0))
+        assert len(self.Label)==len(self.Data), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),len(self.Data))
     def __getitem__(self, index):
         w = self.Width
         crop = self.CropSize
-        img = self.Data[index]
+        img = t.FloatTensor(self.Data[index])
         if crop is not None:
+            assert self.Width is not None and self.Data.shape[2]==self.Data.shape[3], "crop不能作用在非正方形图像上!"
             bound_width = w-crop
             x_rd,y_rd = rd.randint(0,bound_width),rd.randint(0,bound_width)
             img = img[:, x_rd:x_rd+crop, y_rd:y_rd+crop]

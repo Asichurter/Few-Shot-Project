@@ -113,10 +113,11 @@ def calculate_data_mean_std(base, split=True, excepts=['models']):
             inner_path = path + c_i + "/"
             for image in os.listdir(inner_path):
                 image = Image.open(inner_path+image)
-                image = transformer(image)
-                data.append(image.sum()/(256*256))
+                image = transformer(image).squeeze()
+                size = image.size
+                data.append(image.sum()/(size(0)*size(1)))
 
-    return np.mean(data),np.std(data)
+    return np.mean(data),np.std(data),data
 
 if __name__ == "__main__":
     print(calculate_data_mean_std('D:/peimages/New/cluster_fix_width/train/', split=False))
