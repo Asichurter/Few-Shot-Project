@@ -1,7 +1,7 @@
 # 实验文档
 
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
-## 最近更新时间：2019.09.27
+## 最近更新时间：2019.09.30
 
 [TOC]
 
@@ -791,8 +791,8 @@ learning的。
 
 本实验中复现或者实现的模型几乎都是metric based方法
 
-#### 2.4.1 Siamese Network
-[Koch et al.(2015)](10.ICML-2015%20Siamese%20Neural%20Networks%20for%20One-shot%20Image%20Recognition.pdf)提出了Siamese Network用于手写字符的小样本学习。该论文中利用
+#### 2.4.1 Siamese Network [Koch et al.(2015)](10.ICML-2015%20Siamese%20Neural%20Networks%20for%20One-shot%20Image%20Recognition.pdf)
+本文提出了Siamese Network用于手写字符的小样本学习。该论文中利用
 孪生的若干堆叠的卷积+非线性变换+池化组合来将图像嵌入，然后将特征矩阵展开为特征向量，
 直接将同时输入的两个经过嵌入的样本特征向量求**加权L1距离**输入到FC层中，最后经过sigmoid输
 出一个概率值来指示两个样本是否属于同类。
@@ -800,18 +800,57 @@ learning的。
 ![siamese](siamese_architecture.PNG)
 
 CNN结构中，随着尺寸逐渐减小，通道数逐渐增多，而且卷积核尺寸大小不一，均使用2x2最大池化和ReLU。
-这是后来的metric based方法的基础，后续的大部分模型大致延续这种结构。同时，两个作比较的样本输入到网络的两个孪生（twin）嵌入模块中，**两个孪生模块共享权重**。
+这是后来的metric based方法的基础，后续的大部分模型大致延续这种结构。同时，两个作比较的样本输入到网络
+的两个孪生（twin）
+嵌入模块中，**两个孪生模块共享权重**。
 
 由于论文中的siamese网络只实验了1-shot的设定，没有5-shot，10-shot等更多样本的设定，因此
-不存在induction问题（将同个类若干样本归纳为一个类向量或者将多个样本的结果归纳为一个类结
+**不存在induction问题**（将同个类若干样本归纳为一个类向量或者将多个样本的结果归纳为一个类结
 果）。所以在实验时，使用均值向量来将5个类样本向量生成为一个类向量，并与查询样本组成pair
 输出结果。
 
-#### 2.4.2 Matching Net
+#### 2.4.2 Matching Net [Vinyals et al.(2017)](4.NIPS-2016%20Matching%20Networks%20for%20One%20Shot%20Learning.pdf)
+
 
 这篇论文晚于Siamese Network，具体地提出了一些few-shot的设定。MN先对支持集support set
-和查询集query set使用了不同的嵌入，分别称为$g(x)$和$f(x)$，然后使用一个注意力核利用查询
-（Attention Kernel）
+和查询集query set使用了不同的嵌入，分别称为$g(x)$和$f(x)$，然后使用一个注意力核（Attention 
+Kernel）将查询样本的嵌入与支持集样本的嵌入对齐得到注意力系数，利用这个注意力系数得到键值，即支持集样
+本标签的加权结果来进行一次预测。
+
+因此，模型本身不具有预测能力，而是作为一个分类器的mapping：$S\to c_s(\hat{x})$。在给定
+支持集的时候，模型整体变为$P(\hat{y}|\hat{x},S)$一个关于预测标签的概率分布，即利用了
+task-specific信息变成了一个任务相关的模型，使得模型在相关任务上实现了适应（adaption）。
+论文中提到，为了提高模型 泛化能力与训练速度，使用非参
+数模型(non-parametric)将会大大收益，如基于metric的kNN就是一种非参数方法。MN结合了参数式模
+型和非参数模型的优点，样本的嵌入使用的是参数式模型，而样本之间的比较取得相似程度使用的是非参数模型。
+
+因此，对于不同的任务，**只需要给定支持集，就能生成一个适用于该任务的不同的分类器，而且该分类器使用非参数**
+方法进行分类，具有更好的泛化性。训练时，可以模仿这种行为，给定一个任务，任务中包含支持集和查询集，支持
+集用于生成分类器，查询集用于产生分类损失值并用于优化模型。这种训练方式一定程度上模仿了测试阶段的行为，
+使得训练阶段的设定与测试阶段的设定相匹配(make the train strategy match the inference 
+setting)。这种训练思路成为了后续metric-based方法均默认遵守的一个准则。
+
+论文中提到的注意力机制中查询值与键相匹配的方式利用的是cosine相似度输入到softmax中。该方式可以视为在
+**支持集嵌入和查询集嵌入之间使用cosine距离后输入到softmax分类器中**。后续的模型中大多效仿了这种
+方式，只不过采用了不同的距离度量函数，如欧式平方距离，畸变余弦相似度。
+
+模型中的支持集样本和查询集样本嵌入方式采用了不同的两个模块。论文中提到，将支持集样本视为独立的样本
+单独嵌入不够恰当，应该将整个支持集整体嵌入，文中称为Full Context Embedding（FCE）。同时，对于不同
+的支持集，嵌入的方式应该有所不同，因此不同的支持集对于相同的查询样本应该产生不同的嵌入。具体地：
+
+$f(\hat{x},S)=attLSTM(f'(\hat{x}),g(S), K)$
+
+其中$f'$是一个查询样本的CNN嵌入，$g(S)$是整个支持集的嵌入，attLSTM是带有注意力机制的双向LSTM。
+
+文章中还详细描述了episode training的步骤，简单来说就是在每个episode中，先抽取任务（task），然后在
+任务中抽样得到支持集和查询集，在不同的episode就会在不同的训练集上进行训练，从而强迫模型学得更有泛化
+能力的模型从而在不同的任务上都能表现的很好。这可以视为一个meta learning策略，让模型不固定在一个任务
+上进行学习，而是让模型学会如何适应不同的任务。
+
+#### 2.4.3 Prototype Network 
+
+[Snell et al.(2017)](4.NIPS-2016%20Matching%20Networks%20for%20One%20Shot%20Learning.pdf)
+
 
 的基础理念类似于迁移学习（transfer learning）和元学习（meta learning）
 
