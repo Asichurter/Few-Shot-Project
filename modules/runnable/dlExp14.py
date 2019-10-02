@@ -1,18 +1,13 @@
 # 本实验利用训练好的模型将验证集可视化
 
 import matplotlib.pyplot as plt
-import torch as t
 import numpy as np
-from sklearn.manifold import t_sne, MDS
-from sklearn.decomposition import PCA
-import  torchvision.transforms as T
-import PIL.Image as Image
+from sklearn.manifold import MDS
 import os
 from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import Dataset
 
 from modules.model.PrototypicalNet import ProtoNet
-from modules.model.datasets import FewShotRNDataset,RNSamlper,get_RN_sampler
+from modules.utils.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
 # 每个类多少个样本，即k-shot
 k = 5
@@ -25,12 +20,16 @@ N = 20
 
 class_contents_num = 5
 
-MODEL_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_5shot_5way_v21.0.h5"
-DATA_PATH = "D:/peimages/New/test/test/"
-DATA_LENGTH = len(os.listdir(DATA_PATH))
-BATCH_LENGTH = int(len(os.listdir(DATA_PATH))/n)
+folder = 'cluster'
+version = 38
 
-dataset = FewShotRNDataset(DATA_PATH, N, rotate=False)
+MODEL_PATH = "D:/peimages/New/%s/models/"%folder+"ProtoNet_best_acc_model_5shot_5way_v%d.0.h5"%version
+DATA_PATH = "D:/peimages/New/%s/test.npy"%folder
+DATA_LENGTH = 50#len(os.listdir(DATA_PATH))
+BATCH_LENGTH = int(DATA_LENGTH/n)#int(len(os.listdir(DATA_PATH))/n)
+
+# dataset = FewShotRNDataset(DATA_PATH, N, rotate=False)
+dataset = FewShotFileDataset(DATA_PATH, N, DATA_LENGTH, rotate=False, squre=True)
 datas = []
 reducer = MDS(n_components=2)
 # reducer = PCA(n_components=2)
@@ -51,7 +50,7 @@ reducer = MDS(n_components=2)
 #         class_datas.append(item)
 #     datas.append(class_datas)
 
-net = ProtoNet(k=k, n=n, qk=qk).cuda()
+net = ProtoNet().cuda()
 for i in range(BATCH_LENGTH):
     classes = [i*n+j for j in range(n)]
     print(classes)
@@ -67,7 +66,7 @@ for i in range(BATCH_LENGTH):
     supports = supports.cuda()
     tests = tests.cuda()
 
-    supports,tests = net(supports, tests, save_embed=True)
+    supports,tests = net(supports.view(n,k,1,256,256), tests.view(n*qk,1,256,256), save_embed=True)
     batch_datas = supports.view(n, k, -1).cpu().detach().numpy().tolist()
     # batch_datas = t.cat((supports, tests), dim=1).view(n, qk+k, -1).cpu().detach().numpy().tolist()
 
@@ -273,7 +272,7 @@ cnames = {
 
 # plt.title("Acc = %.4f"%acc)
 plt.axis("off")
-plt.figure(figsize=(10,8))
+plt.figure(figsize=(15,12))
 for i in range(DATA_LENGTH):
     plt.plot([reduced_datas[i][j][0] for j in range(class_contents_num)],
                 [reduced_datas[i][j][1] for j in range(class_contents_num)],
@@ -284,7 +283,7 @@ for i in range(DATA_LENGTH):
     #          [x[1] for j,x in enumerate(queries_trans) if query_labels[j]==sample_labels[i]],
     #          marker="^", color=colors[i])
 plt.show()
-plt.figure(figsize=(10,8))
+plt.figure(figsize=(15,12))
 for i in range(DATA_LENGTH):
     plt.scatter([reduced_datas[i][j][0] for j in range(class_contents_num)],
                 [reduced_datas[i][j][1] for j in range(class_contents_num)],

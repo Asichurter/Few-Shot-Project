@@ -39,7 +39,7 @@ class SiameseNet(nn.Module):
         w = support.size(3)
 
         support = support.view(n*k, 1, w, w)
-        query = support.view(qk, 1, w, w)
+        query = query.view(qk, 1, w, w)
 
         support = self.layer1(support)
         support = self.layer2(support)
@@ -57,9 +57,10 @@ class SiameseNet(nn.Module):
         query= self.layer2(query)
         query = self.layer3(query)
         query = self.layer4(query)
+        query = query.view(qk,-1)
 
         # shape:
-        query = query.repeat(k*n,1,1).transpose(0,1).contiguous().view(qk,n,k,-1)
+        query = query.repeat(n,1,1).transpose(0,1).contiguous().view(qk,n,-1)
 
         # shape: [qk,n,d]
         merge = self.fc(t.abs(support-query).view(qk*n,-1)).view(qk,n)

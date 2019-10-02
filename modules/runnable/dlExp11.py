@@ -1,10 +1,9 @@
 # 本实验用于测试Residual网络
 
 import torch as t
-import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam, SGD
+from torch.optim import Adam
 from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
@@ -15,8 +14,8 @@ import visdom
 import time
 
 from modules.model.ResidualNet import ResidualNet
-from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import net_init, RN_labelize
+from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 # TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 # TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"

@@ -1,26 +1,21 @@
 # 本实验用于测试原型网络
 
 import torch as t
-import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam, SGD
+from torch.optim import Adam
 from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
-from modules.utils.dlUtils import RN_baseline_KNN
-import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
-import os
 import visdom
 
 import time
 
 from modules.model.PrototypicalNet import ProtoNet
-from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import net_init, RN_labelize
+from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 # TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 # TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
@@ -31,8 +26,8 @@ data_folder = "cluster"
 
 # TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
 # TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
-TRAIN_PATH = "D:/peimages/New/%s/train.t" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.t"%data_folder
+TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
+TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
@@ -50,7 +45,7 @@ hidder_size = 8
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 10
 # 测试时每个类多少个样本
 qk = 15
 # 一个类总共多少个样本
@@ -58,7 +53,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 36
+version = 39
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -91,7 +86,7 @@ loss_names = ["train loss", "validate loss"]
 train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
-net = ProtoNet(feature_in=64, feature_out=64)
+net = ProtoNet()
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
 net = net.cuda()
 

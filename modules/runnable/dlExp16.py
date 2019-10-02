@@ -3,20 +3,19 @@
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam, SGD
-from torch.nn import NLLLoss, CrossEntropyLoss
+from torch.optim import Adam
+from torch.nn import CrossEntropyLoss
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
-import os
 import visdom
 
 import time
 
 from modules.model.HybridAttentionProtoNet import HAPNet
-from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import net_init, RN_labelize
+from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 folder = 'cluster'
 TRAIN_PATH = "D:/peimages/New/%s/train.t" % folder

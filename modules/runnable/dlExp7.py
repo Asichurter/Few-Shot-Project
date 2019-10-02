@@ -4,8 +4,7 @@ import torch as t
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam, SGD
-from torch.nn import NLLLoss
+from torch.optim import Adam
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
@@ -15,20 +14,20 @@ import visdom
 import time
 
 from modules.model.RelationNet import RN
-from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import net_init, RN_labelize
+from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 # TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 # TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "test"
+data_folder = "cluster"
 
 # TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
 # TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
-TRAIN_PATH = "D:/peimages/New/%s/train.t" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.t"%data_folder
+TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
+TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
@@ -46,7 +45,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 28
+version = 14
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -54,14 +53,11 @@ TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
 CROP_SIZE = 224
-
-inner_var_alpha = 1e-2
-outer_var_alpha = 1e-2*(k-1)*n
-margin = 1
+FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
-train_classes = 300#len(os.listdir(TRAIN_PATH))
-test_classes = 57#len(os.listdir(TEST_PATH))
+train_classes = 100#len(os.listdir(TRAIN_PATH))
+test_classes = 58#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -75,10 +71,10 @@ loss_names = ["train loss", "validate loss"]
 
 # train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 # test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
-train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=300, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=57, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
-net = RN(hidder_size)
+net = RN()
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
 net = net.cuda()
 
@@ -98,6 +94,8 @@ train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train
 train_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss_train.npy"%version).tolist()
 test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%version).tolist()
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
+proto_norms = []
+time_consuming = []
 
 best_acc = 0.
 best_epoch = 0
@@ -220,6 +218,13 @@ for episode in range(MAX_ITER):
             current_train_acc = np.mean(train_acc_his[-1*current_length:])
             current_train_loss = np.mean(train_loss_his[-1*current_length:])
 
+            # writer.add_scalars("Accuracy",
+            #                    {"train":current_train_acc,"validate":test_acc/TEST_EPISODE},
+            #                    global_step)
+            # writer.add_scalars("Loss",
+            #                    {"train":current_train_loss,"validate":test_loss/TEST_EPISODE},
+            #                    global_step)
+
             plot_x = np.ones((1,2))*global_step
             plot_acc = np.array([current_train_acc, test_acc/TEST_EPISODE]).reshape((1,2))
             plot_loss = np.array([current_train_loss, test_loss/TEST_EPISODE]).reshape((1,2))
@@ -243,6 +248,7 @@ for episode in range(MAX_ITER):
                                     ylabel="Loss"
                                 ),
                                 update=None if episode==0 else "append")
+            now_stamp = time.time()
 
             global_step += TEST_CYCLE
 
@@ -263,7 +269,6 @@ for episode in range(MAX_ITER):
                 best_epoch = episode
             print("best val acc: ", best_acc)
             print("best epoch: %d"%best_epoch)
-            now_stamp = time.time()
             print(TEST_CYCLE,"episode time consume:",now_stamp-previous_stamp)
             print("****************************************")
             previous_stamp = now_stamp

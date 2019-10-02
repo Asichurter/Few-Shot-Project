@@ -443,7 +443,8 @@ def check_data_is_valid(base, size, remove_invalid=False, remove_dest=None):
         for c in invalid_list.keys():
             shutil.move(base+c+"/", remove_dest)
 
-def integrate_images_to_datas(base, dest, transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
+def integrate_images_to_datas(base, dest,
+                              transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
     datas = []
     for c in os.listdir(base):
         print(c)
@@ -454,16 +455,29 @@ def integrate_images_to_datas(base, dest, transform=T.Compose([T.ToTensor(),T.No
     # datas = t.FloatTensor(datas)
     np.save(dest, datas)
 
-def compress_huge_image(base, threshold=256):
+def scale_rectangle_image(base, threshold=256):
     for folder in os.listdir(base):
         print(folder)
         for image_name in os.listdir(base+folder):
             imgae_path = base + folder + '/' + image_name
             img = Image.open(imgae_path)
-            if img.size[0] > threshold:
-                w_h_ratio = img.size[1]/img.size[0]
-                img = img.resize((threshold,int(threshold*w_h_ratio)), Image.ANTIALIAS)
-                img.save(imgae_path, 'JPEG')
+            # if img.size[0] > threshold:
+            w_h_ratio = img.size[1]/img.size[0]
+            img = img.resize((threshold,int(threshold*w_h_ratio)), Image.ANTIALIAS)
+            img.save(imgae_path, 'JPEG')
+
+def statistic_min_max_height(base):
+    min_ = 10000
+    max_ = -1
+    for c in os.listdir(base):
+        for item in os.listdir(base+c):
+            imgae_path = base+c+'/'+item
+            img = Image.open(imgae_path)
+            if img.size[1] > max_:
+                max_ = img.size[1]
+            if img.size[0] < min_:
+                min_ = img.size[1]
+    return max_,min_
 
 
 def validate(model, dataloader, Criteria, return_predict=False):
@@ -623,9 +637,10 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_fix_width/train/', fix_width=True)
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
 
-    integrate_images_to_datas('D:/peimages/New/cluster_fix_width/train/',
-                              'D:/peimages/New/cluster_fix_width/train.npy',
-                              T.Compose([T.ToTensor(),T.Normalize([0.39177823], [0.11456729])]))
+    # integrate_images_to_datas('D:/peimages/New/cluster_fix_width/train/',
+    #                           'D:/peimages/New/cluster_fix_width/train.npy',
+    #                           T.Compose([T.ToTensor(),T.Normalize([0.39177823], [0.11456729])]))
                                 #cluster_fix_width: 0.39177823, 0.11456729
                                 #cluster: [0.40118653], [0.097657144]
-    # compress_huge_image('D:/peimages/New/cluster_fix_width/train/')
+    # scale_rectangle_image('D:/peimages/New/cluster_fix_width/validate/', threshold=256)
+    # print(statistic_min_max_height('D:/peimages/New/cluster_fix_width/train/'))

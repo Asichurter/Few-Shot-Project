@@ -165,6 +165,49 @@ class FewShotFileDataset(Dataset):
     def __len__(self):
         return len(self.Data)
 
+class FewShotPreloadDataset(Dataset):
+    # 直接指向support set或者query set路径下
+    def __init__(self, base, rd_crop_size=None, rotate=True, square=False,
+                 transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
+        self.Data = []
+        self.Label = []
+        class_index = 0
+        # 预加载
+        for c in os.listdir(base):
+            print(c)
+            class_path = base + c
+            for item in os.listdir(class_path):
+                img = Image.open(class_path + '/' + item)
+                img = transform(img)
+                self.Data.append(img)
+            self.Label += [class_index] * len(os.listdir(class_path))
+            class_index += 1
+        self.CropSize = rd_crop_size
+        self.Rotate = rotate
+        self.Width = self.Data.shape[2] if square else None
+        assert len(self.Label)==len(self.Data), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),len(self.Data))
+
+    def __getitem__(self, index):
+        w = self.Width
+        crop = self.CropSize
+        img = self.Data[index]
+        if crop is not None:
+            assert self.Width is not None and self.Data.shape[2]==self.Data.shape[3], "crop不能作用在非正方形图像上!"
+            bound_width = w-crop
+            x_rd,y_rd = rd.randint(0,bound_width),rd.randint(0,bound_width)
+            img = img[:, x_rd:x_rd+crop, y_rd:y_rd+crop]
+        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
+        # 对于非正方形图像使用翻转会导致混乱
+        if self.Width is not None and self.Rotate:
+            rotation = rd.choice([0,1,2,3])
+            img = t.rot90(img, k=rotation, dims=(1,2))
+        label = self.Label[index]
+
+        return img,label
+
+    def __len__(self):
+        return len(self.Data)
+
 # class FewShotClassDataset(Dataset):
 #     def __init__(self, base, n, N, transform=None):
 #         self.Data = []

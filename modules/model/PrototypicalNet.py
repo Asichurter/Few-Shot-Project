@@ -4,6 +4,58 @@ import torch.nn.functional as F
 
 from modules.utils.dlUtils import RN_repeat_query_instance
 
+def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
+    return nn.Sequential(
+        nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+        nn.BatchNorm2d(out_feature),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(2)
+    )
+
+def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1):
+    return nn.Sequential(
+        nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+        nn.BatchNorm2d(out_feature),
+        nn.LeakyReLU(inplace=True),
+        nn.MaxPool2d(3,2,1)
+    )
+
+class SppPooling(nn.Module):
+    def __init__(self, levels=[1,2,4]):
+        super(SppPooling, self).__init__()
+        self.Pools = nn.ModuleList(
+            [nn.AdaptiveMaxPool2d((i,i)) for i in levels]
+        )
+
+    def forward(self, x):
+        assert len(x.size())==4, '输入形状不满足(n,c,w,w)'
+        n = x.size(0)
+        c = x.size(1)
+        features = []
+        for pool in self.Pools:
+            features.append(pool(x).view(n,c,-1))
+        re = t.cat(features, dim=2).view(n,-1)
+        return re
+
+class MultiLevelPooling(nn.Module):
+    def __init__(self, levels=[1,2,4]):
+        super(MultiLevelPooling, self).__init__()
+        self.Pools = nn.ModuleList(
+            [nn.MaxPool2d(i) for i in levels]
+        )
+
+    def forward(self, x):
+        assert len(x.size())==4, '输入形状不满足(n,c,w,w)'
+        n = x.size(0)
+        c = x.size(1)
+        features = []
+        for pool in self.Pools:
+            features.append(pool(x))
+        return features[0].view(n,c,-1)
+        # re = t.cat(features, dim=2).view(n,-1)
+        # return re
+        # return self.Pools[0](x)
+
 # 基于卷积神经网络的图像嵌入网络
 class ProtoNet(nn.Module):
     def __init__(self, metric="SqEuc", **kwargs):
@@ -11,36 +63,42 @@ class ProtoNet(nn.Module):
 
         self.metric = metric
         self.ProtoNorm = None
+        channels = [1,16,32,64,128,256]
+        strides = [2,1,1,1,1]
+        layers = [get_block_2(channels[i],channels[i+1],strides[i]) for i in range(len(strides))]
+        layers.append(nn.AdaptiveMaxPool2d((1,1)))
+        self.Layers = nn.Sequential(*layers)
 
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 经过这层以后，尺寸除以4
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(32, affine=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2))
-        # 第二层是一个64输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
-        # 卷积核的宽度为3,13变为10，再经过宽度为2的pool变为5
-        # 经过这层以后，尺寸除以4
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(64, affine=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2))
-        # 第三层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数,的卷积层
-        # 经过这层以后，尺寸除以2
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(128, affine=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2))
-        # 第四层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数的卷积层
-        # 经过这层以后，尺寸除以2
-        self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(256, affine=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2))
+        # self.layer1 = nn.Sequential(
+        #     nn.Conv2d(1, 32, kernel_size=3, padding=1, stride=2, bias=False),
+        #     nn.BatchNorm2d(32, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2))
+        # # 第二层是一个64输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
+        # # 卷积核的宽度为3,13变为10，再经过宽度为2的pool变为5
+        # # 经过这层以后，尺寸除以4
+        # self.layer2 = nn.Sequential(
+        #     nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=2, bias=False),
+        #     nn.BatchNorm2d(64, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2))
+        # # 第三层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数,的卷积层
+        # # 经过这层以后，尺寸除以2
+        # self.layer3 = nn.Sequential(
+        #     nn.Conv2d(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+        #     nn.BatchNorm2d(128, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(2))
+        # # 第四层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数的卷积层
+        # # 经过这层以后，尺寸除以2
+        # self.layer4 = nn.Sequential(
+        #     nn.Conv2d(128, 256, kernel_size=3, padding=1, bias=False),
+        #     nn.BatchNorm2d(256, affine=True),
+        #     nn.ReLU(inplace=True),
+        #     SppPooling(levels=[1,2])#nn.MaxPool2d(3)
+        # )
         # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
 
     def forward(self, support, query, save_embed=False):
@@ -99,22 +157,24 @@ class ProtoNet(nn.Module):
 
         # 每一层都是以上一层的输出为输入，得到新的输出、
         # 支持集输入是N个类，每个类有K个实例
-        support = self.layer1(support)
-        support = self.layer2(support)
-        support = self.layer3(support)
-        support = self.layer4(support)
+        # support = self.layer1(support)
+        # support = self.layer2(support)
+        # support = self.layer3(support)
+        # support = self.layer4(support).squeeze()
+        support = self.Layers(support).squeeze()
 
         # 查询集的输入是N个类，每个类有qk个实例
         # 但是，测试的时候也需要支持单样本的查询
-        query = self.layer1(query)
-        query = self.layer2(query)
-        query = self.layer3(query)
-        query = self.layer4(query)
+        # query = self.layer1(query)
+        # query = self.layer2(query)
+        # query = self.layer3(query)
+        # query = self.layer4(query).squeeze()
+        query = self.Layers(query).squeeze()
 
         # support = self.Transformer(support.view(self.n, self.k, -1))
 
         if save_embed:
-            return support.view(n, k, -1),query.view(n, qk/n, -1)
+            return support.view(n, k, -1),query.view(n, int(qk/n), -1)
 
         # 计算类的原型向量
         # shape: [n, k, d]
@@ -122,12 +182,12 @@ class ProtoNet(nn.Module):
         d = support.size(2)
 
         # proto shape: [n, d]
-        proto = proto_correct_attention(support)
-        # proto = proto_mean(support)
+        # proto = proto_correct_attention(support)
+        proto = proto_mean(support)
         proto_norm = proto.detach().norm(dim=1).sum().item()
         self.ProtoNorm = proto_norm
-        self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
-        self.forward_outer_var = proto.var(dim=0).sum()
+        # self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
+        # self.forward_outer_var = proto.var(dim=0).sum()
         support = proto
 
         # 直接将均值向量作为原型向量
@@ -168,7 +228,8 @@ class ProtoNet(nn.Module):
         # shape: [n,d]->[qk, n, d]
         support = support.repeat((qk,1,1)).view(qk,n,-1)
 
-        query = query.repeat(n,1,1,1,1).transpose(0,1).contiguous().view(qk,n,-1)
+        # query shape: [qk,d]->[n,qk,d]->[qk,n,d]
+        query = query.repeat(n,1,1).transpose(0,1).contiguous().view(qk,n,-1)
 
         # query = RN_repeat_query_instance(query, self.n).view(-1,self.n,support.size(1),support.size(2),support.size(3))
 

@@ -1,23 +1,12 @@
-import numpy as np
-import torch as t
-import os
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import label_binarize
-from scipy.stats import entropy
-import PIL.Image as Image
 import torch.nn as nn
-import math
-from sklearn.preprocessing import label_binarize
+from torch.utils.data.dataloader import DataLoader
 import random as rd
-import inspect
+import torchvision.transforms as T
+import torch as t
+import numpy as np
 
-from sklearn.neighbors import KNeighborsClassifier as KNN
-import torch.nn.functional as F
-import time
-import re
-
-from modules.model.datasets import FewShotFileDataset
+from modules.utils.datasets import FewShotPreloadDataset
+from modules.utils.datasets import get_RN_sampler
 
 
 # train_datas = np.array([[0,0],[3,3]])
@@ -111,7 +100,40 @@ from modules.model.datasets import FewShotFileDataset
 
 # a = [1, 'a', ['1', 2], t.Tensor([[1,2],[3,4]])]
 # np.save('test.npy', a)
-a = np.load('test.npy', allow_pickle=True)
+# a = np.load('test.npy', allow_pickle=True)
+
+# def variant_length_collect_fn(datas):
+#     pass
+#
+# classes = [i for i in range(100)]
+# sample_classes = rd.sample(classes, 5)
+# dataset = FewShotPreloadDataset('D:/peimages/New/cluster_fix_width/train/', square=False,
+#                                 transform=T.Compose([T.ToTensor(), T.Normalize([0.4077583], [0.09825569])]))
+#
+# sample_sampler, query_sampler = get_RN_sampler(sample_classes, 5, 15, 20)
+#
+# train_sample_dataloader = DataLoader(dataset, batch_size=5*5, sampler=sample_sampler)
+# train_query_dataloader = DataLoader(dataset, batch_size=15 * 5, sampler=query_sampler)
+#
+# samples, sample_labels = train_sample_dataloader.__iter__().next()
+# queries, query_labels = train_query_dataloader.__iter__().next()
+#
+# samples = samples.cuda()
+# sample_labels = sample_labels.cuda()
+# queries = queries.cuda()
+# query_labels = query_labels.cuda()
+#
+# net = nn.Sequential(
+#     nn.Conv2d(1, 16, kernel_size=8, stride=4, padding=0, bias=False),
+#     nn.BatchNorm2d(16),
+#     nn.ReLU(inplace=True),
+#     )
+# net = net.cuda()
+# support_outs = net(samples)
+# query_outs = net(queries)
+
+a = np.load('D:/peimages/New/cluster/test.npy', allow_pickle=True)
+
 
 
 

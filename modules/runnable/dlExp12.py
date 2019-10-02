@@ -4,26 +4,16 @@ import torch as t
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam, SGD
-from torch.nn import NLLLoss
+from torch.optim import SGD
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
-from torch.optim.lr_scheduler import StepLR
-import torch.nn.functional as F
 
 import time
-import os
 
-from sklearn.manifold import MDS
-
-from modules.model.ResidualNet import ResidualNet
 from modules.model.PrototypicalNet import ProtoNet
-from modules.model.ResProtoNet import ResProtoNet
-from modules.model.RelationNet import RN
-from modules.model.SiameseNet import SiameseNet
-from modules.utils.dlUtils import RN_weights_init, net_init, RN_labelize
-from modules.model.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import RN_labelize
+from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 input_size = 256
 
@@ -39,7 +29,7 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 35
+version = 38
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []

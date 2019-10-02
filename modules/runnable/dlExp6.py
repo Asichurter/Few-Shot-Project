@@ -6,7 +6,7 @@ import numpy as np
 from modules.utils.imageUtils import validate
 import torch as t
 from modules.model.MalResnet import ResNet
-from modules.model.datasets import DirDataset
+from modules.utils.datasets import DirDataset
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import matplotlib.pyplot as plt

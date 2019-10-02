@@ -1,7 +1,7 @@
 # 实验文档
 
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
-## 最近更新时间：2019.09.30
+## 最近更新时间：2019.10.02
 
 [TOC]
 
@@ -847,12 +847,42 @@ $f(\hat{x},S)=attLSTM(f'(\hat{x}),g(S), K)$
 能力的模型从而在不同的任务上都能表现的很好。这可以视为一个meta learning策略，让模型不固定在一个任务
 上进行学习，而是让模型学会如何适应不同的任务。
 
-#### 2.4.3 Prototype Network 
+这篇论文的主要贡献在于对few-shot模型的一些基本的方法进行了约定。分类方法可以视为一种加权的近邻法。
 
-[Snell et al.(2017)](4.NIPS-2016%20Matching%20Networks%20for%20One%20Shot%20Learning.pdf)
+#### 2.4.3 Prototype Network [Snell et al.(2017)](8.NIPS-2017%20Prototypical%20Networks%20for%20Few-shot%20Learning.pdf)
+
+Prototype原型网络遵循了元学习（meta learning）的一个基础设定：不在一个特定的任务上进行学习，而是在任务间进行学习从而让模型能够学习如何适应不同的任务，因此原型网络也大致遵循Matching Network中的大部分设定，例如在每一个episode中采样得到N个类别，又从N个类别中分别抽取K个样本组成一个N-way K-shot任务的episode-based training；整个模型M作为一个分类器的映射器，提供一个特定的支持集就能生成一个该支持集对应的分类器，不同的支持集生成不同的分类器；分类时使用的是基于距离metric的softmax分类器，分类是在嵌入空间embbeding space上进行的等等。
+
+文中提出，在给定支持集时，良好的嵌入能够在嵌入空间中把支持集样本进行聚类，可以利用这个聚类中心来进行分类任务。作者提出，在使用**基于Bregman距离的距离函数**时，**均值向量是最好的类向量**，同时配合**平方欧式距离**作为距离函数能够达到最好的效果。
+
+模型十分简单：支持集样本和查询集样本都使用相同的嵌入函数嵌入到嵌入空间中，然后计算支持集每个类的类均值向量作为其类的原型向量(prototype)，查询集样本的嵌入利用距离函数分别计算与每个类原型的距离，将距离负值输入到softmax中得到后验概率。算法的前半部分是在计算类原型，后半部分与NCA分类几乎相同。
+
+作者将PrototypeNet与MatchingNet做了比较：后者是加权的近邻分类，每一个样本在进行分类时都会被利用，对分类的贡献（注意力系数）来自cosine距离；前者是先求出一个在Bregman散度下最佳的均值向量作为类的原型，并将原型视为类的聚类进行分类。两者在k=1时几乎相同，只是距离函数的选取不同。还有一点，MatchingNet中将查询集和支持集的样本的嵌入解耦合了，使用了f和g两个不同的嵌入函数；而PrototypeNet没有将两者分开，而是使用了相同的嵌入函数。
+
+作者提出了两个模型的设计选择：
+
+1. 距离函数的选取。作者提出了平方欧式距离和cosine距离两个，同时指出了后者要好于前者，因为前者不属于Bregman散度
+2. Episode的组成。作者提出在训练时和测试时可以不选取相同k和n进行匹配。例如在训练时选取更多类的分类任务n=10，而测试时使用更小的分类任务n=5。k同理。但是作者提出n不匹配可能可以提升模型表现，但是k不匹配可能反而会导致模型性能下降。
+
+嵌入网络的模型基本遵循Conv4的设定：
+
+每一个Conv由 **Conv2d(kernel_size=3,channel=64, padding=1) + BatchNorm + ReLU + MaxPool(2) **组成，模型由2000轮下降一次学习率的Adam训练，且除了BN外没有使用其他正则化手段。
+
+在模型经过训练以后，在测试阶段不需要进一步的修改或者fine-tuning就可以直接工作，模型一直保持不变。这得益于训练时的meta learning设定带来的泛化性。这样的模型不仅简单，而且能够比其他模型更快地进行inference。
+
+#### 2.4.4 Relation NetWork  [Sung,Yang et al.(2018)](9.CVPR-2018%20Learning%20to%20compare%20Relation%20network%20for%20fewshot%20learning.pdf)
+
+与之前三种网络的结构相似，都是embedding+metric的组合，不同的是利用了CNN+FC的组合作为一个动态可学习的Relation Module来取代原先固定的metric。
+
+相比于PrototypeNet和MatchingNet，RelationNet与SiameseNet更加接近：前两者是将支持集输入到模型中生成一个用于特定任务的分类器，整个支持集的样本都将被用于分类任务中；而后两者更加强调的是利用固定的模型来计算两个单独的样本的相似度，因此只需要提供一个支持集样本而不是整个支持集就能够形成一个分类器，该分类器属于两分类分类器，只负责判定两个样本的相似度。
+
+正因为以上原因，该论文的作者指出RelationNet相比于分类模型更像**回归模型**，因此模型的训练使用的是MSE均方误差损失，而不是分类器常用的负对数损失（交叉熵）。
+
+模型的embedding模块使用的常见的Conv4结构
 
 
-的基础理念类似于迁移学习（transfer learning）和元学习（meta learning）
+
+
 
 
 
