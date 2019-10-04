@@ -4,6 +4,8 @@ import random as rd
 import torchvision.transforms as T
 import torch as t
 import numpy as np
+import math
+import matplotlib.pyplot as plt
 
 from modules.utils.datasets import FewShotPreloadDataset
 from modules.utils.datasets import get_RN_sampler
@@ -132,8 +134,30 @@ from modules.utils.datasets import get_RN_sampler
 # support_outs = net(samples)
 # query_outs = net(queries)
 
-a = np.load('D:/peimages/New/cluster/test.npy', allow_pickle=True)
+# a = np.load('D:/peimages/New/cluster/test.npy', allow_pickle=True)
 
+# def normalize(tensors):
+#     dim = len(tensors.size())-1
+#     length = tensors.size(dim)
+#     repeat_index = [1 for i in range(dim)]
+#     repeat_index.append(length)
+#     norm = tensors.norm(dim=dim).unsqueeze(dim=dim).repeat(repeat_index)
+#
+#     return tensors/norm
+#
+
+# def fx(x):
+#     return math.exp(1)/(math.exp(1)+(x-1)*math.exp(-1))
+#
+# x = [i+2 for i in range(99)]
+# plt.title()
+# plt.xlabel('|C|')
+# plt.ylabel('probability upper bound')
+# plt.plot(x, [fx(xx) for xx in x])
+# plt.show()
+
+a = t.Tensor([[[1,2],[3,4]],[[4,5],[6,7]]])
+b = t.Tensor([[1,2],[3,4]])
 
 
 

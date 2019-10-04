@@ -6,17 +6,25 @@ import matplotlib.pyplot as plt
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
+import numpy as np
 
 import time
+from sklearn.manifold import MDS
+from sklearn.manifold.t_sne import TSNE
 
 from modules.model.ResidualNet import ResidualNet
+from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import RN_labelize
-from modules.utils.datasets import FewShotRNDataset, get_RN_sampler
+from modules.utils.datasets import FewShotRNDataset, FewShotFileDataset, get_RN_sampler
 
-VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
+folder = 'cluster'
+model = 'ProtoNet'
+version = 40
+
+VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 # VALIDATE_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/validate/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v22.0.h5"
+MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_best_acc_model_5shot_5way_v%d.0.h5"%(model, version)
 
 input_size = 256
 
@@ -33,9 +41,47 @@ lr = 1e-3
 
 seed = time.time()%100000
 
-test_classes = 30
+test_classes = 50
 TEST_CLASSES = [i for i in range(test_classes)]
 VALIDATE_EPISODE = 1
+
+
+def proto_embed_reduction(support, query, metric="MDS", proto=None):
+    assert support.size(2)==query.size(2), 'suppor和query的向量维度不一致！'
+    d = support.size(2)
+    support = support.view(-1,d)
+    query = query.view(-1,d)
+
+    support_size = support.size(0)
+    proto_size = proto.size(0) if proto is not None else 0
+
+    if proto is not None:
+        merge = t.cat((support, query, proto), dim=0).cpu().detach().numpy()
+    else:
+        merge = t.cat((support, query), dim=0).cpu().detach().numpy()
+    # support_np = support.cpu().detach().numpy()
+    # support_labels = np.array([[i for j in range(k)] for i in range(n)]).reshape(-1)
+
+    if metric == "MDS":
+        reducer = MDS(n_components=2, verbose=True)
+    elif metric == "tSNE":
+        reducer = TSNE(n_components=2)
+    else:
+        assert False, "无效的metric"
+    merge_transformed = reducer.fit_transform(merge)
+
+    support = merge_transformed[:support_size]
+    query = merge_transformed[support_size:] if proto_size==0 else merge_transformed[support_size:-proto_size]
+    if proto_size != 0:
+        proto = merge_transformed[-proto_size:]
+
+    support_center = support.reshape((n, k, -1)).mean(axis=1)
+    support_center = support_center.reshape((n, -1))
+
+    if proto_size == 0:
+        return support, query, support_center
+    else:
+        return support, query, support_center,proto
 
 def validate(model, loss, classes, seed=0):
     model.eval()
@@ -65,7 +111,7 @@ def validate(model, loss, classes, seed=0):
 
             # test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
             test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-            test_relations = net(supports, tests)
+            test_relations = net(supports.view(n,k,1,256,256), tests.view(n*qk,1,256,256))
 
             test_loss += loss(test_relations, test_labels).item()
             test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
@@ -74,9 +120,10 @@ def validate(model, loss, classes, seed=0):
         return test_acc/VALIDATE_EPISODE,test_loss/VALIDATE_EPISODE
 
 
-dataset = FewShotRNDataset(VALIDATE_PATH, N)
+dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes)
 
-net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=5)
+# net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Proto',block_num=5)
+net = ProtoNet()
 net.load_state_dict(t.load(MODEL_LOAD_PATH))
 net = net.cuda()
 
@@ -98,15 +145,18 @@ query_labels = query_labels.cuda()
 sample_labels = sample_labels.cpu().numpy()[::k]
 query_labels = query_labels.cpu().numpy()
 
-samples_trans,queries_trans,center_trans = net.proto_embed_reduction(samples,queries, metric="tSNE")
+samples,queries = net(samples.view(n,k,1,256,256), queries.view(n*qk,1,256,256), save_embed=True, save_proto=False)
+
+samples_trans,queries_trans,center_trans = proto_embed_reduction(samples,queries,metric="MDS")
 
 acc,_loss = validate(net, nn.NLLLoss().cuda(), sample_classes, seed)
 
 colors = ["red","blue","orange","green","purple"]
-plt.title("Variance not in loss\nAcc = %.4f"%acc)
+plt.title("Acc = %.4f"%acc)
 plt.axis("off")
 for i in range(n):
     plt.scatter([center_trans[i][0]], center_trans[i][1], marker="x", color=colors[i])
+    # plt.scatter([proto[i][0]], proto[i][1], marker="*", color=colors[i])
     plt.scatter([x[0] for x in samples_trans[i*k:(i+1)*k]],[x[1] for x in samples_trans[i*k:(i+1)*k]],
              marker="o", color=colors[i])
     plt.scatter([x[0] for j,x in enumerate(queries_trans) if query_labels[j]==sample_labels[i]],

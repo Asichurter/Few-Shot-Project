@@ -19,4 +19,8 @@
     式。对卷积的权重使用
     kaiming初始化，对线性层的权重使用xavier初始化，对所有的bias选择填充0初始化
     
-3. 使用Adam优化，但是学习率衰减改为20000轮变为原来的0.1
+3. 使用Adam优化，但是学习率衰减改为15000轮变为原来的0.1
+
+4. Encoder的Conv的通道数改为1->32->64->128->256，且使用LeakyReLU，池化使用重叠池化
+
+5. 只使用InstanceAttention，没有使用FeatureAttention

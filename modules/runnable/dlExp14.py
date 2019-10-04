@@ -21,7 +21,7 @@ N = 20
 class_contents_num = 5
 
 folder = 'cluster'
-version = 38
+version = 40
 
 MODEL_PATH = "D:/peimages/New/%s/models/"%folder+"ProtoNet_best_acc_model_5shot_5way_v%d.0.h5"%version
 DATA_PATH = "D:/peimages/New/%s/test.npy"%folder

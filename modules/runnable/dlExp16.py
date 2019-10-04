@@ -1,6 +1,7 @@
 # 测试HybridAttention
 
 import torch as t
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.optim import Adam
@@ -18,8 +19,8 @@ from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 folder = 'cluster'
-TRAIN_PATH = "D:/peimages/New/%s/train.t" % folder
-TEST_PATH = "D:/peimages/New/%s/validate.t"%folder
+TRAIN_PATH = "D:/peimages/New/%s/train.npy" % folder
+TEST_PATH = "D:/peimages/New/%s/validate.npy"%folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 
@@ -36,7 +37,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 1
+version = 2
 TEST_CYCLE = 100
 MAX_ITER = 60000
 TEST_EPISODE = 100
@@ -78,14 +79,15 @@ print('params:', num_of_params)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
-scheduler = StepLR(opt, step_size=20000 , gamma=0.1)
-nll = CrossEntropyLoss().cuda()
-# nll = NLLLoss().cuda()
+scheduler = StepLR(opt, step_size=15000 , gamma=0.1)
+# nll = CrossEntropyLoss().cuda()
+nll = nn.NLLLoss().cuda()
 
 train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()
 train_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss_train.npy"%version).tolist()
 test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%version).tolist()
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
+time_consuming = []
 
 best_acc = 0.
 previous_stamp = time.time()
@@ -95,7 +97,8 @@ grads = {}
 
 def save_grad(name):
     def hook(grad):
-        grads[name] = t.norm(grad.detach()).item()
+        g = t.norm(grad.detach()).item()
+        grads[name] = g
         return grad
     return hook
 
@@ -108,7 +111,7 @@ def register_hooks():
     }
     template = "handlers.append(%s.register_hook(save_grad('%s')))"
     for hook,name in hooks.items():
-        print(template%(hook,name))
+        # print(template%(hook,name))
         exec(template%(hook,name))
     return handlers
 
@@ -150,7 +153,7 @@ for episode in range(MAX_ITER):
 
     labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
 
-    outs = net(samples, queries)
+    outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), queries.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
     loss = nll(outs, labels)
     loss.backward()
@@ -178,10 +181,11 @@ for episode in range(MAX_ITER):
         t.save(net.state_dict(),
                MODEL_SAVE_PATH + "HybridAttentionNet_%d_epoch_model_%dshot_%dway_v%d.0.h5" % (episode + 1, k, n, version))
 
+
     plot_grad_x = np.array([1]) * episode
     plot_encoder_grad = np.array([grads['encoder']])
     plot_feature_grad = np.array([grads['feature_attention']])
-    plot_instance_grad = np.array([grads['instance_attention']])
+    # plot_instance_grad = np.array([grads['instance_attention']])
     encoder_line = vis.line(X=plot_grad_x,
                             Y=plot_encoder_grad,
                             win="encoder_grad",
@@ -200,15 +204,15 @@ for episode in range(MAX_ITER):
                                 ylabel="Gradient Norm"
                             ),
                             update=None if episode%FRESH_CYCLE==0 else "append")
-    instance_line = vis.line(X=plot_grad_x,
-                             Y=plot_instance_grad,
-                             win="instance_attention_grad",
-                             opts=dict(
-                                 title="Instance Attention Gradient Norm",
-                                 xlabel="Iterations",
-                                 ylabel="Gradient Norm"
-                             ),
-                             update=None if episode%FRESH_CYCLE==0 else "append")
+    # instance_line = vis.line(X=plot_grad_x,
+    #                          Y=plot_instance_grad,
+    #                          win="instance_attention_grad",
+    #                          opts=dict(
+    #                              title="Instance Attention Gradient Norm",
+    #                              xlabel="Iterations",
+    #                              ylabel="Gradient Norm"
+    #                          ),
+    #                          update=None if episode%FRESH_CYCLE==0 else "append")
 
     if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")
@@ -238,7 +242,7 @@ for episode in range(MAX_ITER):
                 test_labels = test_labels.cuda()
 
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-                test_relations = net(supports, tests)
+                test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
                 val_loss = nll(test_relations, test_labels)
 
@@ -253,6 +257,7 @@ for episode in range(MAX_ITER):
             current_train_loss = np.mean(train_loss_his[-1*current_length:])
 
             plot_x = np.ones((1,2))*episode
+            plot_time_x = np.array([1])*episode
             plot_acc = np.array([current_train_acc, test_acc/TEST_EPISODE]).reshape((1,2))
             plot_loss = np.array([current_train_loss, test_loss/TEST_EPISODE]).reshape((1,2))
             acc_line = vis.line(X=plot_x,
@@ -275,6 +280,19 @@ for episode in range(MAX_ITER):
                                     ylabel="Loss"
                                 ),
                                 update=None if episode==0 else "append")
+            now_stamp = time.time()
+            time_consuming.append(now_stamp - previous_stamp)
+            plot_time = np.array([time_consuming[-1]])
+            time_line = vis.line(X=plot_time_x,
+                                 Y=plot_time,
+                                 win="time",
+                                 opts=dict(
+                                     title="Time Consuming",
+                                     xlabel="Iterations",
+                                     ylabel="seconds"
+                                 ),
+                                 # update=None if episode == 0 else "append")
+                                 update=None if episode == 0 else "append")
 
             print("****************************************")
             print("train acc: ", current_train_acc)
@@ -306,7 +324,7 @@ test_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]
 train_acc_plot = np.array(train_acc_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
 train_loss_plot = np.array(train_loss_his).reshape(-1,TEST_CYCLE).mean(axis=1).reshape(-1).tolist()
 
-plt.title('%d-shot %d-way Prototypical Net Accuracy'%(k,n))
+plt.title('%d-shot %d-way HybridAttention Net Accuracy'%(k,n))
 plt.plot(train_x, train_acc_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_acc_his, linestyle='-', color='red', label='validate')
 plt.plot(train_x, [1/k]*len(train_x), linestyle='--', color="black", label="baseline")
@@ -315,7 +333,7 @@ plt.legend()
 plt.savefig(DOC_SAVE_PATH + '%d_acc.png'%version)
 plt.show()
 
-plt.title('%d-shot %d-way Prototypical Net Loss'%(k,n))
+plt.title('%d-shot %d-way HybridAttention Net Loss'%(k,n))
 plt.plot(train_x, train_loss_plot, linestyle='-', color='blue', label='train')
 plt.plot(test_x, test_loss_his, linestyle='-', color='red', label='validate')
 plt.grid(True, axis='y', color='black' ,linestyle='--')

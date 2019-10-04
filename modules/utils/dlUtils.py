@@ -5,7 +5,7 @@ import os
 import PIL.Image as Image
 import torchvision.transforms as T
 from sklearn.neighbors import KNeighborsClassifier as KNN
-from torch.nn.init import kaiming_normal_, xavier_normal_, constant_
+from torch.nn.init import kaiming_normal_, xavier_normal_, constant_, normal_
 
 def RN_labelize(support, query, k, n, type="float", expand=True):
     # support = torch.LongTensor([support[i].item() for i in range(0,len(support),k)])
@@ -69,8 +69,8 @@ def net_init(m):
                 except ValueError:
                     print(name)
             elif name.find('bias') != -1:
-                constant_(par, 0)
-
+                # constant_(par, 0)
+                normal_(par, 0, 0.01)
 
 def RN_baseline_KNN(supports, queries, support_labels, query_labels, k):
     '''

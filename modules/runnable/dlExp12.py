@@ -29,7 +29,7 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 38
+version = 42
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
@@ -54,7 +54,7 @@ margin = 1
 TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
-if_finetuning = False
+if_finetuning = True
 
 embed_size = 7
 hidden_size = 8
@@ -175,7 +175,7 @@ def validate(model, loss, classes, seed=None):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
 # net = ResProtoNet()
-net = ProtoNet(feature_in=64, feature_out=64)
+net = ProtoNet()
 # net = ProtoNet(k=k, n=n, qk=qk)
 # net = SiameseNet(input_size=input_size, k=k, n=n)
 states = t.load(MODEL_LOAD_PATH)

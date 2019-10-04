@@ -29,7 +29,7 @@ data_folder = "cluster"
 TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
 TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_relation_net_exp/"
 
 input_size = 256
 hidder_size = 8

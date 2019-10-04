@@ -4,6 +4,15 @@ import torch.nn.functional as F
 
 from modules.utils.dlUtils import RN_repeat_query_instance
 
+def normalize(tensors):
+    dim = len(tensors.size())-1
+    length = tensors.size(dim)
+    repeat_index = [1 for i in range(dim)]
+    repeat_index.append(length)
+    norm = tensors.norm(dim=dim).unsqueeze(dim=dim).repeat(repeat_index)
+
+    return tensors/norm
+
 def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
     return nn.Sequential(
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
@@ -12,13 +21,16 @@ def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
         nn.MaxPool2d(2)
     )
 
-def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1):
-    return nn.Sequential(
+def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinear=True):
+    layers = [
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
         nn.LeakyReLU(inplace=True),
         nn.MaxPool2d(3,2,1)
-    )
+    ]
+    if not nonlinear:
+        layers.pop(2)
+    return nn.Sequential(*layers)
 
 class SppPooling(nn.Module):
     def __init__(self, levels=[1,2,4]):
@@ -99,9 +111,9 @@ class ProtoNet(nn.Module):
         #     nn.ReLU(inplace=True),
         #     SppPooling(levels=[1,2])#nn.MaxPool2d(3)
         # )
-        # self.Transformer = nn.Linear(kwargs['feature_in'], kwargs['feature_out'])
+        self.Transformer = nn.Linear(256, 256, bias=False)
 
-    def forward(self, support, query, save_embed=False):
+    def forward(self, support, query, save_embed=False, save_proto=False):
         assert len(support.size()) == 5 and len(query.size()) == 4, \
             "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
         k = support.size(1)
@@ -171,10 +183,8 @@ class ProtoNet(nn.Module):
         # query = self.layer4(query).squeeze()
         query = self.Layers(query).squeeze()
 
-        # support = self.Transformer(support.view(self.n, self.k, -1))
-
-        if save_embed:
-            return support.view(n, k, -1),query.view(n, int(qk/n), -1)
+        support = self.Transformer(support.view(n, k, -1))
+        query = self.Transformer(query.view(qk,-1))
 
         # 计算类的原型向量
         # shape: [n, k, d]
@@ -182,8 +192,19 @@ class ProtoNet(nn.Module):
         d = support.size(2)
 
         # proto shape: [n, d]
-        # proto = proto_correct_attention(support)
-        proto = proto_mean(support)
+        proto = proto_correct_attention(support)
+        # proto = proto_mean(support)
+        # proto = proto_attention(support)
+
+        if save_embed:
+            if save_proto:
+                return support.view(n, k, -1),query.view(n, int(qk/n), -1),proto
+            else:
+                return support.view(n, k, -1),query.view(n, int(qk/n), -1)
+
+        # proto = normalize(proto)
+        # query = normalize(query)
+
         proto_norm = proto.detach().norm(dim=1).sum().item()
         self.ProtoNorm = proto_norm
         # self.forward_inner_var = ((support - proto.unsqueeze(dim=1).repeat(1,k,1)) ** 2).sum()
