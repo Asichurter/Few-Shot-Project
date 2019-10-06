@@ -137,18 +137,18 @@ class HAPNet(nn.Module):
         # 将qk，n与k均压缩到一个维度上以便输入到线性层中
         # query_expand shape:[qk,d]->[n*k,qk,d]->[qk,n,k,d]
         # support_expand shape: [n,k,d]->[qk,n,k,d]
-        # support_expand = support.repeat((qk,1,1,1)).view(qk*n*k,-1)
-        # query_expand = query.repeat((n*k,1,1)).transpose(0,1).contiguous().view(qk*n*k,-1)
+        support_expand = support.repeat((qk,1,1,1)).view(qk*n*k,-1)
+        query_expand = query.repeat((n*k,1,1)).transpose(0,1).contiguous().view(qk*n*k,-1)
 
         # 利用样例注意力注意力对齐支持集样本
         # shape: [qk,n,k,d]
-        # support = self.InstanceAttention(support_expand, query_expand, k, qk, n)
+        support = self.InstanceAttention(support_expand, query_expand, k, qk, n)
 
         # 生成对于每一个qk都不同的类原型向量
         # 注意力对齐以后，将同一类内部的加权的向量相加以后
         # proto shape: [qk,n,k,d]->[qk,n,d]
-        # support = support.sum(dim=2).squeeze()
-        support = support.mean(dim=1).repeat((qk,1,1)).view(qk,n,-1)
+        support = support.sum(dim=2).squeeze()
+        # support = support.mean(dim=1).repeat((qk,1,1)).view(qk,n,-1)
 
         # query shape: [qk,d]->[qk,n,d]
         query = query.unsqueeze(dim=1).repeat(1,n,1)

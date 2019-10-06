@@ -22,14 +22,12 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "test"
+data_folder = "cluster"
 
-# TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
-# TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
-TRAIN_PATH = "D:/peimages/New/%s/train.t" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.t"%data_folder
+TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
+TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ResidualNet_5shot_5way_exp/"
 
 input_size = 256
 hidder_size = 8
@@ -45,7 +43,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 28
+version = 29
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -59,8 +57,8 @@ outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = 300#len(os.listdir(TRAIN_PATH))
-test_classes = 57#len(os.listdir(TEST_PATH))
+train_classes = 100#len(os.listdir(TRAIN_PATH))
+test_classes = 58#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -74,10 +72,10 @@ loss_names = ["train loss", "validate loss"]
 
 # train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
 # test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
-train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=300, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=57, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
-net = ResidualNet(CROP_SIZE,n,k,qk,block_num=6)
+net = ResidualNet(CROP_SIZE)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
 net = net.cuda()
 

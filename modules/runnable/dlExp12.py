@@ -12,6 +12,7 @@ from torch.autograd import no_grad
 import time
 
 from modules.model.PrototypicalNet import ProtoNet
+from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
@@ -29,23 +30,32 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 42
+version = 45
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster'
-VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
-# VALIDATE_PATH = "D:/peimages/New/test/test/"
+folder = 'cluster_2'
+VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%'cluster'
+mode = 'best_acc'
+if_finetuning = True
+
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
-MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_best_acc_model_%dshot_%dway_v%d.0.h5"%(type,k,n,version)
+MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
 # MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n, version)
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
 # MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v27.0.h5"
+
+def freeze_weight_func(net):
+    for name,par in net.named_parameters():
+        if name.find('ProtoNet') == -1:
+            par.requires_grad_(False)
+        else:
+            par.requires_grad_(True)
 
 inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
@@ -54,7 +64,7 @@ margin = 1
 TEST_EPISODE = 600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
-if_finetuning = True
+
 
 embed_size = 7
 hidden_size = 8
@@ -62,7 +72,7 @@ hidden_size = 8
 test_classes = 50#len(os.listdir(VALIDATE_PATH))
 TEST_CLASSES = [i for i in range(test_classes)]
 
-dataset = FewShotFileDataset(VALIDATE_PATH, N, 50, rd_crop_size=224, rotate=False)
+dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=224, rotate=False)
 # dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 
 acc_hist = []
@@ -175,6 +185,7 @@ def validate(model, loss, classes, seed=None):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
 # net = ResProtoNet()
+# net = ChannelNet(k=k)
 net = ProtoNet()
 # net = ProtoNet(k=k, n=n, qk=qk)
 # net = SiameseNet(input_size=input_size, k=k, n=n)
@@ -182,11 +193,15 @@ states = t.load(MODEL_LOAD_PATH)
 net.load_state_dict(states)
 net = net.cuda()
 
+# ---------------------------
+# 冻结网络中部分权重
+# freeze_weight_func(net)
+# ---------------------------
+
 # opt = Adam(net.parameters(), lr=lr)
 opt = SGD(net.parameters(), lr=lr)
 entro = nn.NLLLoss().cuda()
 # entro = nn.MSELoss().cuda()
-# entro = nn.CrossEntropyLoss().cuda()
 
 # net.Layer1.requires_grad_(False)
 # net.Layer2.requires_grad_(False)
@@ -255,15 +270,16 @@ for episode in range(TEST_EPISODE):
             # fine-tuning
             net.train()
             net.zero_grad()
-            outs = net(samples, samples)
+            outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), samples.view(n*k,1,CROP_SIZE,CROP_SIZE))
 
             # loss = entro(outs, labels)
-            inner_var_loss = inner_var_alpha * net.forward_inner_var
-            outer_var_loss = -outer_var_alpha * net.forward_outer_var
+            # inner_var_loss = inner_var_alpha * net.forward_inner_var
+            # outer_var_loss = -outer_var_alpha * net.forward_outer_var
 
-            loss  = margin + inner_var_loss + outer_var_loss
+            # loss  = margin + inner_var_loss + outer_var_loss
+            f_loss = entro(outs, labels)
 
-            loss.backward()
+            f_loss.backward()
 
             opt.step()
 

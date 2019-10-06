@@ -185,7 +185,7 @@ for episode in range(MAX_ITER):
     plot_grad_x = np.array([1]) * episode
     plot_encoder_grad = np.array([grads['encoder']])
     plot_feature_grad = np.array([grads['feature_attention']])
-    # plot_instance_grad = np.array([grads['instance_attention']])
+    plot_instance_grad = np.array([grads['instance_attention']])
     encoder_line = vis.line(X=plot_grad_x,
                             Y=plot_encoder_grad,
                             win="encoder_grad",
@@ -204,15 +204,15 @@ for episode in range(MAX_ITER):
                                 ylabel="Gradient Norm"
                             ),
                             update=None if episode%FRESH_CYCLE==0 else "append")
-    # instance_line = vis.line(X=plot_grad_x,
-    #                          Y=plot_instance_grad,
-    #                          win="instance_attention_grad",
-    #                          opts=dict(
-    #                              title="Instance Attention Gradient Norm",
-    #                              xlabel="Iterations",
-    #                              ylabel="Gradient Norm"
-    #                          ),
-    #                          update=None if episode%FRESH_CYCLE==0 else "append")
+    instance_line = vis.line(X=plot_grad_x,
+                             Y=plot_instance_grad,
+                             win="instance_attention_grad",
+                             opts=dict(
+                                 title="Instance Attention Gradient Norm",
+                                 xlabel="Iterations",
+                                 ylabel="Gradient Norm"
+                             ),
+                             update=None if episode%FRESH_CYCLE==0 else "append")
 
     if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")

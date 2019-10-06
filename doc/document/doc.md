@@ -27,10 +27,7 @@
 
 #### 1.1.1 提取特征方法
 
-提取特征的方法参考了 [Transfer Learning for Image-Based Malware Classification",
-Bhodia et.al(2019)](Transfer learning for image-based malware classification.pdf), 使用GitHub上的[PeFile模块](https://github.com/erocarrera/pefile)。
-其主要提取的是PE文件的**代码特征**，例如头文件大小SizeOfHeads，代码大小SizeOfCode，
-SectionMeanEntropy模块平均熵等，总共54个特征作为分类时每个PE文件的特征向量。
+提取特征的方法参考了 [Bhodia et.al(2019)](papers/Transfer learning for image-based malware classification.pdf), 使用GitHub上的[PeFile模块](https://github.com/erocarrera/pefile)。其主要提取的是PE文件的**代码特征**，例如头文件大小SizeOfHeads，代码大小SizeOfCode，SectionMeanEntropy模块平均熵等，总共54个特征作为分类时每个PE文件的特征向量。
 
 通过观察，这些特征各个维度上的数据差距实质上较大。查看其中一个样本提取到的特征的值：
 
@@ -351,7 +348,7 @@ trojan.Zlob：
 ### 1.2 使用深度学习方法
 
 深度学习方法主要是将数据向量化后输入到深度神经网络中得到预测的输出值。本实验中将PE文件
-转换为灰度图像的方法参考自 [Natara et.al(2011)](Malware%20Image%20Visualization%20and%20Automatic%20Classification.pdf)
+转换为灰度图像的方法参考自 [Natara et.al(2011)](papers/Malware%20Image%20Visualization%20and%20Automatic%20Classification.pdf)
 。但是该论文中的将PE文件转换为灰度图像的方法是：对于不同长度PE文件应用不同的固定宽度，
 图像的长度是可变的。文件大小与宽度的关系如下：
 
@@ -369,18 +366,18 @@ trojan.Zlob：
 该论文中使用了GIST特征对图像进行小波分解以提取图像的纹理特征，然后将提取的特征输入到欧式
 距离的kNN进行分类。参考这种方法，后续有很多实验围绕恶意代码图像进行：
 
-[Gibert et al.(2016)](Convolutional%20Neural%20Networks%20for%20Malware%20Classification.pdf)
+[Gibert et al.(2016)](papers/Convolutional%20Neural%20Networks%20for%20Malware%20Classification.pdf)
 使用简单的卷积神经网络进行分类和识别。不仅使用了图像，还使用了微软数据集中提供的反汇编代码
 提取Opcode操作码进行分类。
 
-[Kim et al.(2018)](Image-Based%20Malware%20Classification%20Using.pdf)
+[Kim et al.(2018)](papers/Image-Based%20Malware%20Classification%20Using.pdf)
 同样使用的是Conv+FC的经典组合。
 
-[Kalash et al.(2018)](Malware%20Classification%20with%20Deep%20CNN.pdf)
+[Kalash et al.(2018)](papers/Malware%20Classification%20with%20Deep%20CNN.pdf)
 基于VGG-16搭建深度卷积网络+softmax分类器进行分类，同时还改用SVM对GIST特征进行分类
 来搭建基线。
 
-[Choi et al.(2017)](Malware%20Detection%20using%20Malware%20Image%20and%20Deep%20Learning.pdf)
+[Choi et al.(2017)](papers/Malware%20Detection%20using%20Malware%20Image%20and%20Deep%20Learning.pdf)
 使用相似的方式转换图像后，输入到Conv+FC中进行分类。与之前不同的是，论文作者采用固定的256x256
 的图像尺寸，该尺寸下的代码大小为固定的64KB。对于大于64KB的文件，之后的部分直接丢弃；对于小于
 64KB的图像，将会填充0。文章中作者为了减小显存消耗，还将图片通过下采样将尺寸调整为32x32。
@@ -388,7 +385,7 @@ trojan.Zlob：
 #### 1.2.1 使用ResNet进行恶意代码检测
 
 根据论文[Transfer Learning for Image-Based Malware Classification",
-Bhodia et al.(2019)](Transfer learning for image-based malware classification.pdf)
+Bhodia et al.(2019)](papers/Transfer learning for image-based malware classification.pdf)
 中的描述，他们使用了ResNet34作为恶意代码检测的模型架构。该论文中使用的恶意代码数据集是Malimg
 和Malicia两个，而训练使用的良性数据集提取了3304个Windows文件。该论文中的网络是经过ImageNet
 数据集预训练的，同时使用了多种技术，如余弦退火cosine annealing，带重启的梯度下降gradient descent
@@ -430,7 +427,7 @@ with restart，学习率搜索等。同时使用fast.ai进行实现。该论文�
 这种方法能够得到同一尺寸的图像，通过观察可以看到同一个类中的一些图像确实具有相似的纹理和可视特征，
 例如:
 
-![](example.png)
+![](pictures/example.png)
 
 但是相应的，由于scale会使得图像细节变得模糊，甚至失真，因此即使是某些同类图像也难以直接识别
 其是否具有相似的特征。
@@ -460,7 +457,7 @@ ProgramFiles的数据集。训练时，按照之前的设定，每一个恶意�
 
 相同的设定，不同的是训练数据中不包含某些大类的数据，然后测试中的恶意代码是来自这些缺少的大类
 以此来模拟0-shot的情景：ResNet是否能在没有见过某些数据的情况下对其进行准确分类，是否能提取
-到具有良好泛化性的特征。同时，这种测试情景模拟了[Bhodia et.al(2019)](Transfer%20learning%20for%20image-based%20malware%20classification.pdf)
+到具有良好泛化性的特征。同时，这种测试情景模拟了[Bhodia et.al(2019)](papers/Transfer%20learning%20for%20image-based%20malware%20classification.pdf)
 中zero-day的实验设定。
 
 测试结果如下：
@@ -663,7 +660,7 @@ def extract_class_name(name):
 
 #### 2.2.3 对恶意代码图像识别的一些思考
 
-1. 相比于[Gibert(2016)](Convolutional%20Neural%20Networks%20for%20Malware%20Classification.pdf)
+1. 相比于[Gibert(2016)](papers/Convolutional%20Neural%20Networks%20for%20Malware%20Classification.pdf)
 中提到的将反汇编的操作码提取n-gram序列建模方法，将恶意代码转换为灰度图像能够从图像中抽取
 固定长度的特征，输入到深度卷积网络中的识别速度比前者**快得多**，而且能够很大程度上减小
 内存和显存的消耗
@@ -683,8 +680,8 @@ def extract_class_name(name):
 
 一般来说，如果学习任务是n分类问题，则称为n-way；如果每个类别只有k个样本，则称为k-shot。
 
-从[Wang et.al(2019)](Few-shot%20Learning—%20A%20Survey.pdf)的综述和
-[Chen,Liu et.al(2019)](A%20Closer%20Look%20At%20Few-Shot%20Classification.pdf)
+从[Wang et.al(2019)](papers/Few-shot%20Learning—%20A%20Survey.pdf)的综述和
+[Chen,Liu et.al(2019)](papers/A%20Closer%20Look%20At%20Few-Shot%20Classification.pdf)
 的Related Work部分都能够了解到小样本学习的基本方法和途径。大部分文献中都将小样本学习划分
 为4个子类。
 
@@ -692,7 +689,7 @@ def extract_class_name(name):
 
 该方法意图学习模型参数的一个较好的初始值，从而模型能在仅使用少量数据的情况下就能迅速泛化到对应的任务上。
 
-对应的论文有[Finn et.al(2017)](5.ICML-2017%20Model-Agnostic%20Meta-Learning%20for%20Fast%20Adaption%20of%20Deep%20Networks.pdf)等。该文章提出了一种基于梯度下降的元学习（meta-learning）的框架MAML，该框架在任何模型下均可以使用：在每一次训练中采集
+对应的论文有[Finn et.al(2017)](papers/5.ICML-2017%20Model-Agnostic%20Meta-Learning%20for%20Fast%20Adaption%20of%20Deep%20Networks.pdf)等。该文章提出了一种基于梯度下降的元学习（meta-learning）的框架MAML，该框架在任何模型下均可以使用：在每一次训练中采集
 一批量的任务$T_i$，模型参数、
 $\theta$基于$T_i$中的数据进行一次或者多次梯度下降得到更新后的参数$\theta'$，然后再
 在任务$T_i$上根据更新后的参数$\theta'$计算出损失值，利用该损失值更新更新原参数值
@@ -715,7 +712,7 @@ $\theta\gets\theta-\beta\nabla_\theta\sum_{T_i\sim p(T)}L_{T_i}(f_{\theta'})$
 输入到网络中根据对应的标签获得损失值来训练网络；有的算法通过在不同的任务（Task）上的训练从而
 让模型天生拥有在不同的任务上泛化的能力，该模型能够直接在不重新训练的情况下用在没有见过的任务中；
 还有的算法将两者结合在一起：模型先在不同的任务上训练以获得在任务间的泛化能力（cross-task），
-然后利用任务相关（task-specific）信息将模型迅速泛化到相关的任务上。[Wang et.al(2019)](Few-shot%20Learning—%20A%20Survey.pdf)
+然后利用任务相关（task-specific）信息将模型迅速泛化到相关的任务上。[Wang et.al(2019)](papers/Few-shot%20Learning—%20A%20Survey.pdf)
 在4.2节详细讨论了这三者。
 
 第一个的设定类似于度量学习（metric learning）中的训练策略。度量学习的目的是通过样本让模型学会
@@ -728,7 +725,7 @@ $L = \max ({d(x_i,y_i)-d(x_i,z_i)+margin, 0})$
 
 其中，$d(·,·)$ 是距离函数。该损失函数将会以pair的形式将相似的样本距离缩小，将不相似的样本的
 距离增大从而达到分隔的任务，使用的几乎都是NCA(Neignborhood Component Analysis)j作为分类
-器。具体参见两篇相关的论文: [Movshovitz-Attias et al.(2017)](No%20Fuss%20Distance%20Metric%20Learning%20using%20Proxies.pdf)和[Weinberger et al.](distance-metric-learning-for-large-margin-nearest-neighbor-classification.pdf)
+器。具体参见两篇相关的论文: [Movshovitz-Attias et al.(2017)](papers/No%20Fuss%20Distance%20Metric%20Learning%20using%20Proxies.pdf)和[Weinberger et al.](papers/distance-metric-learning-for-large-margin-nearest-neighbor-classification.pdf)
 
 在实验中，使用的最多的设定是第三种设定，**即现在任务间训练以获得较好的泛化能力，然后利用任务具体信息使得模型在具体任务上能够快速适应**。
 一般来说，将模型适应到具体任务的方式有两种：一种是利用
@@ -751,7 +748,7 @@ to specific task)；一个称为meta learner元学习器，其负责学习如何
 
 元学习方法一般是基于算法进行优化，即利用meta learner来改进优化过程。因为meta learner用于
 指导base learner进行学习，因此本质上meta learner学习的就是优化的算法。典型的有：
-[Ravi et al.(2017)](6.ICLR-2017%20Optimization%20as%20a%20model%20for%20few-shot%20learning.pdf)，[Munkhdala,Yu(2017)](7.ICML-2017%20Meta%20networks.pdf) 和 [Li,Zhou et al.(2017)](Meta-SGD.pdf)。前者从梯度下降的公式中
+[Ravi et al.(2017)](papers/6.ICLR-2017%20Optimization%20as%20a%20model%20for%20few-shot%20learning.pdf)，[Munkhdala,Yu(2017)](papers/7.ICML-2017%20Meta%20networks.pdf) 和 [Li,Zhou et al.(2017)](papers/Meta-SGD.pdf)。前者从梯度下降的公式中
 得到启发，认为LSTM的cell输出公式与梯度下降的更新公式可以进行对应，具体的：
 
 梯度下降： $\theta' = \theta - \alpha \nabla_\theta L(\theta)$
@@ -782,7 +779,7 @@ learning的。
 模型，也没有将该类模型作为基线。
 
 对应的论文有：
-[Chen,Fu et al.(2018)](17.ECCV-2018%20Semantic%20Feature%20Augmentation%20in%20Few-shot%20Learning.pdf)   和	[Wang,Girshick et al.(2018)](20.CVPR-2018%20Low-Shot%20Learning%20from%20Imaginary%20Data.pdf)
+[Chen,Fu et al.(2018)](papers/17.ECCV-2018%20Semantic%20Feature%20Augmentation%20in%20Few-shot%20Learning.pdf)   和	[Wang,Girshick et al.(2018)](papers/20.CVPR-2018%20Low-Shot%20Learning%20from%20Imaginary%20Data.pdf)
 
 
 
@@ -799,13 +796,13 @@ learning的。
 
 
 
-#### 2.4.1 Siamese Network [Koch et al.(2015)](10.ICML-2015%20Siamese%20Neural%20Networks%20for%20One-shot%20Image%20Recognition.pdf)
+#### 2.4.1 Siamese Network [Koch et al.(2015)](papers/10.ICML-2015%20Siamese%20Neural%20Networks%20for%20One-shot%20Image%20Recognition.pdf)
 本文提出了Siamese Network用于手写字符的小样本学习。该论文中利用
 孪生的若干堆叠的卷积+非线性变换+池化组合来将图像嵌入，然后将特征矩阵展开为特征向量，
 直接将同时输入的两个经过嵌入的样本特征向量求**加权L1距离**输入到FC层中，最后经过sigmoid输
 出一个概率值来指示两个样本是否属于同类。
 
-![siamese](siamese_architecture.PNG)
+![](pictures/siamese_architecture.PNG)
 
 CNN结构中，随着尺寸逐渐减小，通道数逐渐增多，而且卷积核尺寸大小不一，均使用2x2最大池化和ReLU。
 这是后来的metric based方法的基础，后续的大部分模型大致延续这种结构。同时，两个作比较的样本输入到网络
@@ -823,7 +820,7 @@ CNN结构中，随着尺寸逐渐减小，通道数逐渐增多，而且卷积�
 
 
 
-#### 2.4.2 Matching Net [Vinyals et al.(2017)](4.NIPS-2016%20Matching%20Networks%20for%20One%20Shot%20Learning.pdf)
+#### 2.4.2 Matching Net [Vinyals et al.(2017)](papers/4.NIPS-2016%20Matching%20Networks%20for%20One%20Shot%20Learning.pdf)
 
 
 这篇论文晚于Siamese Network，具体地提出了一些few-shot的设定。MN先对支持集support set
@@ -869,13 +866,13 @@ $f(\hat{x},S)=attLSTM(f'(\hat{x}),g(S), K)$
 
 
 
-#### 2.4.3 Prototype Network [Snell et al.(2017)](8.NIPS-2017%20Prototypical%20Networks%20for%20Few-shot%20Learning.pdf)
+#### 2.4.3 Prototype Network [Snell et al.(2017)](papers/8.NIPS-2017%20Prototypical%20Networks%20for%20Few-shot%20Learning.pdf)
 
 Prototype原型网络遵循了元学习（meta learning）的一个基础设定：不在一个特定的任务上进行学习，而是在任务间进行学习从而让模型能够学习如何适应不同的任务，因此原型网络也大致遵循Matching Network中的大部分设定，例如在每一个episode中采样得到N个类别，又从N个类别中分别抽取K个样本组成一个N-way K-shot任务的episode-based training；整个模型M作为一个分类器的映射器，提供一个特定的支持集就能生成一个该支持集对应的分类器，不同的支持集生成不同的分类器；分类时使用的是基于距离metric的softmax分类器，分类是在嵌入空间embbeding space上进行的等等。
 
 文中提出，在给定支持集时，良好的嵌入能够在嵌入空间中把支持集样本进行聚类，可以利用这个聚类中心来进行分类任务。作者提出，在使用**基于Bregman距离的距离函数**时，**均值向量是最好的类向量**，同时配合**平方欧式距离**作为距离函数能够达到最好的效果。
 
-![](pic4.png)
+![](pictures/pic4.png)
 
 模型十分简单：支持集样本和查询集样本都使用相同的嵌入函数嵌入到嵌入空间中，然后计算支持集每个类的类均值向量作为其类的原型向量(prototype)，查询集样本的嵌入利用距离函数分别计算与每个类原型的距离，将距离负值输入到softmax中得到后验概率。算法的前半部分是在计算类原型，后半部分与NCA分类几乎相同。
 
@@ -896,13 +893,13 @@ Prototype原型网络遵循了元学习（meta learning）的一个基础设定�
 
 
 
-#### 2.4.4 Relation NetWork  [Sung,Yang et al.(2018)](9.CVPR-2018%20Learning%20to%20compare%20Relation%20network%20for%20fewshot%20learning.pdf)
+#### 2.4.4 Relation NetWork  [Sung,Yang et al.(2018)](papers/9.CVPR-2018%20Learning%20to%20compare%20Relation%20network%20for%20fewshot%20learning.pdf)
 
 与之前三种网络的结构相似，都是embedding+metric的组合，不同的是利用了CNN+FC的组合作为一个动态可学习的Relation Module来取代原先固定的metric。
 
 相比于PrototypeNet和MatchingNet，RelationNet与SiameseNet更加接近：前两者是将支持集输入到模型中生成一个用于特定任务的分类器，整个支持集的样本都将被用于分类任务中；而后两者更加强调的是利用固定的模型来计算两个单独的样本的相似度，因此只需要提供一个支持集样本而不是整个支持集就能够形成一个分类器，该分类器属于两分类分类器，只负责判定两个样本的相似度。
 
-![](pic5.png)
+![](pictures/pic5.png)
 
 正因为以上原因，该论文的作者指出RelationNet相比于分类模型更像**回归模型**，因此模型的训练使用的是MSE均方误差损失，而不是分类器常用的负对数损失（交叉熵）。
 
@@ -920,7 +917,7 @@ Prototype原型网络遵循了元学习（meta learning）的一个基础设定�
 
 
 
-#### 2.4.5 Induction Network  [Geng,Li et al.(2019)](Induction%20Net.pdf)
+#### 2.4.5 Induction Network  [Geng,Li et al.(2019)](papers/Induction%20Net.pdf)
 
 这篇文章来自于阿里巴巴团队，文章主要解决的是文本的小样本分类问题。文章中提出的InductionNet可以视为将多种模型的特点融合在了一起：由Encoder，Induction和Relation部分。其中Encoder类似PrototypeNet等之中的Conv4结构，用于将样本嵌入到Embedding空间中，由于文中是应用在文本分类任务上的，因此Encoder使用的带自注意力机制(self-attention)的双向LSTM：
 
@@ -928,7 +925,7 @@ $a=softmax(W_{a2} tanh(W_{a1}H^T))$   用于计算注意力系数
 
 $e = \sum_{t=1}^Ta_t ·h_t$   使用自注意力得到语义向量。
 
-**Induction Module用于将支持集中一个类中的K个样本归纳成为一个具有代表性的类向量，而不是单纯地求K个向量的平均向量**。其使用的方法仿照了[Sabour et al.(2017)](capsule%20network.pdf)中的动态路由方法(dynamic routing)，根据样本的特征进行迭代的动态地选择路由强度并利用该强度来线性地从K个样本中来生成类向量，其步骤如下：
+**Induction Module用于将支持集中一个类中的K个样本归纳成为一个具有代表性的类向量，而不是单纯地求K个向量的平均向量**。其使用的方法仿照了[Sabour et al.(2017)](papers/capsule%20network.pdf)中的动态路由方法(dynamic routing)，根据样本的特征进行迭代的动态地选择路由强度并利用该强度来线性地从K个样本中来生成类向量，其步骤如下：
 
 1. 初始化耦合系数$b_i=0, b_i \in R^{d\times k}$，
 2. 将耦合系数输入到softmax中生成加权系数: $d_i = softmax(b_i)$
@@ -941,7 +938,7 @@ $e = \sum_{t=1}^Ta_t ·h_t$   使用自注意力得到语义向量。
 
 以上就是Induction Module的主要步骤。仔细观察可以发现，由于初始化耦合系数的值为0，因此所有向量在第一次迭代时耦合系数产生的权重在k个样本上相同，**即第一次routing时生成的类向量c为均值向量**，同时迭代过程中使用点积的大小来更新耦合系数。可证明，同一个类原型向量，对于不同的类向量，他们之间的平方欧式距离的大小只取决于两者点积和类向量的模长。**如果将类向量标准化使之模长为定值（例如1），则点积等价于平方欧式距离**，因此可以认为**动态路由方法实质上是以均值向量距离为键的注意力机制的变种（见xxxx）**，两者有许多相似的地方。
 
-![](pic6.png)
+![](pictures/pic6.png)
 
 除此之外，InductionNet中的Relation Module使用了专门用于度量关系的neural tensor layer [Socher et al., 2013]，整个模型使用**MSE均方误差损失**端到端进行训练，优化器没有选择Adam或者动量SGD，而是Adagrad。
 
@@ -951,7 +948,7 @@ $e = \sum_{t=1}^Ta_t ·h_t$   使用自注意力得到语义向量。
 
 
 
-#### 2.4.6 Imprinted Weights   [Qi,Brown et al.(2018)](Low-Shot%20Learning%20with%20Imprinted%20Weights.pdf)
+#### 2.4.6 Imprinted Weights   [Qi,Brown et al.(2018)](papers/Low-Shot%20Learning%20with%20Imprinted%20Weights.pdf)
 
 这篇论文的基本思路与前几篇也基本一样，且创新点较少。文章的基本想法是：Conv+fc的分类网络中，Conv的输出输入到fc中分类，因此Conv的输出实质上可以视为嵌入后的向量，这也是embedding的基本思想。因此作者认为，可以使用纯Conv的结构，然后将多个类的Conv输出向量按列组合成一个权重矩阵，该矩阵就效仿conv+fc结构中的fc层的权重，因此可以将多个类的样本嵌入后直接“映射”为权重矩阵的列向量。其实质上就是在利用conv结构从输入的支持集中找寻原型向量，再加上文中提到k>1时使用均值向量作为类别的权重列向量，所以实质上该网络就等同于PrototypeNet。
 
@@ -963,7 +960,7 @@ $\min d(x,p(x)) = \min \lVert x-p(x) \rVert^2 = \max x^Tp(x)$,    因为$\lVert 
 
 $P(y_i|x)=\cfrac{e^1}{e^1+(|C|-1)e^{-1}}$，这个值在$|C|=100$时会急剧下降到0.0069，与理想中的one-hot编码差距十分巨大，如下图所示。
 
-![](pic1.png)
+![](pictures/pic1.png)
 
 因此作者提出需要使用放大因子s来放大cosine距离的值，即：
 
@@ -973,7 +970,7 @@ $p_i(f(x)) = \cfrac{\exp(sw_i^Tf(x))}{\sum_c\exp(sw_c^Tf(x))}$
 
 作者提出，这个放大因子没必要动态选取，可以直接选取一个固定值。可以从下图看到，在s=5左右时，其最大概率值已经接近达到了1(N=5)：
 
-![](pic2.png)
+![](pictures/pic2.png)
 
 另外，本文中的模型的训练利用的优化器是带0.9动量的RMSProp，并且每4个epoch就将学习率改为原来的0.94。同时，作者提出，本模型在imprinting以后由于和原Conv模型保持相同的参数模型，因此支持fine-tuning来改善正确率。
 
@@ -983,7 +980,7 @@ $p_i(f(x)) = \cfrac{\exp(sw_i^Tf(x))}{\sum_c\exp(sw_c^Tf(x))}$
 
 
 
-#### 2.4.7 Dynamic Few-shot Learning Without Forgetting   [Gidaris,Komodakis(2018)](Dynamic%20Few-Shot%20Visual%20Learning%20without%20Forgetting.pdf)
+#### 2.4.7 Dynamic Few-shot Learning Without Forgetting   [Gidaris,Komodakis(2018)](papers/Dynamic%20Few-Shot%20Visual%20Learning%20without%20Forgetting.pdf)
 
 这篇文章与上一篇类似，都是将未见过的类的样本输入到模型中生成一个类向量，然后该列向量作为权重矩阵的一个新的列，使得分类时使用cosine相似度再输入到softmax中后可以在添加新类时也新增加一个新类概率，从而让模型“学会了识别新的类”。
 
@@ -997,7 +994,7 @@ $w'_{att} = \cfrac{1}{N'}\sum_{i=1}^{N'}\sum_{b=1}^{K_{base}}Att(\phi_q\bar{z_i'
 
 即利用嵌入后的$K_base$个类向量$\bar{z_i'}$在利用转换矩阵转换后分别与$N'$个权重向量的键$k_b$进行注意力对齐生成注意力系数，然后利用注意力系数加权其权重向量$\bar{w_b}$。其中$k_b$是可学习的键key。
 
-![](pic3.png)
+![](pictures/pic3.png)
 
 作者解释道，这样做是因为base classes中存许多与新类相似的对象，可以使用注意力机制来提取这些base classes中的知识。由于在新类到来时只需要利用以上步骤将新类的权重列向量加入到权重矩阵中，因此模型的其他类向量仍然存在于权重矩阵中，因此**新类的加入不会失去对原类识别的能力**。
 
@@ -1012,11 +1009,11 @@ $w'_{att} = \cfrac{1}{N'}\sum_{i=1}^{N'}\sum_{b=1}^{K_{base}}Att(\phi_q\bar{z_i'
 
 
 
-#### 2.4.8 Hybrid Attention Network  [Gao,Han et al.(2019)](Hybrid%20Attention-Based%20Prototypical%20Networks%20for%20Noist%20Few-Shot%20Relation%20Classification.pdf)
+#### 2.4.8 Hybrid Attention Network  [Gao,Han et al.(2019)](papers/Hybrid%20Attention-Based%20Prototypical%20Networks%20for%20Noist%20Few-Shot%20Relation%20Classification.pdf)
 
 这篇文章为metric based方法中两个关键设计决策：**如何从k个类向量归纳出类向量和如何度量向量距离** 提出了一种解决方案。首先，文中提到，从K个类向量提取出类向量时，如果存在噪声样本，则会使得直接取均值向量得到的原型向量出现很大偏差；其次，文章又指出在度量两个向量的距离时，例如使用平方欧式距离时，某些维度上的数据**可能存在过度稀疏或者不具有可分性等问题**而导致平等地看待这些维度会导致距离度量不够充分。因此，文中提出的feature-level attention用于强调更加重要的维度来计算距离，为不同的关系构建不同的距离函数；instance-level attention用于选择支持集中包含更多信息的样本来构建类向量。
 
-![](pic7.png)
+![](pictures/pic7.png)
 
 在Instance-level attention module中，文中提出了一个重要观点：**对于不同的查询样本query，应该为其生成不同的类向量，而不是为所有查询样本生成相同的类向量**。因此，在instance attention中需要加入query作为输入。文中以类向量和查询样本生成类向量的方式是：将支持集中的每个样本$s_i^j$都与查询集样本$x$在一个fc层$g$转换按元素相乘，经过tanh激活以后相加得到标准化前的注意力系数$e_j$，然后将e输入到softmax中得到注意力系数$\alpha$，具体如下：
 
@@ -1036,21 +1033,22 @@ $c_i = \sum_{j=1}^{n_i}\alpha_j x^j_i$    ——利用注意力系数生成类�
 
 #### 2.4.9 其他论文
 
-1. [Chen,Liu et al.(2019)](A%20Closer%20Look%20At%20Few-Shot%20Classification.pdf) 中对几种有代表性的metric-based方法进行了比较，同时提出了若干改进后的基线，还提出了一些重要结论，如：
+1. [Chen,Liu et al.(2019)](papers/A%20Closer%20Look%20At%20Few-Shot%20Classification.pdf) 中对几种有代表性的metric-based方法进行了比较，同时提出了若干改进后的基线，还提出了一些重要结论，如：
    - 减小类内差异(intra-class variation)对浅层模型十分重要，但对深层模型的影响会减弱
    - 最先进的方法之间的性能差异在模型深度加深时会逐渐减小
    - 数据集增强方法，如翻转（flip），随机裁剪(crop)，色彩都懂(color jittering)对正确率的保证十分关键
    - 如果base classes和novel classes之间的差距过大，会降低meta learning的性能，因此**如何使模型适应(adapt) novel classes十分关键**，例如固定住特征提取部分，只fine-tuning softmax分类器
    - meta-learning与meta-testing的设定一致是模型成功的关键
-2. [Wang, Yao(2019)](Few-shot%20Learning—%20A%20Survey.pdf) 是一篇百科全书式的小样本学习综述，里面总结了许多关键的小样本学习方法和概念
-3. [Keshari, Vatsa(2018)](11.CVPR-2018%20Learning%20Structure%20and%20Strength%20of%20CNN%20Filters%20for%20Small%20Sample%20Size%20Training.pdf)  提出了一种减少参数数量的方法，用于缓解因参数过多而样本过少带来的过拟合问题。论文中提出将卷积网络中的卷积核分为结构(stracture)和强度(strength)两个部分，前者是卷积核的形状和内部的值，后者是卷积的权重。文章中提出使用稀疏字典学习来逐层初始化网络中的卷积核，在小样本学习时，将样本输入后只更新卷积核的强度，而不更新卷积核的结构，从而大大减少了要更新的参数数量，缓解了过拟合。
-4. [Zhao et al.(2018)](Dynamic%20Conditional%20Networks(√).pdf)  也提出了一种只对卷积核进行强度训练而对卷积核结构不进行改变的思路。文章中将模型分为了两个部分：Dynamic Convolutional subNet和Conditional subNet。后者接收一个类标签或者ID，然后利用嵌入模型得到一个加权向量W，该向量用于动态地改变各个基础的卷积核的权重，配合经过CNN嵌入后的图像，再一次动态地进行卷积
-5. [Wang,Liu et al.(2017)](13.CVPR-2017%20Multi-attention%20Network%20for%20One%20Shot%20Learning.pdf)  提出了一种利用类标签生成多注意力机制的方法来进行小样本学习。作者指出，在小样本学习中，类标签作为信息的一部分一直没有被很好地利用起来。因此这篇文章中利用了类标签嵌入后生成一系列注意力探测器(attention detector)，然后利用注意力探测器作用在CNN嵌入后的图像的编码特征上生成多个注意力映射作用在图像的编码特征上生成对应图像的特征向量。这种方法虽然看似比较有吸引力，但是由于网络的参数过多，而且涉及到NLP和CV的同时处理，因此复杂度很高，不一定适合大部分任务。
-6.  注意力机制相应的论文
-   - [Fu, Zheng et al.(2018)](Look%20Closer%20to%20See%20Better%20Recurrent%20Attention%20Convolutional%20Neural%20Network%20for%20FineGrained%20Image%20Recognition.pdf)  APN
-   - [Wang,Jiang et al.(2017)](Residual%20Attention%20Network%20for%20Image%20Classification.pdf)  Residual Attention
-   - [Jaderberg et al.(2016)](Spatial%20Transformer%20Networks.pdf)  Spatial Transformer
-   - [Hu,Shen et al.(2019)](Squeeze-and-Excitation%20Networks.pdf) Squeeze and Excitation
+2. [Wang, Yao(2019)](papers/Few-shot%20Learning—%20A%20Survey.pdf) 是一篇百科全书式的小样本学习综述，里面总结了许多关键的小样本学习方法和概念
+3. [Keshari, Vatsa(2018)](papers/11.CVPR-2018%20Learning%20Structure%20and%20Strength%20of%20CNN%20Filters%20for%20Small%20Sample%20Size%20Training.pdf)  提出了一种减少参数数量的方法，用于缓解因参数过多而样本过少带来的过拟合问题。论文中提出将卷积网络中的卷积核分为结构(stracture)和强度(strength)两个部分，前者是卷积核的形状和内部的值，后者是卷积的权重。文章中提出使用稀疏字典学习来逐层初始化网络中的卷积核，在小样本学习时，将样本输入后只更新卷积核的强度，而不更新卷积核的结构，从而大大减少了要更新的参数数量，缓解了过拟合。
+4. [Zhao et al.(2018)](papers/Dynamic%20Conditional%20Networks(√).pdf)  也提出了一种只对卷积核进行强度训练而对卷积核结构不进行改变的思路。文章中将模型分为了两个部分：Dynamic Convolutional subNet和Conditional subNet。后者接收一个类标签或者ID，然后利用嵌入模型得到一个加权向量W，该向量用于动态地改变各个基础的卷积核的权重，配合经过CNN嵌入后的图像，再一次动态地进行卷积
+5. [Wang,Liu et al.(2017)](papers/13.CVPR-2017%20Multi-attention%20Network%20for%20One%20Shot%20Learning.pdf)  提出了一种利用类标签生成多注意力机制的方法来进行小样本学习。作者指出，在小样本学习中，类标签作为信息的一部分一直没有被很好地利用起来。因此这篇文章中利用了类标签嵌入后生成一系列注意力探测器(attention detector)，然后利用注意力探测器作用在CNN嵌入后的图像的编码特征上生成多个注意力映射作用在图像的编码特征上生成对应图像的特征向量。这种方法虽然看似比较有吸引力，但是由于网络的参数过多，而且涉及到NLP和CV的同时处理，因此复杂度很高，不一定适合大部分任务。
+6. [He,Zhang et al.(2015)](papers/Spatial%20Pyramid%20Pooling%20in%20Deep%20Convolutional%20Networks%20for%20Visual%20Recognition.pdf)    提出了一种动态多层次的池化策略，使得网络可以适应不同尺寸大小的图像输入来生成定长的特征向量。文中提出，由于卷积层本身就不对图像大小进行限制，因此只需要将网络中的全连接层去掉，然后利用比例动态池化代替定长池化即可。
+7. 注意力机制相应的论文
+   - [Fu, Zheng et al.(2018)](papers/Look%20Closer%20to%20See%20Better%20Recurrent%20Attention%20Convolutional%20Neural%20Network%20for%20FineGrained%20Image%20Recognition.pdf)  APN
+   - [Wang,Jiang et al.(2017)](papers/Residual%20Attention%20Network%20for%20Image%20Classification.pdf)  Residual Attention
+   - [Jaderberg et al.(2016)](papers/Spatial%20Transformer%20Networks.pdf)  Spatial Transformer
+   - [Hu,Shen et al.(2019)](papers/Squeeze-and-Excitation%20Networks.pdf) Squeeze and Excitation
 
 ### 2.5 相关实验
 
@@ -1113,11 +1111,15 @@ def DBscan_cluster(datas, base_num, name=None, plot=False, fig_save=None):
 
 实验中，聚类结果如下：
 
-![](Trojan.Win32.Vapsup.png)
+![](pictures/Trojan.Win32.Vapsup.png)
 
-![](Trojan-Proxy.Win32.Puma.png)
+---
 
-![](Trojan-Downloader.Win32.Zlob.png)
+![](pictures/Trojan-Proxy.Win32.Puma.png)
+
+---
+
+![](pictures/Trojan-Downloader.Win32.Zlob.png)
 
 **如果类别中一个类簇都没有（聚类结果全是噪声），则不会选取该类的样本加入到数据集中**。
 
@@ -1217,11 +1219,11 @@ def make_few_shot_data_by_cluster(clusters, dest, fix_width=False, num_per_class
 
 经过聚类处理以后生成数据集中，同一个类的恶意代码图像拥有高度相似的图像特征，例如 ：
 
-![](pic8.png)
+![](pictures/pic8.png)
 
-![](pic9.png)
+![](pictures/pic9.png)
 
-![](pic10.png)
+![](pictures/pic10.png)
 
 最终产生了208个类的数据，每个类中含有20个样本。在未加说明时，都是100个类作为训练集，58个类作为验证集，剩余50个类作为测试集。
 
@@ -1229,7 +1231,7 @@ def make_few_shot_data_by_cluster(clusters, dest, fix_width=False, num_per_class
 
 为了使得各个模型的关键部分具有可比性，现规定每个模型都使用相同的嵌入结构，即Conv4结构。Conv4是指4个连续堆叠的卷积网络层，其基本的结构为Conv+BatchNorm+ReLU+Maxpool。大部分论文中的Conv4的通道数都为固定的64，但是由VGG，ResNet等网络结构的启发，大部分的深度卷积网络结构都是使得图像的宽度逐渐变小，但是通道数逐渐增多的结构，如下图所示：
 
-![](pic11.png)
+![](pictures/pic11.png)
 
 因此，Conv4嵌入结构的通道数统一为1->32->64->128->256，Maxpool的宽度均为2，stride的数量取决于图片宽度，目的是最终让图像变为通道数为256的1x1的图像阵列。因为本实验中图像的输入为剪裁后大小为224x224的图片，因此通过计算可得stride均为2。具体地，代码如下：
 
@@ -1323,9 +1325,9 @@ def net_init(m):
 
 本实验使用聚类后的数据集，使用论文中交叉熵损失函数（由于是二元交叉熵，因此使用了torch.nn.BCELoss）和0.001初始学习率的Adam优化器优化，一共训练60000轮，每15000轮将学习率下降到原先的0.1。训练结果如下：
 
-![](3_acc_siamese.png)
+![](pictures/3_acc_siamese.png)
 
-![](3_loss_siamese.png)
+![](pictures/3_loss_siamese.png)
 
 可见，模型的训练过程中震荡较大，而且出现了过拟合，最终的验证正确率停留在70%多一点。
 
@@ -1335,19 +1337,19 @@ def net_init(m):
 
 非聚类数据：
 
-![](13_acc_relation.png)
+![](pictures/13_acc_relation.png)
 
-![](13_loss_relation.png)
+![](pictures/13_loss_relation.png)
 
-![](13_bestacc_600epoches_relation.png)
+![](pictures/13_bestacc_600epoches_relation.png)
 
 
 
 使用聚类数据：
 
-![](14_acc_relation.png)
+![](pictures/14_acc_relation.png)
 
-![](14_loss_relation.png)
+![](pictures/14_loss_relation.png)
 
 由于聚类数据的效果显然不如其他模型，因此没有进行进一步的具体测试。可以发现，RelationNet的性能确实因为之前所述的原因而不太理想。
 
@@ -1357,27 +1359,27 @@ def net_init(m):
 
 实验中对该网络有很多不同的修改，将在下文中提出。但是原生的网络在聚类数据集上的表现十分优秀，其结果如下：
 
-![](35_acc_proto.png)
+![](pictures/35_acc_proto.png)
 
-![](35_loss_proto.png)
+![](pictures/35_loss_proto.png)
 
 其测试结果如下。以后所有的实验如果不加特殊说明，均为在测试集上进行了12000轮测试得到的平均值：
 
-![](35_bestacc_600epoches_proto.png)
+![](pictures/35_bestacc_600epoches_proto.png)
 
-![](35_bestacc_600epoches_dist_proto.png)
+![](pictures/35_bestacc_600epoches_dist_proto.png)
 
 ---
 
 如果使用非聚类的数据集，则结果如下：
 
-![](32_acc_proto.png)
+![](pictures/32_acc_proto.png)
 
-![](32_loss_proto.png)
+![](pictures/32_loss_proto.png)
 
-![](32_bestacc_2_600epoches_proto.png)
+![](pictures/32_bestacc_2_600epoches_proto.png)
 
-![](32_bestacc_2_600epoches_dist_proto.png)
+![](pictures/32_bestacc_2_600epoches_dist_proto.png)
 
 可以发现聚类使得同类数据之间具有较高的相关度从而让模型的识别正确率大大提高了约15%。但是与此同时，可以发现**模型的过拟合程度也提高了一些**，这说明聚类数据会加剧模型的过拟合。
 
@@ -1389,9 +1391,9 @@ def net_init(m):
 
 非聚类数据：
 
-![](21_validate_supports_scatter_proto.png)
+![](pictures/21_validate_supports_scatter_proto.png)
 
-![](21_validate_supports_plot_proto.png)
+![](pictures/21_validate_supports_plot_proto.png)
 
 上图中，同类的点使用了线进行连接来强调同类的支持集数据。
 
@@ -1399,13 +1401,13 @@ def net_init(m):
 
 聚类数据：
 
-![](39_bestacc_scatter_proto.png)
+![](pictures/39_bestacc_scatter_proto.png)
 
-![](39_bestacc_plot_proto.png)
+![](pictures/39_bestacc_plot_proto.png)
 
 可以发现，经过聚类后的数据的支持集分布有了更加明的间隔，使得类别之间的可分更大，虽然还有部分类和点分离得不是很开，但可以看到大部分类分离的十分彻底，例如下图：
 
-![](39_bestacc_scatter_proto_1.png)
+![](pictures/39_bestacc_scatter_proto_1.png)
 
 由于ProtoNet是基于平方欧式距离进行分类的，当且仅当在这种设定下才能使用可视化方式查看效果。如果使用的是cosine相似度或者是其他参数方法来度量距离，则不能使用直接的可视化查看分离状况。
 
@@ -1417,13 +1419,13 @@ def net_init(m):
 
 对于恶意代码，我们能得出一个天然的假设：相同大类（例如均为Trojan）的恶意代码的相似度一定大于不同大类的恶意代码之间的相似度。因此，首先考虑能否在一个大类上重复以上实验来提高正确率。为此，实验中只抽取了Trojan大类中的数据作为训练，验证和测试集，然后在此基础上重复实验。在**没有使用无监督聚类的情况下**，数据集总共215个类，将其分为150个类作为训练集，35个类作为验证集，30个类作为测试集，其结果如下：
 
-![](15_acc_proto.png)
+![](pictures/15_acc_proto.png)
 
-![](15_loss_proto.png)
+![](pictures/15_loss_proto.png)
 
-![](15_bestacc_600epoches_proto.png)
+![](pictures/15_bestacc_600epoches_proto.png)
 
-![](15_bestacc_600epoches_dist_proto.png)
+![](pictures/15_bestacc_600epoches_dist_proto.png)
 
 结果出人意料：在一个大类内部的训练并没有让模型的性能提升，反而使得模型的过拟合更加严重，正确率下降了约8%，简单推测其原因也是**因为数据类别的限制导致模型的抗噪能力下降了**，在测试集中出现噪声的时候无法对噪声进行合理的处理，从而使得模型的正确率下降。（在使用无监督方法清洗数据之后再限制大类的实验是未来的工作）
 
@@ -1435,13 +1437,13 @@ def net_init(m):
 
 实验中，限制PE文件的大小为16~1024KB，即只提取16~1024KB的PE文件作为数据集，最后一共产生了361个类的数据，其250个作为训练集，61个作为验证集，50个作为测试集。其他设定几乎相同，实验的结果如下：
 
-![](16_acc_proto.png)
+![](pictures/16_acc_proto.png)
 
-![](16_loss_proto.png)
+![](pictures/16_loss_proto.png)
 
-![](16_bestacc_600epoches_proto.png)
+![](pictures/16_bestacc_600epoches_proto.png)
 
-![](16_bestacc_600epoches_dist_proto.png)
+![](pictures/16_bestacc_600epoches_dist_proto.png)
 
 同样的出现了以上的问题，正确率下降了约7%：**限制大小会让数据的多样性降低，数据的多样性降低导致模型的去噪能力和泛化能力下降，从而使得模型的过拟合加剧**。因此，根据变种1和变种2的结果来看，只从数据的种类来处理数据并不能有效的提升模型的识别能力。
 
@@ -1451,15 +1453,15 @@ def net_init(m):
 
 2.5.7中复现的网络在经过可视化时发现了一些异常的现象：
 
-![](abnormal.png)
+![](pictures/abnormal.png)
 
 ---
 
-![](abnormal_a.png)
+![](pictures/abnormal_a.png)
 
 ---
 
-![](abnormal_b.png)
+![](pictures/abnormal_b.png)
 
 某些样本在数据集中属于噪声或者是与类内其他样本差异很大时，其嵌入结果会很不理想，导致某些点离其对应类的样本点的类簇十分远，属于明显的异常点(outlier)。如果这些异常点属于支持集，则其可能造成直接求均值时，异常点让均值向量偏向异常方向而脱离了正常点的均值中心。因此，为了校正这种偏差，需要让远离类簇的异常点对类向量的贡献更小。使用基于均值向量的注意力机制可以达到这种目的，其具体计算方式如下：
 
@@ -1492,23 +1494,23 @@ $x_c = \sum_i^{k}\alpha_i · x_i$		利用注意力系数加权向量求得类向
 
 其他部分不改变，在**未聚类的数据集中**进行实验，结果如下：
 
-![](23_acc_proto.png)
+![](pictures/23_acc_proto.png)
 
-![](23_loss_proto.png)
+![](pictures/23_loss_proto.png)
 
-![](23_bestacc_600epoches_proto.png)
+![](pictures/23_bestacc_600epoches_proto.png)
 
-![](23_bestacc_600epoches_dist_proto.png)
+![](pictures/23_bestacc_600epoches_dist_proto.png)
 
 在聚类数据集中的实验结果如下：
 
-![](41_acc_proto.png)
+![](pictures/41_acc_proto.png)
 
-![](41_loss_proto.png)
+![](pictures/41_loss_proto.png)
 
-![](41_bestacc_600epoches_proto.png)
+![](pictures/41_bestacc_600epoches_proto.png)
 
-![](41_bestacc_600epoches_dist_proto.png)
+![](pictures/41_bestacc_600epoches_dist_proto.png)
 
 在聚类前的数据上，注意力机制生成类向量的方式没有让正确率发生提升，反而让正确率下降了约1.5%。分析可能的原因：**有可能是因为数据集中异常点较少，使得需要校正的点也很少，而使用该方法生成的类向量并没有在普通情境下比均值向量更有代表性（其不是Bregman散度）**，因此使得正确率下降。
 
@@ -1520,11 +1522,11 @@ $x_c = \sum_i^{k}\alpha_i · x_i$		利用注意力系数加权向量求得类向
 
 2.5.10中提出的方法虽然能够以改进类向量生成方式的方法来减小异常点的影响，但是仔细分析后，该方法存在一个缺陷：softmax函数的特征就是对输入值之间的差异十分敏感，因此该方法十分有可能会让类向量收敛到一个具体的样本上去。以下的实验对此进行了说明：实验中多次使用该方法迭代地生成类向量，其中上一次迭代得到的类向量将会作为下一次迭代的公式中的均值向量，基于该类向量重新校正生成新的类向量。
 
-![](pic12.png)
+![](pictures/pic12.png)
 
 上图中红色点为异常点，蓝色点为正常点，蓝色叉代表均值点，蓝色三角形代表除去异常点时的均值点，也正是我们希望的类向量点。**可以发现类向量在迭代过程中逐渐向一个点收缩，最后直接收敛在一个点上**。更具体的，参考下图，其描述的是K=5时，其中一个值x相对于其他4个值的倍数变化时（假设其他4个值相同），其softmax值变化的曲线。
 
-![](pic13.png)
+![](pictures/pic13.png)
 
 可以看到，其值在0~4倍时变化的非常快，这意味着即使有较小的变化都会导致softmax值发生较大的变化；另外，在6倍时，其值趋近饱和于1，这意味着如果有一个样本点距离均值比其他样本点都要小6倍时，样本点就回直接收敛在该点上，如果迭代地使用该方法，则该效应会更加明显。
 
@@ -1544,7 +1546,7 @@ $x_c = \sum_i^{k}\alpha_i · x_i$		利用注意力系数加权向量求得类向
 
 这样的话，不仅离均值向量远的点的权重会被减小，而且离均值点近的点的权重也会被减小，其效果图如下：
 
-![](pic14.png)
+![](pictures/pic14.png)
 
 可以发现，修正后的注意力机制生成的类向量围绕在目标类向量附近，但是修正前的注意力机制生成的类向量直接收敛到一个点上。这说明修正后的注意力机制生成的点更能在有异常点的环境下找到合适的类向量。
 
@@ -1552,22 +1554,380 @@ $x_c = \sum_i^{k}\alpha_i · x_i$		利用注意力系数加权向量求得类向
 
 非聚类的数据集：
 
-![](21_acc_proto.png)
+![](pictures/21_acc_proto.png)
 
-![](21_loss_proto.png)
+![](pictures/21_loss_proto.png)
 
-![](21_bestacc_600epoches_proto.png)
+![](pictures/21_bestacc_600epoches_proto.png)
 
-![](21_bestacc_600epoches_dist_proto.png)
+![](pictures/21_bestacc_600epoches_dist_proto.png)
 
 聚类后的数据集的实验结果：
 
-![](40_acc_proto.png)
+![](pictures/40_acc_proto.png)
 
-![](40_loss_proto.png)
+![](pictures/40_loss_proto.png)
 
-![](40_bestacc_600epoches_proto.png)
+![](pictures/40_bestacc_600epoches_proto.png)
 
-![](40_bestacc_600epoches_dist_proto.png)
+![](pictures/40_bestacc_600epoches_dist_proto.png)
 
 虽然在聚类前的数据集上，修正后的注意力机制表现反而不如修正前，但是在聚类后的数据集上表现得远好于修正前，但是其表现仍然没有超过普通的均值向量作为类向量的方式。其原因也同2.5.10中总结的一样：异常点只占数据集中的很小一部分，但是这种类向量生成方式不能保证在正常情况下能够生成有代表性的类向量点。因此就会出现不仅性能没有超越原方法还出现了一定的性能下滑。
+
+
+
+#### 2.5.12 PrototypeNet变种5：使用修正后的Cosine距离
+
+在2.4.7节的论文中，作者提到cosine相似度直接输入到softmax中会导致生成的后验概率不能很好地模拟one-shot向量，因此使用放大因子来调整cosine相似度，具体地，后验概率的生成方式为:
+
+$p(y_i|x,S) = \cfrac{\exp(s·\cos(x,c_i))}{\sum_{j=1}^k\exp(s·\cos(x,c_j))}$	，其中s为放大因子。
+
+为了测试在PrototypeNet中cosine相似度作为距离度量时网络的性能，因此将原网络中的欧式平方距离改为修正后的cosine距离，s取值为10。
+
+![](pictures/42_acc_proto.png)
+
+![](pictures/42_loss_proto.png)
+
+![](pictures/42_bestacc_600epoches_dist_proto.png)
+
+![](pictures/42_bestacc_600epoches_proto.png)
+
+发现cosine相似度的正确率与平方欧式距离的正确率大致差不多，只低0.1%左右，但仍然是相比于原模型没有提升。
+
+
+
+#### 2.5.13 Conv4结构的改进
+
+参考ResNet的实现中，Maxpool使用的是**带重叠的最大池化**，即kernel_size=3，stride=2，padding=1的最大池化，该池化层的效果仍然是将图像下采样使图像的尺寸减半，但是由于重叠，局部的最大值能在更大的池化结果面积上产生作用，有论文指出**带重叠的最大池化能够一定程度上缓解过拟合**，因此本实验中为了测试这种次重叠最大池化方法对模型是否有改进效果，将所有最大池化均改为带重叠的最大池化，即torch.nn.Maxpool(3,2,1)。
+
+另一方面，在2.4.7节的论文中，作者提出了一个观点：metric based方法利用的是Conv结构生成的特征向量来做近邻分类，**而Conv最后一层的ReLU会导致特征向量中每一个维度上的值都为非负值，这将会大大减小实际的嵌入空间大小**。2.4.7节中作者的建议是移除最后一层的ReLU非线性变换，但是由于Conv4中一共本来就只有4次非线性变换，如果再减少一次，有可能会减小网络的拟合能力，因此**考虑使用LeakyReLU代替ReLU**。LeakyReLU是一种ReLU的变种，其在负值区域的值不会被置0，而是被缩小。LeakyReLU的图像如下：
+
+![](pictures/pic15.png)
+
+经过改进后的Conv4结构使用在均值向量作为类向量的结构上的实验效果如下：
+
+![](pictures/38_acc_proto.png)
+
+![](pictures/38_loss_proto.png)
+
+![](pictures/38_bestacc_600epoches_proto.png)
+
+![](pictures/38_bestacc_600epoches_dist_proto.png)
+
+可以发现，在原先的Conv4结构上，新的Conv4结构比原结构的正确率上升1%左右，而且模型的拟合能力大大提高了：原Conv4结构在60000epoch训练后训练正确率只能达到90%，但是改进后的Conv4结构的训练正确率在60000epoch后已经可以达到95%。但是，过拟合问题还是相当严重。
+
+
+
+#### 2.5.14 PrototypeNet变种6：将类间方差和类内方差加入损失函数
+
+由于PrototypeNet实质上是学会如何将恶意代码图像嵌入到嵌入空间中使得各个类之间尽可能隔开，同时，验证集和测试集是从训练集中抽样得到的，因此验证集和测试集的数据与训练集应该服从同一个分布，所以如果模型能够见训练集中的数据类很好地分隔开，那么也应该能够很好地将测试集和验证集的数据分隔开。为了使得数据集之间更好的地分隔开来提高近邻分类器的正确率，模型应该具有能够让**同一个类的类内样本之间尽可能紧密相邻，而让不同类之间的样本的类簇尽可能推远**。因此可以考虑在损失函数中加入一定的表示值，显式地通过优化来达到该目的。
+
+由于以上原因，定义了两个标量：类间方差(intra-class variation)和类内方差(inter-class variation)，分别计算如下：
+
+$D_{intra} = \sum_c\sum_i^k(x_{ci}-\cfrac{\sum_j^kx_{cj}}{k})^2$
+
+$D_{inter}=\sum_i^n(\cfrac{\sum_j^kx_{ij}}{k}-\cfrac{\sum_c\sum_kx_{ck}}{nk})^2$
+
+即：类内方差就是单独的同一个类内部的向量的各个维度的方差之和，类间方差是各个类的均值向量组成的集合内部的各个维度的方差。前者用于衡量一个类内部的紧密程度，后者用于衡量类之间的紧密程度。显然，如果要达到嵌入目的，应该最小化前者，最大化后者。因此，新的损失函数定义为:
+
+$L_{loss} = L_{NLL}+\alpha·D_{intra}-\beta·D_{inter}$
+
+类向量的生成方式仍然为简单的均值向量，实验中上式的$\alpha=\beta=0.01$。在未聚类的数据集上的表现如下：
+
+![](pictures/15_bestacc_600epoches_residual.png)
+
+正确率并没有在原有的基础上提高。可见该方法的可行性还存在一定问题。
+
+
+
+
+
+#### 2.5.15 PrototypeNet变种7：使用微调fine-tuning
+
+微调是迁移学习领域的方法，是在模型原有数据集上训练后，为了进行领域适应(domain adaption)而利用部分新数据集中的数据来更新网络权重的方法。在本实验中，fine-tuning相当于是在训练集上训练后的模型，在给定新任务的少量带标签样本时，利用这些样本来更新网络的部分权重达到在新任务上的适应，以提高模型在新任务上的表现。在2.4.9.1的论文中提出的观点认为，模型性能的关键在于如何让模型很好地适应新的任务。因此，fine-tuning是一个可行的办法。
+
+由于模型的训练遵守的是episode-training的方式，因此在微调时，即使只有少量样本，也需要形成支持集和查询集共同组成一个episode。由于模型只对支持集的数据格式敏感（n个类，每个类有k个样本），而对查询集数据格式不敏感，因此实验中将提供的n个类每个类k个样本的支持集同时作为查询集，即利用支持集产生损失值来优化模型，大致代码如下：
+
+```python
+for i in range(FINETUNING_EPISODE):
+    # fine-tuning
+    net.train()
+    net.zero_grad()
+    outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), samples.view(n*k,1,CROP_SIZE,CROP_SIZE))
+```
+
+实验中，使用学习率为0.001的SGD进行20epoch的fine-tuning。每次实验都进行600*20=12000轮。结果如下：
+
+在聚类数据集上的结果：
+
+![](pictures/35_bestacc_600epoches_finetuning.png)
+
+
+
+虽然fine-tuning有一定的效果，但是效果十分微弱，平均正确率只提高了0.15%。
+
+
+
+
+
+#### 2.5.16 HybridAttention 网络复现
+
+根据2.4.8节的论文描述，复现了该网络结构。除了Encoder部分改为Conv4结构，其余几乎都按照论文中的描述实现。由于原论文中提到该网络能够较好地对抗噪声，而聚类前数据恰好有较大的噪声，因此使用该网络来实验是否能够取得较好效果。复现网络的代码如下：
+
+```python
+import torch as t
+import torch.nn as nn
+import math
+import warnings
+
+def get_encoder_block(in_channel, out_channel, kernel_size=3, stride=1, padding=1, pool=2):
+    return nn.Sequential(
+        nn.Conv2d(in_channel,
+                  out_channel,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=padding,
+                  bias=False),
+        nn.BatchNorm2d(out_channel),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(pool)
+    )
+
+def get_encoder_block_2(in_channel, out_channel, kernel_size=3, stride=1, padding=1, pool=2):
+    return nn.Sequential(
+        nn.Conv2d(in_channel,
+                  out_channel,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=padding,
+                  bias=False),
+        nn.BatchNorm2d(out_channel),
+        nn.LeakyReLU(inplace=True),
+        nn.MaxPool2d(3,pool,1)
+    )
+
+def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1):
+    return nn.Sequential(
+        nn.Conv2d(in_channel,
+                  out_channel,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=padding),
+        nn.ReLU(inplace=True),
+    )
+
+def get_embed_size(in_size, depth):
+    assert math.log2(in_size) >= depth, "输入:%d 对深度%d过小"%(in_size,depth)
+    for i in range(depth):
+        in_size  = in_size//2
+    return in_size//2
+
+class InstanceAttention(nn.Module):
+    def __init__(self, linear_in, linear_out):
+        super(InstanceAttention, self).__init__()
+        self.g = nn.Linear(linear_in, linear_out)
+
+    def forward(self, support, query, k, qk, n):
+        # support/query shape: [qk*n*k, d]
+        d = support.size(1)
+        support = self.g(support)
+        query = self.g(query)
+        # shape: [qk, n, k, d]->[qk, n, k]
+        attentions = t.tanh((support*query).view(qk, n, k, d)).sum(dim=3).squeeze()
+        # shape: [qk,n,k]->[qk,n,k,d]
+        attentions = t.softmax(attentions, dim=2).unsqueeze(3).repeat(1,1,1,d)
+
+        return t.mul(attentions, support.view(qk, n, k, d))
+
+
+class HAPNet(nn.Module):
+    def __init__(self, input_size, n, k, qk, encoder_depth=4):
+        super(HAPNet, self).__init__()
+        self.n = n
+        self.k = k
+        self.qk = qk
+
+        embed_size = 256#get_embed_size(input_size, encoder_depth)
+        self.d = embed_size
+        # self.d = embed_size
+        channels = [1,32,64,128,256]
+        strides = [2,2,2,2]
+        encoders = [get_encoder_block_2(channels[i],channels[i+1],stride=strides[i]) for i in range(encoder_depth)]
+
+        # 图像的嵌入结构
+        # 将整个batch整体输入
+        self.Encoder = nn.Sequential(*encoders)
+
+        # 获得样例注意力的模块
+        # 将嵌入后的向量拼接成单通道矩阵后，有多少个支持集就为几个batch
+        if k%2==0:
+            warnings.warn("K=%d是偶数将会导致feature_attention中卷积核的宽度为偶数，因此部分将会发生一些变化")
+            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
+        else:
+            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
+        attention_channels = [1,32,64,1]
+        attention_strides = [(1,1),(1,1),(k,1)]
+        attention_kernels = [(k,1),(k,1),(k,1)]
+
+        self.FeatureAttention = nn.Sequential(
+            *[get_attention_block(attention_channels[i],
+                                  attention_channels[i+1],
+                                  attention_kernels[i],
+                                  attention_strides[i],
+                                  attention_paddings[i])
+              for i in range(len(attention_channels)-1)])
+
+
+        # 获得样例注意力的模块
+        # 将support重复query次，query重复n*k次，因为每个support在每个query下嵌入都不同
+        self.InstanceAttention = InstanceAttention(embed_size, embed_size)
+
+
+    def forward(self, support, query):
+        assert len(support.size()) == 5 and len(query.size()) == 4, \
+            "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
+        k = support.size(1)
+        qk = query.size(0)
+        n = support.size(0)
+        w = support.size(3)
+
+        support = support.view(n*k, 1, w, w)
+        query = query.view(qk, 1, w, w)
+
+        support = self.Encoder(support).squeeze()
+        query = self.Encoder(query).squeeze()
+
+        # 将嵌入的支持集展为合适形状
+        # support shape: [n,k,d]->[n,k,d]
+        support = support.view(n,k,-1)
+        # query shape: [qk, d]
+        query = query.view(qk,-1)
+
+        # 将支持集嵌入视为一个单通道矩阵输入到特征注意力模块中获得特征注意力
+        # 并重复qk次让基于支持集的特征注意力对于qk个样本相同
+        # 输入: [n,k,d]->[n,1,k,d]
+        # 输出: [n,1,1,d]->[n,d]->[qk,n,d]
+        feature_attentions = self.FeatureAttention(support.unsqueeze(dim=1)).squeeze().repeat(qk,1,1)
+
+        # 将支持集重复qk次，将查询集重复n*k次以获得qk*n*k长度的样本
+        # 便于在获得样例注意力时，对不同的查询集有不同的样例注意力
+        # 将qk，n与k均压缩到一个维度上以便输入到线性层中
+        # query_expand shape:[qk,d]->[n*k,qk,d]->[qk,n,k,d]
+        # support_expand shape: [n,k,d]->[qk,n,k,d]
+        support_expand = support.repeat((qk,1,1,1)).view(qk*n*k,-1)
+        query_expand = query.repeat((n*k,1,1)).transpose(0,1).contiguous().view(qk*n*k,-1)
+
+        # 利用样例注意力注意力对齐支持集样本
+        # shape: [qk,n,k,d]
+        support = self.InstanceAttention(support_expand, query_expand, k, qk, n)
+
+        # 生成对于每一个qk都不同的类原型向量
+        # 注意力对齐以后，将同一类内部的加权的向量相加以后
+        # proto shape: [qk,n,k,d]->[qk,n,d]
+        support = support.sum(dim=2).squeeze()
+
+        # query shape: [qk,d]->[qk,n,d]
+        query = query.unsqueeze(dim=1).repeat(1,n,1)
+
+        # dis_attented shape: [qk*n,n,d]->[qk*n,n,d]->[qk*n,n]
+        dis_attented = (((support-query)**2)*feature_attentions).sum(dim=2).neg()
+
+        return t.log_softmax(dis_attented, dim=1)
+
+```
+
+但测试结果表明，该网络会出现梯度消失的情况。训练时，分别监测了Encoder，FeatureAttention和InstanceAttention三个模块的梯度范数值，结果如下：
+
+![](pictures/pic16.png)
+
+可以发现才刚刚开始训练，三个模块的梯度就出现了消失的情况。重复开启训练，大约有3/4的几率会出现梯度消失的情况，还有1/4的几率模型震荡十分剧烈，难以收敛。
+
+为了找到原因，将FeatureAttention和InstanceAttention分别隔离使用，再次监测梯度范数。结果表明，FeatureAttention部分会导致梯度消失，其原因也比较容易理解。根据模型计算公式:
+
+$ d(x_c,x)=f(x_s)·(x_c-x)^2，其中x_c是生成的类向量，x是查询样本，f(·)是特征注意力模块$，
+
+**如果$f(x_s)$生成的特征注意力值都接近于0，那么整个距离值也会接近0，导致梯度反向传播到距离值时，梯度直接在此处消失**。
+
+如果只使用InstanceAttention不会导致梯度消失，但是模型同样震荡得非常剧烈而难以拟合。
+
+#### 2.5.17  Biembed模型
+
+由于模型的性能直接与嵌入的好坏挂钩，因此考虑一个更深层的嵌入方式。本实验中提出了一种二次嵌入模型，该模型在第一次嵌入后会按照PrototypeNet中的方式生成均值向量作为类向量，然后再将类向量输入到二次嵌入模块中再次嵌入，查询集样本同样会经过两个嵌入模块，两者在两次嵌入后根据距离函数输入到softmax中生成概率分布值。
+
+![](pictures/pic17.png)
+
+实验中，两个Embed都使用Conv4结构，第二个Embed的最后一层没有使用ReLU变换使得特征向量的值有正有负。实现的代码如下：
+
+```python
+import torch as t
+import torch.nn as nn
+import torch.nn.functional as F
+import time
+
+def get_block(in_feature, out_feature, stride=1, relu=True, bn=True, pool=2):
+    components = [nn.Conv2d(in_feature, out_feature, kernel_size=3, stride=stride, padding=1, bias=False)]
+    if bn:
+        components.append(nn.BatchNorm2d(out_feature))
+    if relu:
+        components.append(nn.ReLU(inplace=True))
+    if pool is not None:
+        components.append(nn.MaxPool2d(3,pool,1))
+
+    return nn.Sequential(*components)
+
+class BiEmbedProtoNet(nn.Module):
+    def __init__(self, induction='mean', in_channel=1):
+        super(BiEmbedProtoNet, self).__init__()
+        strides = [2,1,1,1]
+        channels = [in_channel,64,64,64,64]
+        encoder = [get_block(channels[i], channels[i+1], stride=strides[i]) for i in range(len(strides))]
+        self.Encoder = nn.Sequential(*encoder)
+
+        relus = [True, True, True, False]
+        pools = [None, 2, 2, 2]
+        embedder = [get_block(64, 64, relu=relus[i], pool=pools[i]) for i in range(len(pools))]
+        self.Embedder = nn.Sequential(*embedder)
+
+        self.Induction = induction
+
+    def forward(self, support, query):
+        assert len(support.size()) == 5 and len(query.size()) == 4, \
+            "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
+        k = support.size(1)
+        qk = query.size(0)
+        n = support.size(0)
+        w = support.size(3)
+
+        support = support.view(n*k, 1, w, w)
+        query = query.view(qk, 1, w, w)
+
+        support = self.Encoder(support).view(n,k,64,7,7)
+        query = self.Encoder(query)
+
+        # input shape: [n, k, c, w, w]->[n,c,w,w]
+        def proto_mean(tensors):
+            return tensors.mean(dim=1).squeeze()
+
+        # shape: [n,c,w,w]
+        support = proto_mean(support)
+
+        support = self.Embedder(support)
+        support = support.view(n,64)
+        query = self.Embedder(query).view(qk,64)
+
+        # support shape: [n,d]->[qk,n,d]
+        support = support.repeat((qk,1,1))
+        # query shape: [qk,d]->[qk,n,d]
+        query = query.unsqueeze(dim=1).repeat((1,n,1))
+
+        # return shape: [qk, n]
+        return F.log_softmax(((support - query) ** 2).sum(dim=2).neg(), dim=1)
+```
+
+其余设定与常规的PrototypeNet中几乎相同。在**未聚类的数据集上**实验结果如下：
+
+![](pictures/1_acc_biembed.png)
+
+![](pictures/1_loss_biembed.png)
+
+由于验证集上的效果不如原生PrototypeNet，因此没有进行进一步测试。该模型的性能似乎也不如PrototypeNet。

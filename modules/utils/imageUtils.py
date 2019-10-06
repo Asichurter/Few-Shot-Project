@@ -625,22 +625,23 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/cluster_fix_width/train/",
-    #             dest="D:/peimages/New/cluster_fix_width/test/",
-    #             ratio=50,
+    # split_datas(src="D:/peimages/New/cluster_2/train/",
+    #             dest="D:/peimages/New/cluster_2/validate/",
+    #             ratio=30,
     #             mode="x",
     #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
     # make_few_shot_datas(20, "D:/peimages/New/fuzzy/train/", fuzzy=128)
     # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
-    # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_fix_width/train/', fix_width=True)
+    # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_2/train/')
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
-
-    # integrate_images_to_datas('D:/peimages/New/cluster_fix_width/train/',
-    #                           'D:/peimages/New/cluster_fix_width/train.npy',
-    #                           T.Compose([T.ToTensor(),T.Normalize([0.39177823], [0.11456729])]))
-                                #cluster_fix_width: 0.39177823, 0.11456729
-                                #cluster: [0.40118653], [0.097657144]
+    #
+    # integrate_images_to_datas('D:/peimages/New/cluster_2/test/',
+    #                           'D:/peimages/New/cluster_2/test.npy',
+    #                           T.Compose([T.ToTensor(),T.Normalize([0.41148445], [0.09440111])]))
+                                # cluster_fix_width: 0.39177823, 0.11456729
+                                # cluster: [0.40118653], [0.097657144]
+                                # cluster_2: [0.41148445], [0.09440111]
     # scale_rectangle_image('D:/peimages/New/cluster_fix_width/validate/', threshold=256)
     # print(statistic_min_max_height('D:/peimages/New/cluster_fix_width/train/'))

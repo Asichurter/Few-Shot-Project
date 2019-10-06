@@ -20,10 +20,11 @@ class ResidualBlock(nn.Module):
         self.Layer1 = nn.Sequential(
             nn.Conv2d(in_channel,out_channel,kernel_size,stride,padding=int((kernel_size-1)/2), bias=False),
             nn.BatchNorm2d(out_channel))
-        self.Pool = nn.MaxPool2d(2) if not keep_dim else None
+        self.Pool = nn.MaxPool2d(3,2,1) if not keep_dim else None
         self.trans = nn.Sequential(
             nn.Conv2d(in_channel,out_channel,kernel_size=1,stride=1,padding=0,bias=False),
             nn.BatchNorm2d(out_channel)) if in_channel!=out_channel else None
+        self.NonLinear = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
         left = self.Layer1(x)
@@ -31,66 +32,43 @@ class ResidualBlock(nn.Module):
         x = self.trans(x) if self.trans is not None else x
         x = x + left
         x = self.Pool(x) if self.Pool is not None else x
-        return F.relu(x)
+        return self.NonLinear(x)
 
 class ResidualNet(nn.Module):
-    def __init__(self, input_size, n, k, qk, channel=64, block_num=4, metric="Proto",
-                 attention=False, attention_num = 1,
-                 **kwargs):
+    def __init__(self, input_size, block_num=4, metric="Proto", **kwargs):
         super(ResidualNet, self).__init__()
         assert metric in ["Siamese","Proto","Relation"]
         self.metric = metric
         pars = {}
-        pars['n'] = n
-        pars['k'] = k
-        pars['qk'] = qk
-        pars['channel'] = channel
         pars['block_num'] = block_num
         self.pars = pars
         self.forward_inner_var = None
         self.forward_outer_var = None
+
+        channels = [1,32,64,128,256,512]
         self.Layer1 = nn.Sequential(
-            nn.Conv2d(1,channel,kernel_size=7,stride=2,padding=3,bias=False),
-            nn.BatchNorm2d(channel),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)
+            nn.Conv2d(channels[0],channels[1],kernel_size=7,stride=2,padding=3,bias=False),
+            nn.BatchNorm2d(channels[1]),
+            nn.LeakyReLU(inplace=True),
+            nn.MaxPool2d(3,2,1)
         )
         max_pool_num = int(math.log2(int(input_size / 4)))
-        # self.Layer2 = nn.ModuleList([ResidualBlock(channel,
-        #                                            channel,
-        #                                            kernel_size=3,
-        #                                            stride=1,
-        #                                            keep_dim=(block_num-i)>max_pool_num) for i in range(block_num)])
-
-        # 由于存在一个前置的block用于快速缩小图片尺寸，因此注意力映射要比block的数量多一个
-        # assert not attention or attention_num is not None, "注意力映射数量不能为None"
-        # self.Attentions = nn.ModuleList([AttentionLayer(2*channel,attention_num) for i in range(block_num+1)]) \
-        #                                                                             if attention else None
         self.Layer2 = nn.Sequential()
         for i in range(block_num):
             # 在block的数量大于最大池化次数时，设定前k个block不使用最大池化
-            self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channel,channel,kernel_size=3,stride=1,
+            self.Layer2.add_module('block%d'%(i+1),ResidualBlock(channels[i+1],channels[i+2],kernel_size=3,stride=1,
                                                                  keep_dim=(block_num-i)>max_pool_num))
 
-        # 用于接收类内向量生成类向量的转换器
-        # shape: [n,k,d]->[n,d]
-        # self.Transformer = nn.Sequential(
-        #                         nn.Conv2d(k,k,kernel_size=3,padding=1,bias=False),
-        #                         nn.BatchNorm2d(k),
-        #                         nn.ReLU(inplace=True),
-        #                         nn.Conv2d(k, 1, kernel_size=3, padding=1),
-        # )
-
         conv_out = input_size/4/(2**block_num)
-        out_size = int(channel*conv_out*conv_out)
+        out_size = int(channels[-1]*conv_out*conv_out)
 
         if metric=="Siamese":
             # shape: [d,1]
             self.fc1 = nn.Linear(out_size,1)
         elif metric=="Relation":
             # shape: [d,hidden]
-            self.relation = ResidualBlock(channel*2,channel)
-            out_size = int(64/(2**block_num)*channel)
+            self.relation = ResidualBlock(channels[-1]*2,channels[-1])
+            out_size = int(64/(2**block_num)*channels[-1])
             self.fc1 = nn.Linear(out_size,kwargs['hidden_size'])
             self.fc2 = nn.Linear(kwargs['hidden_size'],1)
 
@@ -104,25 +82,52 @@ class ResidualNet(nn.Module):
 
         support = support.view(n*k, 1, w, w)
         query = query.view(qk, 1, w, w)
-        channel = self.pars['channel']
-        block_num = self.pars['block_num']
+        # channel = self.pars['channel']
+        # block_num = self.pars['block_num']
 
         support = self.Layer1(support)
         query = self.Layer1(query)
         support = self.Layer2(support)
         query = self.Layer2(query)
-        # support,query = self.Attentions[0](support,query) \
-        #                     if self.Attentions is not None else support,query
-        # support = self.Layer2(support)
-        # for i in range(block_num):
-        #     support = self.Layer2[i](support)
-        #     query = self.Layer2[i](query)
-            # 注意力模块的下标比block多1
-            # support,query = self.Attentions[i+1](support,query) \
-            #     if self.Attentions is not None else support,query
 
-        # query = self.Layer1(x[1])
-        # query = self.Layer2(query)
+        def proto_mean(tensors):
+            return tensors.mean(dim=1).squeeze()
+
+        def proto_correct_attention(tensors):
+            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # 类均值向量
+            # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            support_center = tensors.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+
+            # -------------------------------------------------------------
+            # 支持集与均值向量的欧式平方距离
+            # dis shape: [n,k,d]->[n,k]
+            support_dis = ((tensors - support_center) ** 2).sum(dim=2).sqrt()
+            # dis_mean_shape: [n,k]->[n]->[n,k]
+            support_dis_mean = support_dis.mean(dim=1).unsqueeze(dim=1).repeat(1,k)
+            support_dis = t.abs(support_dis-support_dis_mean).neg()
+            # attention shape: [n,k]->[n,k,d]
+            attention_map = t.softmax(support_dis, dim=1).unsqueeze(dim=2).repeat(1,1,d)
+
+            # return shape: [n,k,d]->[n,d]
+            return t.mul(tensors, attention_map).sum(dim=1).squeeze()
+            # -------------------------------------------------------------
+
+        def proto_attention(tensors):
+            # 利用类内向量的均值向量作为键使用注意力机制生成类向量
+            # 类均值向量
+            # centers shape: [n,k,d]->[n,d]->[n,k,d]
+            support_center = tensors.mean(dim=1).repeat(1, k).reshape(n, k, -1)
+
+            # attention shape: [n,k,d]
+            # 类内对每个向量的注意力映射，由负距离输入到softmax生成
+            attention_map = t.softmax(((tensors - support_center) ** 2).sum(dim=2).neg(), dim=1)
+            # [n,k]->[n,k,d]
+            # 将向量的注意力系数重复到每个位置
+            attention_map = attention_map.unsqueeze(dim=2).repeat(1, 1, d)
+            # support: [n,k,d]->[n,d]
+            # 注意力映射后的支持集中心向量
+            return t.mul(tensors, attention_map).sum(dim=1).squeeze()
 
         if self.metric == "Siamese":
             # shape: [qk,n,k,d]
@@ -138,42 +143,27 @@ class ResidualNet(nn.Module):
 
             # shape: [b,d]->[n,k,d]
             support = support.view(n,k,-1)
-            self.forward_inner_var = support.var(dim=1).sum()
+            # self.forward_inner_var = support.var(dim=1).sum()
+            #
+            # support = support.mean(dim=1).squeeze()
+            #
+            # self.forward_outer_var = support.var(dim=0).sum()
 
-            # # 利用类内向量的均值向量作为键使用注意力机制生成类向量
-            # # 类均值向量
-            # # centers shape: [n,k,d]->[n,d]->[n,k,d]
-            # support_center = support.sum(dim=1).div(k).repeat(1,k).reshape(n,k,-1)
-            # # 支持集与均值向量的欧式平方距离
-            # # dis shape: [n,k,d]->[n]->[n,k]
-            # support_dis_sum = ((support-support_center)**2).sum(dim=2).sum(dim=1).unsqueeze(dim=1).repeat(1,k)
-            # # attention shape: [n,k,d]
-            # # 类内对每个向量的注意力映射，由负距离输入到softmax生成
-            # d = support.size(2)
-            # attention_map = t.softmax((((support-support_center)**2).sum(dim=2)/support_dis_sum).neg(), dim=1)
-            # # [n,k]->[n,k,d]
-            # # 将向量的注意力系数重复到每个位置
-            # attention_map = attention_map.unsqueeze(dim=2).repeat(1,1,d)
-            # # support: [n,k,d]->[n,d]
-            # # 注意力映射后的支持集中心向量
-            # support = t.mul(support, attention_map).sum(dim=1).squeeze()
+            support = proto_mean(support)
 
-            support = support.mean(dim=1).squeeze()
-
-            self.forward_outer_var = support.var(dim=0).sum()
-            # shape: [n,k,d]->[qk,n,d]
+            # shape: [n,d]->[qk,n,d]
             support = support.repeat(qk,1,1)
             # shape: [qk,d]->[qk,n,d]
             query = query.view(qk,-1).repeat(n,1,1).transpose(0,1).contiguous()
         elif self.metric == "Relation":
             # shape: [n*k,channel,d,d]->[qk,n,channel,d,d]
             d = support.size(2)
-            support = support.view(n,k,channel,d,d).sum(dim=1).div(k).squeeze(1).repeat(qk,1,1,1,1)
+            support = support.view(n,k,512,d,d).sum(dim=1).div(k).squeeze(1).repeat(qk,1,1,1,1)
 
             # shape: [qk,channel,d,d]->[qk,n,channel,d,d]
-            query = query.view(qk,channel,d,d).repeat(n,1,1,1,1).transpose(0,1)
+            query = query.view(qk,512,d,d).repeat(n,1,1,1,1).transpose(0,1)
 
-            relation_input = t.cat((support,query), dim=2).view(-1,channel*2,d,d)
+            relation_input = t.cat((support,query), dim=2).view(-1,512*2,d,d)
 
         if self.metric == "Siamese":
             out = t.abs(support-query)

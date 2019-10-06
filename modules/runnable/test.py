@@ -156,8 +156,6 @@ from modules.utils.datasets import get_RN_sampler
 # plt.plot(x, [fx(xx) for xx in x])
 # plt.show()
 
-a = t.Tensor([[[1,2],[3,4]],[[4,5],[6,7]]])
-b = t.Tensor([[1,2],[3,4]])
 
 
 

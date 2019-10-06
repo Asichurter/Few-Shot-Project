@@ -22,7 +22,7 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "cluster"
+data_folder = "cluster_2"
 
 # TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
 # TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
@@ -53,7 +53,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 43
+version = 45
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -68,8 +68,8 @@ outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = 100#len(os.listdir(TRAIN_PATH))
-test_classes = 58#len(os.listdir(TEST_PATH))
+train_classes = 150#len(os.listdir(TRAIN_PATH))
+test_classes = 30#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
