@@ -30,13 +30,13 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 45
+version = 1
 type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 
 folder = 'cluster_2'
-VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%'cluster'
+VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 mode = 'best_acc'
 if_finetuning = True
 
@@ -69,7 +69,7 @@ FINETUNING_EPISODE = 10
 embed_size = 7
 hidden_size = 8
 
-test_classes = 50#len(os.listdir(VALIDATE_PATH))
+test_classes = 28#len(os.listdir(VALIDATE_PATH))
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=224, rotate=False)

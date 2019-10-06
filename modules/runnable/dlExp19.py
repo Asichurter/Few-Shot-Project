@@ -17,12 +17,12 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = "cluster"
+data_folder = "cluster_2"
 
 TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
 TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
 input_size = 256
 hidder_size = 8
@@ -38,7 +38,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 1
+version = 2
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -51,8 +51,8 @@ FRESH_CYCLE = 1000
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = 100#len(os.listdir(TRAIN_PATH))
-test_classes = 58#len(os.listdir(TEST_PATH))
+train_classes = 150#len(os.listdir(TRAIN_PATH))
+test_classes = 30#len(os.listdir(TEST_PATH))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
