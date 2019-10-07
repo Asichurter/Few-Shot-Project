@@ -109,7 +109,7 @@ class ProtoNet(nn.Module):
             nn.Conv2d(128, 256, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(256, affine=True),
             nn.ReLU(inplace=True),
-            SppPooling(levels=[1,2])#nn.MaxPool2d(3)
+            nn.MaxPool2d(2)#SppPooling(levels=[1,2])
         )
         # self.Transformer = nn.Linear(256, 256, bias=False)
 

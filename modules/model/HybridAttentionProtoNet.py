@@ -36,7 +36,7 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
                   kernel_size=kernel_size,
                   stride=stride,
                   padding=padding),
-        nn.ReLU(inplace=True),
+        nn.LeakyReLU(inplace=True),
     )
 
 def get_embed_size(in_size, depth):

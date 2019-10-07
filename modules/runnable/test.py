@@ -156,6 +156,10 @@ from modules.utils.datasets import get_RN_sampler
 # plt.plot(x, [fx(xx) for xx in x])
 # plt.show()
 
+a = t.randn((1,7,7))
+pool = nn.MaxPool2d(4)
+
+
 
 
 

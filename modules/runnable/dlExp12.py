@@ -30,15 +30,15 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 1
-type = "ProtoNet"
+version = 5
+type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster_2'
+folder = 'cluster'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 mode = 'best_acc'
-if_finetuning = True
+if_finetuning = False
 
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
@@ -61,7 +61,7 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 600
+TEST_EPISODE = 1000#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
@@ -69,7 +69,7 @@ FINETUNING_EPISODE = 10
 embed_size = 7
 hidden_size = 8
 
-test_classes = 28#len(os.listdir(VALIDATE_PATH))
+test_classes = 50#len(os.listdir(VALIDATE_PATH))
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=224, rotate=False)
@@ -185,8 +185,12 @@ def validate(model, loss, classes, seed=None):
 # net = ResidualNet(input_size=input_size,n=n,k=k,qk=qk,metric='Relation', block_num=6, hidden_size=64)
 # net = RN(input_size, embed_size, hidden_size, k=k, n=n, qk=qk)
 # net = ResProtoNet()
-# net = ChannelNet(k=k)
-net = ProtoNet()
+if type == 'ProtoNet':
+    net = ProtoNet()
+elif type == 'ChannelNet':
+    net = ChannelNet(k=k)
+else:
+    assert False, "不支持的网络类型：%s"%type
 # net = ProtoNet(k=k, n=n, qk=qk)
 # net = SiameseNet(input_size=input_size, k=k, n=n)
 states = t.load(MODEL_LOAD_PATH)
@@ -305,11 +309,8 @@ for episode in range(TEST_EPISODE):
     print("time:%.2f"%(time.time()-s_time))
 
 print("***********************************")
-print("average acc:", np.mean(acc_hist))
-print("average loss:", np.mean(loss_hist))
-print("acc std var:", np.std(acc_hist))
-print("loss std var:", np.std(loss_hist))
-print('------------------------------------')
+print("average acc:", np.mean(acc_hist) if not if_finetuning else before_acc_total/TEST_EPISODE)
+print("average loss:", np.mean(loss_hist) if not if_finetuning else before_loss_total/TEST_EPISODE)
 if if_finetuning:
     print("average acc after:", after_acc_total/TEST_EPISODE)
     print("average loss after:", after_loss_total/TEST_EPISODE)
@@ -318,5 +319,9 @@ if if_finetuning:
     print("average loss gain: ", loss_gain_all/TEST_EPISODE)
     print("average acc gain ratio: ", (acc_gain_all/TEST_EPISODE)/(before_acc_total/TEST_EPISODE))
     print("average loss gain ratio: ", -1*(loss_gain_all/TEST_EPISODE)/(before_loss_total/TEST_EPISODE))
+else:
+    print("acc std var:", np.std(acc_hist))
+    print("loss std var:", np.std(loss_hist))
+    print('------------------------------------')
 
 bar_frequency(acc_hist, "Test Accuracy Distribution\nAcc=%.3f"%np.mean(acc_hist))

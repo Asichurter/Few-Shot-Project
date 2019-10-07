@@ -1,9 +1,9 @@
+# 最佳表现的ChannelNet备份，对应v4.0
+
 import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 import warnings
-
-from modules.utils.dlUtils import RN_repeat_query_instance
 
 def normalize(tensors):
     dim = len(tensors.size())-1
@@ -33,7 +33,7 @@ def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinea
         layers.pop(2)
     return nn.Sequential(*layers)
 
-def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1, relu=True, drop=False):
+def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1, relu=True):
     block = nn.Sequential(
         nn.Conv2d(in_channel,
                   out_channel,
@@ -44,8 +44,6 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
     )
     if relu:
         block.add_module('relu', nn.ReLU(inplace=True))
-    if drop:
-        block.add_module('drop', nn.Dropout())
     return block
 
 class SppPooling(nn.Module):
@@ -85,15 +83,15 @@ class MultiLevelPooling(nn.Module):
         # return self.Pools[0](x)
 
 # 基于卷积神经网络的图像嵌入网络
-class ChannelNet(nn.Module):
+class ConvProtoNet(nn.Module):
     def __init__(self, k):
-        super(ChannelNet, self).__init__()
+        super(ConvProtoNetNet, self).__init__()
 
         self.ProtoNorm = None
         channels = [1,32,64,128,256]
         strides = [2,1,1,1]
-        paddings = [1,1,1,1]
-        layers = [get_block_2(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
+        paddings = [1,1,1,2]
+        layers = [get_block_2(channels[i],channels[i+1],strides[i],padding=paddings[i]) for i in range(len(strides))]
         layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
         self.Layers = nn.Sequential(*layers)
@@ -106,8 +104,7 @@ class ChannelNet(nn.Module):
         attention_channels = [1,32,64,1]
         attention_strides = [(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]
-        attention_relus = [True,True,False]
-        attention_drops = [False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        relus = [True,True,False]
 
         self.ProtoNet = nn.Sequential(
             *[get_attention_block(attention_channels[i],
@@ -115,8 +112,7 @@ class ChannelNet(nn.Module):
                                   attention_kernels[i],
                                   attention_strides[i],
                                   attention_paddings[i],
-                                  relu=attention_relus[i],
-                                  drop=attention_drops[i])
+                                  relu=relus[i])
               for i in range(len(attention_channels)-1)])
 
     def forward(self, support, query, save_embed=False, save_proto=False):
@@ -162,15 +158,6 @@ class ChannelNet(nn.Module):
 
         # query shape: [qk,d]->[n,qk,d]->[qk,n,d]
         query = query.repeat(n,1,1).transpose(0,1).contiguous().view(qk,n,-1)
-
-        # query = RN_repeat_query_instance(query, self.n).view(-1,self.n,support.size(1),support.size(2),support.size(3))
-
-        # if self.metric == "SqEuc":
-        #     # 由于pytorch中的NLLLoss需要接受对数概率，根据官网上的提示最后一层改为log_softmax
-        #     # 已修正：以负距离输入到softmax中,而不是距离
-        #     posterior = F.log_softmax(t.sum((query-support)**2, dim=2).sqrt().neg(),dim=1)
-        #
-        # elif self.metric == 'cos':
 
         # 在原cos相似度的基础上添加放大系数
         scale = 10
