@@ -3,8 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import warnings
 
-from modules.utils.dlUtils import RN_repeat_query_instance
-
 def normalize(tensors):
     dim = len(tensors.size())-1
     length = tensors.size(dim)
@@ -102,12 +100,12 @@ class ChannelNet(nn.Module):
             warnings.warn("K=%d是偶数将会导致feature_attention中卷积核的宽度为偶数，因此部分将会发生一些变化")
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
         else:
-            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
-        attention_channels = [1,32,64,1]
-        attention_strides = [(1,1),(1,1),(k,1)]
-        attention_kernels = [(k,1),(k,1),(k,1)]
-        attention_relus = [True,True,False]
-        attention_drops = [False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
+        attention_channels = [1,32,64,32,1]
+        attention_strides = [(1,1),(1,1),(1,1),(k,1)]
+        attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
+        attention_relus = [True,True,True,False]
+        attention_drops = [False, False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
 
         self.ProtoNet = nn.Sequential(
             *[get_attention_block(attention_channels[i],

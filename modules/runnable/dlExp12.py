@@ -30,12 +30,12 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 5
+version = 8
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster'
+folder = 'test'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 mode = 'best_acc'
 if_finetuning = False

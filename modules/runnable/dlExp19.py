@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
 import visdom
+import os
 
 import time
 
@@ -17,10 +18,11 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = "cluster"
+data_folder = 'test'#"cluster"
 
-TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
+PATH = "D:/peimages/New/%s/"%data_folder
+TRAIN_FILE_PATH =  PATH+'train.npy'
+TEST_FILE_PATH = PATH+'validate.npy'
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
@@ -38,7 +40,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 5
+version = 6
 
 TEST_CYCLE = 100
 MAX_ITER = 60000
@@ -51,8 +53,8 @@ FRESH_CYCLE = 1000
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = 100#len(os.listdir(TRAIN_PATH))
-test_classes = 58#len(os.listdir(TEST_PATH))
+train_classes = len(os.listdir(PATH+'train/'))
+test_classes = len(os.listdir(PATH+'validate/'))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -63,8 +65,8 @@ vis = visdom.Visdom(env="train monitoring")
 acc_names = ["train acc", "validate acc"]
 loss_names = ["train loss", "validate loss"]
 
-train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_FILE_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_FILE_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
 net = ChannelNet(k=k)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
