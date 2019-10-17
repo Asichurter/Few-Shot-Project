@@ -24,7 +24,7 @@ def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinea
     layers = [
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
-        nn.LeakyReLU(inplace=True),
+        nn.ReLU(inplace=True),
         nn.MaxPool2d(3,2,1)
     ]
     if not nonlinear:
@@ -43,7 +43,8 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
     if relu:
         block.add_module('relu', nn.ReLU(inplace=True))
     if drop:
-        block.add_module('drop', nn.Dropout())
+        block.add_module('drop', nn.Dropout2d())
+        # block.add_module('drop', nn.Dropout())
     return block
 
 class SppPooling(nn.Module):
@@ -101,11 +102,16 @@ class ChannelNet(nn.Module):
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
         else:
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
-        attention_channels = [1,32,64,32,1]
-        attention_strides = [(1,1),(1,1),(1,1),(k,1)]
-        attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
-        attention_relus = [True,True,True,False]
-        attention_drops = [False, False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        attention_channels = [1,32,64,1]
+        # attention_channels = [1,32,64,64,1]
+        attention_strides = [(1,1),(1,1),(k,1)]
+        # attention_strides = [(1,1),(1,1),(1,1),(k,1)]
+        attention_kernels = [(k,1),(k,1),(k,1)]
+        # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
+        attention_relus = [True,True,False]
+        # attention_relus = [True,True,True,False]
+        attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
 
         self.ProtoNet = nn.Sequential(
             *[get_attention_block(attention_channels[i],

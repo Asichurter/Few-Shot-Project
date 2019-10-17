@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import StepLR
 import visdom
 
 import time
+import os
 
 from modules.model.PrototypicalNet import ProtoNet
 from modules.utils.dlUtils import net_init, RN_labelize
@@ -22,22 +23,15 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "cluster_2"
+data_folder = "cluster"
 
-# TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
-# TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
-TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
-MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
+PATH = 'D:/peimages/New/%s/'%data_folder
+TRAIN_PATH = PATH + "train.npy"
+TEST_PATH = PATH + "validate.npy"
+MODEL_SAVE_PATH = PATH + "models/"
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
 LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
-# for con in os.listdir(LOG_PATH):
-#     if os.path.isdir(LOG_PATH+"/"+con):
-#         os.removedirs(LOG_PATH+"/"+con)
-#     else:
-#         os.remove(LOG_PATH+"/"+con)
-# writer = SummaryWriter(LOG_PATH)
 
 input_size = 256
 hidder_size = 8
@@ -68,8 +62,8 @@ outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
 # 训练和测试中类的总数
-train_classes = 150#len(os.listdir(TRAIN_PATH))
-test_classes = 30#len(os.listdir(TEST_PATH))
+train_classes = len(os.listdir(PATH + "train/"))
+test_classes = len(os.listdir(PATH + "validate/"))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]

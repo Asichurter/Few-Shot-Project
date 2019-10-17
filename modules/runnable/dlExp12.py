@@ -30,16 +30,15 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 8
+version = 11
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'test'
+folder = 'cluster'#'test'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 mode = 'best_acc'
 if_finetuning = False
-
 
 # VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
 # MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
@@ -61,7 +60,7 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 1000#600
+TEST_EPISODE = 2000#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
