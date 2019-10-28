@@ -6,6 +6,8 @@ import torch as t
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import collections
+from operator import itemgetter
 
 from modules.utils.datasets import FewShotPreloadDataset
 from modules.utils.datasets import get_RN_sampler
@@ -156,8 +158,13 @@ from modules.utils.datasets import get_RN_sampler
 # plt.plot(x, [fx(xx) for xx in x])
 # plt.show()
 
-a = t.randn((1,7,7))
-pool = nn.MaxPool2d(4)
+dic = collections.OrderedDict()#{}#
+
+dic['k1'] = 2
+dic['k2'] = 3
+dic['k3'] = 1
+dic = sorted(dic.items(), key=itemgetter(1), reverse=True)
+
 
 
 

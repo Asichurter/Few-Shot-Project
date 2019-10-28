@@ -24,7 +24,18 @@ def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinea
     layers = [
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
-        nn.ReLU(inplace=True),
+        nn.LeakyReLU(inplace=True),
+        nn.MaxPool2d(3,2,1)
+    ]
+    if not nonlinear:
+        layers.pop(2)
+    return nn.Sequential(*layers)
+
+def get_block_PReLU(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinear=True):
+    layers = [
+        nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+        nn.BatchNorm2d(out_feature),
+        nn.PReLU(),
         nn.MaxPool2d(3,2,1)
     ]
     if not nonlinear:
@@ -92,8 +103,8 @@ class ChannelNet(nn.Module):
         channels = [1,32,64,128,256]
         strides = [2,1,1,1]
         paddings = [1,1,1,1]
-        layers = [get_block_2(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
-        layers.append(nn.AdaptiveMaxPool2d((1,1)))
+        layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
+        # layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
         self.Layers = nn.Sequential(*layers)
 
@@ -103,12 +114,12 @@ class ChannelNet(nn.Module):
         else:
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
         attention_channels = [1,32,64,1]
-        # attention_channels = [1,32,64,64,1]
+        # attention_channels = [1,16,32,64,1]
         attention_strides = [(1,1),(1,1),(k,1)]
         # attention_strides = [(1,1),(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]
         # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
-        attention_relus = [True,True,False]
+        attention_relus = [True,True,True]
         # attention_relus = [True,True,True,False]
         attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
         # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
@@ -147,7 +158,7 @@ class ChannelNet(nn.Module):
         # support shape: [n*k, c, w', w']
         # proto shape: [n,1,1,w,w]->[n,d]
         # d = int(support.size(2)**2*256)
-        d = 1*256   # (1*1)+(2*2)+(4*4)=21, 多层次池化
+        d = query.size(1)#1*256   # (1*1)+(2*2)+(4*4)=21, 多层次池化
         proto = self.ProtoNet(support.view(n,1,k,d)).view(n,d)
 
         if save_embed:

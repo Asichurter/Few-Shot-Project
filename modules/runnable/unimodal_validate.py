@@ -24,3 +24,4 @@ data_type = 'test'
 
 MODEL_PATH = "D:/peimages/New/%s/models/"%data_folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(model_type,model_mode,k,n,model_version)
 DATA_PATH = "D:/peimages/New/%s/%s.npy"%(data_folder,data_type)
+#

@@ -145,7 +145,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
 
 
 #
-def convert(path, method, padding, fuzzy=None):
+def convert(path, method, padding=False, fuzzy=None):
     '''
     单个图像的转换函数，返回Image对象\n
     path:文件的路径\n
@@ -155,6 +155,7 @@ def convert(path, method, padding, fuzzy=None):
     file = open(path, "rb")
     image = np.fromfile(file, dtype=np.byte)
     im = None
+    # 固定宽度
     if method == 'plain':
         # 将不足宽度大小的剩余长度的像素点都过滤掉
         if image.shape[0] % WIDTH != 0:
@@ -163,6 +164,7 @@ def convert(path, method, padding, fuzzy=None):
         image = image.reshape((-1, WIDTH))
         image = np.uint8(image)
         im = Image.fromarray(image)
+    # 固定尺寸的正方形
     elif method=='normal':
         crop_w = int(image.shape[0] ** 0.5)
         image = image[:crop_w ** 2]
@@ -174,6 +176,7 @@ def convert(path, method, padding, fuzzy=None):
         if fuzzy is not None:
             im = im.resize((fuzzy, fuzzy), Image.ANTIALIAS)
         im = im.resize((WIDTH, WIDTH), Image.ANTIALIAS)
+    # 按文件大小而定的正方形
     elif method == 'fix':
         try:
             width = get_width(int(os.path.getsize(path)/1024))
@@ -479,6 +482,14 @@ def statistic_min_max_height(base):
                 min_ = img.size[1]
     return max_,min_
 
+def convert_microsoft_dataset(s_path, d_path, verbose=True):
+    for i,item in enumerate(os.listdir(s_path)):
+        if verbose:
+            print(i)
+        f_name = item.split('.')[0]
+        img = convert(s_path+item, method='normal')
+        img.save(d_path+f_name+'.jpg', 'JPEG')
+
 
 def validate(model, dataloader, Criteria, return_predict=False):
     '''
@@ -646,3 +657,6 @@ if __name__ == "__main__":
                                 # test: [0.3934904], [0.10155067]
     # scale_rectangle_image('D:/peimages/New/cluster_fix_width/validate/', threshold=256)
     # print(statistic_min_max_height('D:/peimages/New/cluster_fix_width/train/'))
+    convert_microsoft_dataset(s_path='D:/MicrosoftDataset/MalwareCla/microsoftPE/train/',
+                              d_path='D:/peimages/New/ms/train/',
+                              verbose=True)

@@ -1931,3 +1931,35 @@ class BiEmbedProtoNet(nn.Module):
 ![](pictures/1_loss_biembed.png)
 
 由于验证集上的效果不如原生PrototypeNet，因此没有进行进一步测试。该模型的性能似乎也不如PrototypeNet。
+
+
+
+#### 2.5.18 ConvProtoNet模型（最新）
+
+借鉴2.5.16节中的混合注意力模型的模型结构，可以构建一种类似的网络结构，该结构通过一个dimension-wise卷积结构，直接在提供了K个类向量的时候，生成一个类原型向量。如下图所示：
+
+![](pictures/pic18.png)
+
+类似地，这种kx1的dimension-wise 卷积会堆叠c次形成一个模块，在最终卷积得到一个1xD的原型向量前，需要进行padding以保持形状。
+
+
+
+与Hybrid模型不同的是，HybridAttention通过这样的一个结构生成一个FeatureAttention，用于加权L2距离生成最终的距离值。但是在ConvProto模型中，这种结构直接用于生成=原型向量，然后使用普通的距离函数进行衡量。由于只有支持集中的样本会经过该模块，而查询集中的数据不会经过该结构，因此两者在求距离的时候将会由于处理不同而数据尺度也有所不同，因此采用L2距离可能不妥。在本模型中，使用的是修正后的cos距离（见2.5.12）。
+
+结果如下：
+
+数据清洗前的结果：
+
+![](pictures/8_bestacc_1000epoches_convproto.PNG)
+
+![](pictures/8_bestacc_1000epoches_dist_convproto.PNG)
+
+(基线正确率：63%)
+
+数据清洗后的效果：
+
+![](pictures/4_bestacc_600epoches_convproto.PNG)
+
+![](pictures/4_bestacc_600epoches_dist_convproto.PNG)
+
+(基线正确率为80.1%)
