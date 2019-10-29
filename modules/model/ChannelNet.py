@@ -119,7 +119,7 @@ class ChannelNet(nn.Module):
         # attention_strides = [(1,1),(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]
         # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
-        attention_relus = [True,True,True]
+        attention_relus = [True,True,False]
         # attention_relus = [True,True,True,False]
         attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
         # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout

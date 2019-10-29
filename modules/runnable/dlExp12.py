@@ -30,7 +30,7 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 16
+version = 17
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
