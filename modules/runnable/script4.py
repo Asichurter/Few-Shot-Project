@@ -1,13 +1,17 @@
+# 调用VirusTotal 的api来扫描和生成报告
+
 import requests
 import os
 import json
+import time
+import sys
 
 scan_url = 'https://www.virustotal.com/vtapi/v2/file/scan'
 report_url = 'https://www.virustotal.com/vtapi/v2/file/report'
 
-folder_path = 'C:/Users/Asichurter/Desktop/malwares/samples/'
-labels_path = 'C:/Users/Asichurter/Desktop/malwares/labels/'
-json_save_path = 'C:/Users/Asichurter/Desktop/malwares/jsons/'
+folder_path = 'D:/BaiduNetdiskDownload/VirusShare_00177/'
+labels_path = 'D:/BaiduNetdiskDownload/VirusShare_labels/'
+json_save_path = 'D:/BaiduNetdiskDownload/VirusShare_jsons/'
 
 AVClass_path = 'D:/BaiduNetdiskDownload/avclass-master/'
 # AVClass_path = '../../modules/avclass-master/'
@@ -17,42 +21,67 @@ AVClass_template = 'python ' + AVClass_path + 'avclass_labeler.py %s %s > %s'
 apikey = 'c424abc9c8d7102cfaf9cf2d8f01fb95f4ddfd81a563d6e07738fa960b501d87'
 scan_params = {'apikey': apikey}
 
-scan_ids = {}
-
 report_platform = 'McAfee'
 
+start_index = 0
+end_index = 100
+
 print('Begin to scan...')
-for f in os.listdir(folder_path):
+samples_list = os.listdir(folder_path)
+while start_index < end_index:
+    print(start_index, time.time()%100000)
+    f = samples_list[start_index]
+    if (os.path.exists(json_save_path+f+'.json') and os.path.getsize(json_save_path+f+'.json') != 0):
+        start_index += 1
+        continue
+
     files_cfg = {'file': ('test', open(folder_path+f, 'rb'))}
 
-    response = requests.post(scan_url, files=files_cfg, params=scan_params)
+    try:
+        response = requests.post(scan_url, files=files_cfg, params=scan_params)
+    except:
+        print(f, ': api request exceeds!')
+        print('waiting...')
+        time.sleep(60)
+        continue
 
     # print(type(response.json()))
     scan_info = response.json()
     # print(response.json())
-    scan_ids[f] = scan_info['md5']
-    print(scan_info)
 
-print('Begin to fetch reports...')
-for f,id in scan_ids.items():
-    report_params = {'apikey': apikey, 'resource': id}
+    report_params = {'apikey': apikey, 'resource': scan_info['md5']}
     try:
         report = requests.get(report_url, params=report_params)
         report = report.json()#['scans']
-    except json.decoder.JSONDecodeError:
-        print(f, report)
+    except:
+        print(f, ': api request exceeds!')
+        print('waiting...')
+        time.sleep(60)
         continue
     # print(report)
     print(report['verbose_msg'])
     if report['response_code'] == 1:
         with open('%s.json'%(json_save_path+f),'w') as fp:
             json.dump(report, fp)
-        report = report['scans']
-        if report[report_platform]['detected']:
-            print('%s:\n'%report_platform,report[report_platform]['result'])
-            # print(report[report_platform])
-        else:
-            print(f, ' fail to be detected by %s'%report_platform)
+    else:
+        sys.stderr.write('%s wrong response code %d'%(f, report['response_code']))
+
+    # time.sleep(20.5)
+    start_index += 1
+        # report = report['scans']
+        # if report[report_platform]['detected']:
+        #     print('%s:\n'%report_platform,report[report_platform]['result'])
+        #     # print(report[report_platform])
+        # else:
+        #     print(f, ' fail to be detected by %s'%report_platform)
+
+    # scan_ids[f] = scan_info['md5']
+
+
+# print('Begin to fetch reports...')
+# for f,id in scan_ids.items():
+
+
 
         # print(AVClass_template % ('-vt',
         #                           folder_path + 'VirusShare_00002a26eadf58972a336ea3d17c2a20.json',
