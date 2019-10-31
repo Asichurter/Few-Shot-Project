@@ -23,8 +23,8 @@ scan_params = {'apikey': apikey}
 
 report_platform = 'McAfee'
 
-start_index = 0
-end_index = 100
+start_index = 2595
+end_index = 10000
 
 print('Begin to scan...')
 samples_list = os.listdir(folder_path)
@@ -38,6 +38,7 @@ while start_index < end_index:
     files_cfg = {'file': ('test', open(folder_path+f, 'rb'))}
 
     try:
+        print('scanning...')
         response = requests.post(scan_url, files=files_cfg, params=scan_params)
     except:
         print(f, ': api request exceeds!')
@@ -51,6 +52,7 @@ while start_index < end_index:
 
     report_params = {'apikey': apikey, 'resource': scan_info['md5']}
     try:
+        print('fetching report...')
         report = requests.get(report_url, params=report_params)
         report = report.json()#['scans']
     except:
@@ -86,11 +88,11 @@ while start_index < end_index:
         # print(AVClass_template % ('-vt',
         #                           folder_path + 'VirusShare_00002a26eadf58972a336ea3d17c2a20.json',
         #                           'VirusShare_00002a26eadf58972a336ea3d17c2a2.labels'))
-print('Begin to convert...')
-# print((labels_path+'malware.labels'))
-os.system(AVClass_template % ('-vtdir',
-                              json_save_path,
-                              (labels_path+'malware.labels'))) #labels_path + f + '.labels'))
+# print('Begin to convert...')
+# # print((labels_path+'malware.labels'))
+# os.system(AVClass_template % ('-vtdir',
+#                               json_save_path,
+#                               (labels_path+'malware.labels'))) #labels_path + f + '.labels'))
 
 
 

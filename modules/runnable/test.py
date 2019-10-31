@@ -8,6 +8,7 @@ import math
 import matplotlib.pyplot as plt
 import collections
 from operator import itemgetter
+import json
 
 from modules.utils.datasets import FewShotPreloadDataset
 from modules.utils.datasets import get_RN_sampler
@@ -158,12 +159,20 @@ from modules.utils.datasets import get_RN_sampler
 # plt.plot(x, [fx(xx) for xx in x])
 # plt.show()
 
-dic = collections.OrderedDict()#{}#
+# dic = collections.OrderedDict()#{}#
+#
+# dic['k1'] = 2
+# dic['k2'] = 3
+# dic['k3'] = 1
+# dic = sorted(dic.items(), key=itemgetter(1), reverse=True)
 
-dic['k1'] = 2
-dic['k2'] = 3
-dic['k3'] = 1
-dic = sorted(dic.items(), key=itemgetter(1), reverse=True)
+# a = {'1':'A', '2':'B', '3':'C'}
+# with open('D:/peimages/New/cluster/gist/temp/1.json', 'w') as fp:
+#     json.dump(a, fp)
+#
+# with open('D:/peimages/New/cluster/gist/temp/1.json', 'r') as fp:
+#     a = json.load(fp)
+#     print(a)
 
 
 
