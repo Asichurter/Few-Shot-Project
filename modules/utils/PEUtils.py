@@ -2,15 +2,15 @@ import os
 import shutil
 import numpy as np
 
-img_path = path = 'D:/peimages/New/cluster/train/'
+img_path = path = 'D:/peimages/New/test/train/'
 pe_src_path = 'D:/pe/'
-pe_dst_path = 'D:/peimages/PEs/cluster/train/'
+pe_dst_path = 'D:/peimages/PEs/test/train/'
 
 # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
 def mk_dirs():
     for dir_ in os.listdir(img_path):
         if not os.path.exists(pe_dst_path+dir_):
-            os.mkdir(pe_dst_path+dir_)
+            os.mkdir(pe_dst_path+dir_+'/')
 
 def find_malware_path(img_name):
     img_mal_name = '.'.join(img.split('.')[:-1])   # 去掉结尾的jpg就成了对应的病毒名称

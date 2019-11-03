@@ -54,7 +54,7 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
     if relu:
         block.add_module('relu', nn.ReLU(inplace=True))
     if drop:
-        block.add_module('drop', nn.Dropout2d())
+        block.add_module('drop', nn.Dropout2d(0.2))
         # block.add_module('drop', nn.Dropout())
     return block
 
@@ -121,7 +121,7 @@ class ChannelNet(nn.Module):
         # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
         attention_relus = [True,True,False]
         # attention_relus = [True,True,True,False]
-        attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        attention_drops = [False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
         # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
 
         self.ProtoNet = nn.Sequential(
