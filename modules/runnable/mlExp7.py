@@ -12,11 +12,11 @@ from modules.utils.gist import getGists
 path = 'D:/peimages/New/test/train/'
 
 k = 5
-n = 5
+n = 10
 N = 20
 qk = N-k
 
-iterations = 100
+iterations = 1000
 
 train_samples = []
 train_labels = []
@@ -100,6 +100,7 @@ for i in range(iterations):
     acc_his.append(acc)
 
 print('average acc: ', np.mean(acc_his))
+bar_frequency(acc_his, title='%d-shot %d-way with Gist Feature'%(k,n))
 
 
 

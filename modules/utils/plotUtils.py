@@ -122,6 +122,27 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
     return texts
 
+def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2):
+    bin_interval = 1/bins
+    x = np.arange(bins)*bar_width
+    x_label = (x-bar_width/2)
+    x_label = np.append(x_label, x_label[-1]+bar_width)
+    x_ticks = [round(i*bin_interval, precision) for i in range(bins+1)]
+    # print(x, x_label, x_ticks, sep='\n')
+    data = np.floor(np.array(data)/bin_interval)
+    frequency = [0]*bins
+    for i in data:
+        try:
+            frequency[int(i)] += 1/len(data)
+        except IndexError:
+            if int(i)==10:
+                frequency[9] += 1/len(data)
+    plt.title(title)
+    plt.bar(x, frequency, alpha=0.5, width=bar_width, color=color, edgecolor='black', label="frequency", lw=3)
+    plt.xticks(x_label, x_ticks)
+    plt.legend()
+    plt.show()
+
 if __name__ == "__main__":
     data = [[0.97, 0.03],[0.04, 0.96]]
     labels = ["benign", "malware"]

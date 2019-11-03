@@ -23,16 +23,21 @@ scan_params = {'apikey': apikey}
 
 report_platform = 'McAfee'
 
-start_index = 2595
-end_index = 10000
+start_index = len(os.listdir(json_save_path))
+end_index = 40000
+
+assert start_index < end_index, '尝试使用一个更大的end下标值！目前的起始下标:%d' % start_index
 
 print('Begin to scan...')
 samples_list = os.listdir(folder_path)
+last_stamp = time.time()
 while start_index < end_index:
-    print(start_index, time.time()%100000)
+    # print(start_index, time.time()%100000)
+    print(start_index)
     f = samples_list[start_index]
     if (os.path.exists(json_save_path+f+'.json') and os.path.getsize(json_save_path+f+'.json') != 0):
         start_index += 1
+        last_stamp = time.time()
         continue
 
     files_cfg = {'file': ('test', open(folder_path+f, 'rb'))}
@@ -40,8 +45,8 @@ while start_index < end_index:
     try:
         print('scanning...')
         response = requests.post(scan_url, files=files_cfg, params=scan_params)
-    except:
-        print(f, ': api request exceeds!')
+    except BaseException as e:
+        print(f, ': api request exceeds!', ' error:', str(e))
         print('waiting...')
         time.sleep(60)
         continue
@@ -55,8 +60,8 @@ while start_index < end_index:
         print('fetching report...')
         report = requests.get(report_url, params=report_params)
         report = report.json()#['scans']
-    except:
-        print(f, ': api request exceeds!')
+    except BaseException as e:
+        print(f, ': api request exceeds!', ' error:', str(e))
         print('waiting...')
         time.sleep(60)
         continue
@@ -67,6 +72,9 @@ while start_index < end_index:
             json.dump(report, fp)
     else:
         sys.stderr.write('%s wrong response code %d'%(f, report['response_code']))
+
+    print('time consuming: %.2f'%(time.time()-last_stamp))
+    last_stamp = time.time()
 
     # time.sleep(20.5)
     start_index += 1

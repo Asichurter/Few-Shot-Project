@@ -174,6 +174,42 @@ from modules.utils.datasets import get_RN_sampler
 #     a = json.load(fp)
 #     print(a)
 
+import random
+import time
+import multiprocessing
+
+
+def worker(name, q, num):
+    t = 0
+    for i in range(10):
+        # print(name + " " + str(i))
+        x = random.randint(1, 3)
+        t += x
+        time.sleep(x * 0.1)
+    q.put(t)
+    print(num, 'done')
+
+def main():
+    q = multiprocessing.Queue()
+    jobs = []
+    for i in range(10):
+        print('create', i)
+        p = multiprocessing.Process(target=worker, args=(str(i), q, i))
+        jobs.append(p)
+        p.start()
+
+    for i,p in enumerate(jobs):
+        print('waiting for', i)
+        p.join()
+        print('process',i,'exit')
+
+    results = [q.get() for j in jobs]
+    print(results)
+
+if __name__ == '__main__':
+    main()
+
+
 
 
 
