@@ -42,7 +42,7 @@ def get_block_PReLU(in_feature, out_feature, stride=1, kernel=3, padding=1, nonl
         layers.pop(2)
     return nn.Sequential(*layers)
 
-def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1, relu=True, drop=False):
+def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1, relu=True, drop=False, bn=True):
     block = nn.Sequential(
         nn.Conv2d(in_channel,
                   out_channel,
@@ -51,6 +51,8 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
                   padding=padding)#,
         # nn.ReLU(inplace=True)
     )
+    if bn:
+        block.add_module('bn', nn.BatchNorm2d(out_channel))
     if relu:
         block.add_module('relu', nn.ReLU(inplace=True))
     if drop:
@@ -103,7 +105,7 @@ class ChannelNet(nn.Module):
         channels = [1,32,64,128,256]
         strides = [2,1,1,1]
         paddings = [1,1,1,1]
-        layers = [get_block_2(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
+        layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
         # layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
         self.Layers = nn.Sequential(*layers)
@@ -121,8 +123,9 @@ class ChannelNet(nn.Module):
         # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
         attention_relus = [True,True,False]
         # attention_relus = [True,True,True,False]
-        attention_drops = [False, True, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
         # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
+        attention_bns = [False, False, False]
 
         self.ProtoNet = nn.Sequential(
             *[get_attention_block(attention_channels[i],
@@ -131,7 +134,8 @@ class ChannelNet(nn.Module):
                                   attention_strides[i],
                                   attention_paddings[i],
                                   relu=attention_relus[i],
-                                  drop=attention_drops[i])
+                                  drop=attention_drops[i],
+                                  bn=attention_bns[i])
               for i in range(len(attention_channels)-1)])
 
     def forward(self, support, query, save_embed=False, save_proto=False):

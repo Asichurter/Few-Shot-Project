@@ -274,7 +274,7 @@ class ClassSampler(Sampler):
         return 1
 
 class RNSamlper(Sampler):
-    def __init__(self, instances, classes, num_per_class, shuffle):
+    def __init__(self, k, qk, instance_seeds, mode, classes, num_per_class, shuffle):
         '''
         用于组成训练时sample set/query set和测试时support set和test set的采样器\n
         sample和query来自相同的类中，均为采样得到的
@@ -285,12 +285,23 @@ class RNSamlper(Sampler):
         self.classes = classes
         self.num_per_class = num_per_class
         self.shuffle = shuffle
-        self.instances = instances
+        self.instances = dict.fromkeys(self.classes)
+        if mode == 'train':
+            # 为每一个类，根据其种子生成抽样样本的下标
+            for cla,seed in zip(classes,instance_seeds):
+                rd.seed(seed)
+                self.instances[cla] = set(rd.sample([i for i in range(num_per_class)], k))
+        elif mode == 'test':
+            for cla,seed in zip(classes, instance_seeds):
+                rd.seed(seed)
+                train_instances = set(rd.sample([i for i in range(num_per_class)], k))
+                test_instances = set([i for i in range(num_per_class)]).difference(train_instances)
+                self.instances[cla] = rd.sample(test_instances, qk)
 
     def __iter__(self):
         batch = []
-        for c in self.classes:
-            for i in self.instances:
+        for c,instances in self.instances.items():
+            for i in instances:
                 batch.append(self.num_per_class*c+i)
         if self.shuffle:
             rd.shuffle(batch)
@@ -333,17 +344,22 @@ class RNModifiedSamlper(Sampler):
 def get_RN_sampler(classes, train_num, test_num, num_per_class, seed=None):
     if seed is None:
         seed = time.time()%1000000
+
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)
-    instance_pool = [i for i in range(num_per_class)]
-    instances = rd.sample(instance_pool, train_num+test_num)
+    # instance_pool = [i for i in range(num_per_class)]
+    # instances = rd.sample(instance_pool, train_num+test_num)
+    # rd.seed(seed)
+    # rd.shuffle(instances)
+    #
+    # train_instances= instances[:train_num]
+    # test_instances = instances[train_num:]
+
+    # 先利用随机种子生成类中的随机种子
     rd.seed(seed)
-    rd.shuffle(instances)
+    instance_seeds = rd.sample([i for i in range(100000)], len(classes))
 
-    train_instances= instances[:train_num]
-    test_instances = instances[train_num:]
-
-    return RNSamlper(train_instances,classes,num_per_class,False),\
-           RNSamlper(test_instances,classes,num_per_class,True)
+    return RNSamlper(train_num, test_num, instance_seeds, 'train', classes, num_per_class,False),\
+           RNSamlper(train_num, test_num, instance_seeds, 'test', classes, num_per_class, True)
 
 def get_RN_modified_sampler(classes, train_num, test_num, num_per_class):
     assert train_num+test_num <= num_per_class, "单类中样本总数:%d少于训练数量加测试数量:%d！"%(num_per_class, train_num+test_num)

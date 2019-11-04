@@ -21,16 +21,16 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
-qk = 15
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 20
+version = 21
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
@@ -60,7 +60,7 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 2000#600
+TEST_EPISODE = 1000#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
