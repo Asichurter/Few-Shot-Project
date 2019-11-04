@@ -48,7 +48,7 @@ def cal_gist_acc(iters, q, num):
     path = 'D:/peimages/New/test/train/'
 
     k = 10
-    n = 10
+    n = 20
     N = 20
     qk = N - k
 
@@ -81,7 +81,9 @@ def cal_gist_acc(iters, q, num):
 
         for l, c_index_each in enumerate(class_indexes):
             # 选中K个样本
-            train_item_indexes = get_random_indexes(N, k)
+            train_test_mix_indexes = set(get_random_indexes(N, k+qk))
+            train_item_indexes = set(rd.sample(train_test_mix_indexes, k))
+            test_item_indexes = train_test_mix_indexes.difference(train_item_indexes)
             class_items = os.listdir(path + class_names[c_index_each] + '/')
             train_imgs = []
             test_imgs = []
@@ -89,7 +91,7 @@ def cal_gist_acc(iters, q, num):
                 img = Image.open(path + class_names[c_index_each] + '/' + class_items[j])
                 if j in train_item_indexes:
                     train_imgs.append(img)
-                else:
+                elif j in test_item_indexes:
                     test_imgs.append(img)
 
             train_samples += Gist(train_imgs)
@@ -132,7 +134,7 @@ def consume_acc(q, num, timeout=60):
 
 if __name__ == '__main__':
 
-    iterations = 1000
+    iterations = 200
     process_amount = 5
     iter_per_process = int(iterations/process_amount)
 
