@@ -18,7 +18,7 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'cluster'
+data_folder = 'cluster_2'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -40,10 +40,10 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 21
+version = 24
 
 TEST_CYCLE = 100
-MAX_ITER = 60000
+MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000

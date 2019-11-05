@@ -8,6 +8,7 @@ from torch.optim import SGD
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
+import os
 
 import time
 
@@ -30,13 +31,14 @@ N = 20
 lr = 1e-3
 CROP_SIZE = 224
 
-version = 21
+version = 24
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster'#'test'
+folder = 'cluster_2'#'test'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
+VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
 if_finetuning = False
 
@@ -60,7 +62,7 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 1000#600
+TEST_EPISODE = 500#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
@@ -68,7 +70,7 @@ FINETUNING_EPISODE = 10
 embed_size = 7
 hidden_size = 8
 
-test_classes = 50#len(os.listdir(VALIDATE_PATH))
+test_classes = len(os.listdir(VALIDATE_LENGTH_PATH))#50
 TEST_CLASSES = [i for i in range(test_classes)]
 
 dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=224, rotate=False)

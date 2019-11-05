@@ -24,7 +24,7 @@ scan_params = {'apikey': apikey}
 report_platform = 'McAfee'
 
 start_index = len(os.listdir(json_save_path))
-end_index = 50000
+end_index = 55000
 
 assert start_index < end_index, '尝试使用一个更大的end下标值！目前的起始下标:%d' % start_index
 
