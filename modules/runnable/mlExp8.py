@@ -12,14 +12,14 @@ from modules.utils.nGram import FrqNGram, KNN
 path = 'D:/peimages/PEs/cluster/train/'
 
 k = 10
-n = 20
+n = 5
 N = 20
 qk = 5
 
 NG = 3
 L = 1024
 
-iterations = 10
+iterations = 2
 
 def debug():
     while True:
@@ -55,7 +55,7 @@ def main():
     class_names = os.listdir(path)
     class_num = len(class_names)
 
-    acc_his = [0.87, 0.83, 0.77, 0.46, 0.72]#[0.49, 0.34, 0.3, 0.42, 0.28, 0.27, 0.29, 0.36, 0.24, 0.34, 0.44, 0.33, 0.46, 0.31, 0.43, 0.36, 0.36]
+    acc_his = [0.87, 0.83, 0.77, 0.46, 0.72, 0.46, 0.7, 0.74, 0.71, 0.65, 0.65, 0.61, 0.89, 0.63, 0.71, 0.6, 0.8, 0.75, 0.79, 0.56, 0.47, 0.82]#[0.49, 0.34, 0.3, 0.42, 0.28, 0.27, 0.29, 0.36, 0.24, 0.34, 0.44, 0.33, 0.46, 0.31, 0.43, 0.36, 0.36]
     time_stamp = time.time()
     for i in range(iterations):
         print(i, 'th iteration')
@@ -159,3 +159,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # acc_his = [0.87, 0.83, 0.77, 0.46, 0.72, 0.46, 0.7, 0.74, 0.71, 0.65, 0.65, 0.61, 0.89, 0.63, 0.71, 0.6, 0.8, 0.75,
+    #            0.79, 0.56, 0.47, 0.82]
+    # print(np.mean(acc_his))
