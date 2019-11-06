@@ -10,6 +10,7 @@ class FrqNGram:
         self.Counter = None
 
         self.extract_NGram(path)
+        self.fetch_topL_frequent()
 
     def extract_NGram(self, path):
         n = self.N
@@ -32,7 +33,7 @@ class FrqNGram:
     def fetch_topL_frequent(self):
         new_NGram = {}
         if len(self.Counter) <= self.L:
-            warnings.warn("NGram总长度 %d 小于提取长度 %d !" % (len(self.Counter)), self.L)
+            warnings.warn("NGram总长度 %d 小于提取长度 %d !" % (len(self.Counter), self.L))
             return
         for i in range(self.L):
             most_frqt_key = max(self.Counter, key=self.Counter.get)
@@ -105,6 +106,6 @@ class KNN:
 
 
 if __name__ == '__main__':
-    p = 'D:/peimages/New/cluster/train/Backdoor.Win32.Agobot/Backdoor.Win32.Agobot.015.e.jpg'
-    a = {'a':2, 'b':1, 'c':3}
+    p = 'D:/peimages/PEs/cluster/train/Backdoor.Win32.Agobot/Backdoor.Win32.Agobot.015.e'
+    ngram = FrqNGram(path=p, N=3, L=1024)
 
