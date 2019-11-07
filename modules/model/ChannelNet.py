@@ -112,7 +112,8 @@ class ChannelNet(nn.Module):
 
         if k%2==0:
             warnings.warn("K=%d是偶数将会导致feature_attention中卷积核的宽度为偶数，因此部分将会发生一些变化")
-            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
+            # attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
+            attention_paddings = [(k//2, 0), (k//2, 0), (0, 0)]
         else:
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
         attention_channels = [1,32,64,1]

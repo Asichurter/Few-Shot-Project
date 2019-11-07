@@ -20,23 +20,23 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
-qk = 5
+qk = 10
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
-CROP_SIZE = 224
+CROP_SIZE = 256
 
-version = 24
+version = 25
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster_2'#'test'
+folder = 'cluster'#'test'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
@@ -62,7 +62,7 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 500#600
+TEST_EPISODE = 20#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
@@ -73,7 +73,7 @@ hidden_size = 8
 test_classes = len(os.listdir(VALIDATE_LENGTH_PATH))#50
 TEST_CLASSES = [i for i in range(test_classes)]
 
-dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=224, rotate=False)
+dataset = FewShotFileDataset(VALIDATE_PATH, N, test_classes, rd_crop_size=CROP_SIZE, rotate=False)
 # dataset = FewShotRNDataset(VALIDATE_PATH, N, rd_crop_size=224)
 
 acc_hist = []
