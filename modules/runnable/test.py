@@ -210,8 +210,8 @@ from modules.utils.datasets import get_RN_sampler
 #     main()
 
 
-a = set([1,3,4,45,5])
-
+a = {'a':3, 'b':1, 'c':2}
+print(sorted(a, key=a.get, reverse=True))
 
 
 
