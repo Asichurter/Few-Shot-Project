@@ -1,15 +1,16 @@
-# 本实验用于测试RelationNet
+# 本实验用于测试Relation
 
 import torch as t
-import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.optim import Adam
+from torch.nn import NLLLoss, CrossEntropyLoss
 import random as rd
 from torch.utils.data import DataLoader
 from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
 import visdom
+import os
 
 import time
 
@@ -17,17 +18,11 @@ from modules.model.RelationNet import RN
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-# TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
-# TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
-# MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
-# DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+data_folder = 'cluster'
 
-data_folder = "cluster"
-
-# TRAIN_PATH = "D:/peimages/New/%s/train/" %data_folder
-# TEST_PATH = "D:/peimages/New/%s/validate/"%data_folder
-TRAIN_PATH = "D:/peimages/New/%s/train.npy" %data_folder
-TEST_PATH = "D:/peimages/New/%s/validate.npy"%data_folder
+PATH = "D:/peimages/New/%s/"%data_folder
+TRAIN_FILE_PATH =  PATH+'train.npy'
+TEST_FILE_PATH = PATH+'validate.npy'
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_relation_net_exp/"
 
@@ -37,27 +32,31 @@ hidder_size = 8
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
-qk = 15
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 14
+version = 19
 
 TEST_CYCLE = 100
-MAX_ITER = 60000
+MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
 CROP_SIZE = 224
 FRESH_CYCLE = 1000
+REST_INTERVAL = 10000
+REST_TIME = 300
+
+margin = 1
 
 # 训练和测试中类的总数
-train_classes = 100#len(os.listdir(TRAIN_PATH))
-test_classes = 58#len(os.listdir(TEST_PATH))
+train_classes = len(os.listdir(PATH+'train/'))
+test_classes = len(os.listdir(PATH+'validate/'))
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -68,11 +67,8 @@ vis = visdom.Visdom(env="train monitoring")
 acc_names = ["train acc", "validate acc"]
 loss_names = ["train loss", "validate loss"]
 
-
-# train_dataset = FewShotRNDataset(TRAIN_PATH, N, rd_crop_size=CROP_SIZE)
-# test_dataset = FewShotRNDataset(TEST_PATH, N, rd_crop_size=CROP_SIZE)
-train_dataset = FewShotFileDataset(TRAIN_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
-test_dataset = FewShotFileDataset(TEST_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
+train_dataset = FewShotFileDataset(TRAIN_FILE_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
+test_dataset = FewShotFileDataset(TEST_FILE_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
 net = RN()
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
@@ -88,13 +84,13 @@ net.apply(net_init)
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
 # opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
 scheduler = StepLR(opt, step_size=15000 , gamma=0.1)
-nll = nn.MSELoss().cuda()
+nll = CrossEntropyLoss().cuda()
+# nll = NLLLoss().cuda()
 
 train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()
 train_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss_train.npy"%version).tolist()
 test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%version).tolist()
 test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
-proto_norms = []
 time_consuming = []
 
 best_acc = 0.
@@ -109,6 +105,9 @@ for episode in range(MAX_ITER):
         choice = input("%d episode, continue?"%episode)
         if choice.find("no") != -1 or choice.find("n") != -1:
             break
+
+    if REST_INTERVAL > 0 and episode+1 % REST_INTERVAL == 0:
+        time.sleep(REST_TIME)
     net.train()
     net.zero_grad()
     print("%d th episode"%episode)
@@ -131,7 +130,7 @@ for episode in range(MAX_ITER):
     query_labels = query_labels.cuda()
     # tracker.track()
 
-    labels = RN_labelize(sample_labels, query_labels, k, n, type="float", expand=True)
+    labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
 
     outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), queries.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
@@ -147,7 +146,7 @@ for episode in range(MAX_ITER):
     # t.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
     opt.step()
 
-    acc = (t.argmax(outs, dim=1)==labels.argmax(dim=1)).sum().item()/labels.size(0)
+    acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
     loss_val = loss.item()
 
     print("train acc: ", acc)
@@ -196,7 +195,7 @@ for episode in range(MAX_ITER):
                 tests = tests.cuda()
                 test_labels = test_labels.cuda()
 
-                test_labels = RN_labelize(support_labels, test_labels, k, n, type="float", expand=True)
+                test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
                 test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(n*qk,1,CROP_SIZE,CROP_SIZE))
 
                 val_nll_loss = nll(test_relations, test_labels)
@@ -205,7 +204,7 @@ for episode in range(MAX_ITER):
                 # val_total_loss = val_inner_var_loss + val_outer_var_loss + margin
 
                 test_loss += val_nll_loss.item()
-                test_acc += (t.argmax(test_relations, dim=1)==test_labels.argmax(dim=1)).sum().item()/test_labels.size(0)
+                test_acc += (t.argmax(test_relations, dim=1)==test_labels).sum().item()/test_labels.size(0)
 
                 # test_inner += val_inner_var_loss.item()
                 # test_outer += val_outer_var_loss.item()
@@ -249,6 +248,18 @@ for episode in range(MAX_ITER):
                                 ),
                                 update=None if episode==0 else "append")
             now_stamp = time.time()
+            time_consuming.append(now_stamp - previous_stamp)
+            plot_time = np.array([time_consuming[-1]])
+            # time_line = vis.line(X=plot_norm_x,
+            #                      Y=plot_time,
+            #                      win="time",
+            #                      opts=dict(
+            #                          title="Time Consuming",
+            #                          xlabel="Iterations",
+            #                          ylabel="seconds"
+            #                      ),
+            #                      # update=None if episode == 0 else "append")
+            #                      update=None if episode == 0 else "append")
 
             global_step += TEST_CYCLE
 

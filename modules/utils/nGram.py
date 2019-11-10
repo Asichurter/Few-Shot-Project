@@ -33,11 +33,14 @@ class FrqNGram:
     def fetch_topL_frequent(self):
         new_NGram = {}
         if len(self.Counter) <= self.L:
-            warnings.warn("NGram总长度 %d 小于提取长度 %d !" % (len(self.Counter), self.L))
+            # warnings.warn("NGram总长度 %d 小于提取长度 %d !" % (len(self.Counter), self.L))
             return
-        for i in range(self.L):
-            most_frqt_key = max(self.Counter, key=self.Counter.get)
-            new_NGram[most_frqt_key] = self.Counter.pop(most_frqt_key)
+        top_L_keys = sorted(self.Counter, key=self.Counter.get, reverse=True)[:self.L]
+        # for i in range(self.L):
+        #     most_frqt_key = max(self.Counter, key=self.Counter.get)
+        #     new_NGram[most_frqt_key] = self.Counter.pop(most_frqt_key)
+        for key in top_L_keys:
+            new_NGram[key] = self.Counter[key]
 
         self.Counter = new_NGram
 

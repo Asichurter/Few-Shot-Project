@@ -14,6 +14,7 @@ import time
 
 from modules.model.PrototypicalNet import ProtoNet
 from modules.model.ChannelNet import ChannelNet
+from modules.model.RelationNet import RN
 from modules.utils.dlUtils import RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
@@ -29,10 +30,11 @@ qk = 10
 N = 20
 # 学习率
 lr = 1e-3
-CROP_SIZE = 256
+CROP_SIZE = 224
+TEST_EPISODE = 500
 
-version = 25
-type = "ChannelNet"
+version = 18
+type = "RelationNet"
 draw_confusion_matrix = False
 conf_mat = []
 
@@ -62,7 +64,6 @@ inner_var_alpha = 1e-2
 outer_var_alpha = 1e-2*(k-1)*n
 margin = 1
 
-TEST_EPISODE = 20#600
 VALIDATE_EPISODE = 20
 FINETUNING_EPISODE = 10
 
@@ -190,6 +191,8 @@ if type == 'ProtoNet':
     net = ProtoNet()
 elif type == 'ChannelNet':
     net = ChannelNet(k=k)
+elif type == 'RelationNet':
+    net  = RN(linear_hidden_size=8)
 else:
     assert False, "不支持的网络类型：%s"%type
 # net = ProtoNet(k=k, n=n, qk=qk)
@@ -205,7 +208,8 @@ net = net.cuda()
 
 # opt = Adam(net.parameters(), lr=lr)
 opt = SGD(net.parameters(), lr=lr)
-entro = nn.NLLLoss().cuda()
+entro = nn.CrossEntropyLoss().cuda()
+# entro = nn.NLLLoss().cuda()
 # entro = nn.MSELoss().cuda()
 
 # net.Layer1.requires_grad_(False)
