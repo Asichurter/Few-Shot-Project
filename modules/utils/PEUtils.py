@@ -4,7 +4,7 @@ import numpy as np
 
 img_path = path = 'D:/peimages/New/test/train/'
 pe_src_path = 'D:/pe/'
-pe_dst_path = 'D:/peimages/PEs/test/train/'
+pe_dst_path = 'D:/peimages/PEs/test_2/train/'
 
 # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
 def mk_dirs():
@@ -29,5 +29,10 @@ for i,dir_ in enumerate(os.listdir(img_path)):
         print(i, dir_path+img)
         mal_path,mal_name = find_malware_path(img)
         shutil.copy(mal_path, pe_dst_path+dir_+'/'+mal_name)
+
+for dir_ in os.listdir(pe_dst_path):
+    items = os.listdir(pe_dst_path+dir_+'/')
+    if len(items) != 20:
+        print(dir_,':',len(items))
 
 
