@@ -1,3 +1,5 @@
+# PE特征+knn分类
+
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
@@ -10,7 +12,7 @@ import gc
 from modules.utils.extract import extract_infos
 
 # 注意：cluster数据集就是根据PE特征进行
-PATH = 'D:/peimages/PEs/cluster/train/'
+PATH = 'D:/peimages/PEs/test/train/'
 
 k = 5
 n = 5
@@ -74,9 +76,9 @@ for i in range(iterations):
 
     # 标准化各维度
     # 利用训练集计算出来的均值和方差来处理训练集和测试集的数据
-    scaler = StandardScaler().fit(train_samples)
-    train_samples = scaler.transform(train_samples)
-    test_samples = scaler.transform(test_samples)
+    # scaler = StandardScaler().fit(train_samples)
+    # train_samples = scaler.transform(train_samples)
+    # test_samples = scaler.transform(test_samples)
 
     knn.fit(train_samples, train_labels)
 
