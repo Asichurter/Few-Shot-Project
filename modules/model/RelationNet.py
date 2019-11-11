@@ -12,9 +12,6 @@ class EmbeddingNet(nn.Module):
 
     def __init__(self):
         super(EmbeddingNet, self).__init__()
-        # 修改：考虑参考Resnet的实现，使用大卷积核和大的步伐
-        # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
-        # 由于卷积核的宽度是3，因此28x28变为64x25x25,经过了pool后变为64x13x13
         self.layer1 = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, padding=1, stride=2, bias=False),
             nn.BatchNorm2d(32, affine=True),
@@ -43,20 +40,11 @@ class EmbeddingNet(nn.Module):
     # 前馈函数，利用图像输入得到图像嵌入后的输出
     def forward(self, x, tracker=None):
         # 每一层都是以上一层的输出为输入，得到新的输出
-        # print("0", x.size())
         x = self.layer1(x)
-        # print("1",x.size())
         x = self.layer2(x)
-        # print("2", x.size())
         x = self.layer3(x)
-        # print("3", x.size())
         x = self.layer4(x)
-        # print("4", x.size())
         return x
-
-        # 输出的矩阵深度改为512
-        # # TODO:添加了一个平均池化层以将嵌入输出为512x1x1的嵌入
-        # return F.avg_pool2d(x, 8)
 
 # 关系神经网络，用于在得到图像嵌入向量后计算关系的神经网络
 class RelationNetwork(nn.Module):
