@@ -12,14 +12,14 @@ import gc
 from modules.utils.extract import extract_infos
 
 # 注意：cluster数据集就是根据PE特征进行
-PATH = 'D:/peimages/PEs/test/train/'
+PATH = 'D:/peimages/PEs/virusshare_origin/'
 
 k = 5
 n = 5
 qk = 15
-N = 20
+# N = 20
 
-iterations = 500
+iterations = 30
 
 all_classes_names = os.listdir(PATH)
 all_class_num = len(all_classes_names)
@@ -50,6 +50,7 @@ for i in range(iterations):
         rd.seed(time()%7355650)
 
         all_insts_name = os.listdir(PATH+sample_classes[l]+'/')
+        N = len(all_insts_name)
         all_insts = set([ii for ii in range(N)])
         train_insts = set(rd.sample(all_insts, k))
 
