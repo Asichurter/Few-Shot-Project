@@ -120,7 +120,7 @@ def calculate_data_mean_std(base, split=True, excepts=['models']):
     return np.mean(data),np.std(data),data
 
 if __name__ == "__main__":
-    print(calculate_data_mean_std('D:/peimages/New/test/train/', split=False))
+    print(calculate_data_mean_std('D:/peimages/New/virushare_30/train/', split=False))
 
 
 

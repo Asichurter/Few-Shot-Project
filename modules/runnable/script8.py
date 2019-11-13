@@ -6,17 +6,20 @@ import shutil
 src_path = 'D:/peimages/PEs/virusshare_origin/'
 dst_path = 'D:/peimages/PEs/virusshare/'
 
-sample_per_class = 20
+sample_per_class = 30
 
 for i,cls in enumerate(os.listdir(src_path)):
     print(i,cls)
+
+    if not len(os.listdir(src_path+cls+'/')) >= sample_per_class:
+        continue
 
     if not os.path.exists(dst_path+cls+'/'):
         os.mkdir(dst_path+cls+'/')
 
     rd.seed(time()%7365550)
-    assert len(os.listdir(src_path+cls+'/')) >= sample_per_class, \
-        "类：%s 的数量%d小于%d"%(cls, len(os.listdir(src_path+cls+'/')), sample_per_class)
+    # assert len(os.listdir(src_path+cls+'/')) >= sample_per_class, \
+    #     "类：%s 的数量%d小于%d"%(cls, len(os.listdir(src_path+cls+'/')), sample_per_class)
     insts = rd.sample(os.listdir(src_path+cls+'/'), sample_per_class)
 
     for inst in insts:

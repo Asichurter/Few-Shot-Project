@@ -18,7 +18,7 @@ from modules.model.RelationNet import RN
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'cluster'
+data_folder = 'virusshare'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -30,7 +30,7 @@ input_size = 256
 hidder_size = 8
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
@@ -40,7 +40,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 19
+version = 20
 
 TEST_CYCLE = 100
 MAX_ITER = 40000

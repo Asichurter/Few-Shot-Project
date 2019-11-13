@@ -261,6 +261,7 @@ def split_datas(src=r'D:/peimages/test for cnn/no padding/malware/', dest=r'D:/p
     All = os.listdir(src)
     size = int(len(All) * ratio) if ratio < 1 else ratio
     assert len(All) >= size, '分割时，总数量没有要求的数量大！'
+    random.seed(time.time()%7365055)
     samples_names = random.sample(All, size)
     num = 0
     for item in All:
@@ -490,6 +491,26 @@ def convert_microsoft_dataset(s_path, d_path, verbose=True):
         img = convert(s_path+item, method='normal')
         img.save(d_path+f_name+'.jpg', 'JPEG')
 
+def convert_class_dataset(src, dst, expect_num=20):
+    '''
+    用于将一个已经按文件夹分类好的PE数据集转化为jpg图像数据集
+    :param expect_num: 预期的每个类文件夹中的文件数量，默认为20
+    :return:
+    '''
+    for i,cls in enumerate(os.listdir(src)):
+        print(i,cls)
+        if not os.path.exists(dst+cls+'/'):
+            os.mkdir(dst+cls+'/')
+        for item in os.listdir(src+cls+'/'):
+            f_name = item.split('.')[0]
+            img = convert(src+cls+'/'+item, method='normal')
+            img.save(dst+cls+'/'+f_name+'.jpg', 'JPEG')
+
+    # self-check
+    for cls in os.listdir(dst):
+        all_files = os.listdir(dst+cls)
+        if len(all_files) != expect_num:
+            print('类：%s 的数量: %d 不足预期数量: %d '%(cls, len(all_files), expect_num))
 
 def validate(model, dataloader, Criteria, return_predict=False):
     '''
@@ -636,9 +657,9 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/cluster_2/train/",
-    #             dest="D:/peimages/New/cluster_2/validate/",
-    #             ratio=30,
+    # split_datas(src="D:/peimages/New/virushare_30/train/",
+    #             dest="D:/peimages/New/virushare_30/test/",
+    #             ratio=50,
     #             mode="x",
     #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
@@ -648,15 +669,20 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_2/train/')
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
     #
-    # integrate_images_to_datas('D:/peimages/New/test/test/',
-    #                           'D:/peimages/New/test/test.npy',
-    #                           T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])]))
+    integrate_images_to_datas('D:/peimages/New/virushare_30/test/',
+                              'D:/peimages/New/virushare_30/test.npy',
+                              T.Compose([T.ToTensor(),T.Normalize([0.40097952], [0.09387944])]))
+                                # virushare_30 : 0.40097952, 0.09387944
+                                # virusshare_20: 0.39430222, 0.097527556
                                 # cluster_fix_width: 0.39177823, 0.11456729
                                 # cluster: [0.40118653], [0.097657144]
                                 # cluster_2: [0.41148445], [0.09440111]
                                 # test: [0.3934904], [0.10155067]
     # scale_rectangle_image('D:/peimages/New/cluster_fix_width/validate/', threshold=256)
     # print(statistic_min_max_height('D:/peimages/New/cluster_fix_width/train/'))
-    convert_microsoft_dataset(s_path='D:/MicrosoftDataset/MalwareCla/microsoftPE/train/',
-                              d_path='D:/peimages/New/ms/train/',
-                              verbose=True)
+    # convert_microsoft_dataset(s_path='D:/MicrosoftDataset/MalwareCla/microsoftPE/train/',
+    #                           d_path='D:/peimages/New/ms/train/',
+    #                           verbose=True)
+    # convert_class_dataset(src='D:/peimages/PEs/virusshare/',
+    #                       dst='D:/peimages/New/virushare_30/train/',
+    #                       expect_num=30)

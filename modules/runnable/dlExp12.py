@@ -15,6 +15,7 @@ import time
 from modules.model.PrototypicalNet import ProtoNet
 from modules.model.ChannelNet import ChannelNet
 from modules.model.RelationNet import RN
+from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
@@ -23,22 +24,23 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 10
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
 qk = 10
 # 一个类总共多少个样本
 N = 20
 # 学习率
+
 lr = 1e-3
-CROP_SIZE = 224
+CROP_SIZE = 256
 TEST_EPISODE = 500
 
-version = 18
-type = "RelationNet"
+version = 30
+type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'cluster'#'test'
+folder = 'virushare_20'#'test'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
@@ -193,6 +195,8 @@ elif type == 'ChannelNet':
     net = ChannelNet(k=k)
 elif type == 'RelationNet':
     net  = RN(linear_hidden_size=8)
+elif type == 'HybridAttentionNet':
+    net = HAPNet(n=n, k=k, qk=qk)
 else:
     assert False, "不支持的网络类型：%s"%type
 # net = ProtoNet(k=k, n=n, qk=qk)

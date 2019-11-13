@@ -124,3 +124,27 @@
 
 1. 10-shot 20-way，为了适应显存大小，将裁剪尺寸改为192
 
+## 27
+
+1. virusshare 数据集
+
+2. 5-shot 5-way
+
+## 28
+
+1. test数据集
+
+2. 5-shot 5-way
+
+## 29
+
+1. virushare_20数据集
+
+2. 5-shot 20-way
+
+## 30
+
+1. virushare_20 数据集
+
+2. 10-shot 5-way
+

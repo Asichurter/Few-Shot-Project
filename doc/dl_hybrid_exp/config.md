@@ -24,3 +24,9 @@
 4. Encoder的Conv的通道数改为1->32->64->128->256，且使用LeakyReLU，池化使用重叠池化
 
 5. 只使用InstanceAttention，没有使用FeatureAttention
+
+## 2
+
+1. cluster数据集
+
+2. 5-way 5-shot

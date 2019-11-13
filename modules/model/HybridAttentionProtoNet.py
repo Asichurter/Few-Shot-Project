@@ -36,6 +36,7 @@ def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=
                   kernel_size=kernel_size,
                   stride=stride,
                   padding=padding),
+        # nn.ReLU(inplace=True)
         nn.LeakyReLU(inplace=True),
     )
 
@@ -64,7 +65,7 @@ class InstanceAttention(nn.Module):
 
 
 class HAPNet(nn.Module):
-    def __init__(self, input_size, n, k, qk, encoder_depth=4):
+    def __init__(self, n, k, qk, encoder_depth=4):
         super(HAPNet, self).__init__()
         self.n = n
         self.k = k
@@ -75,7 +76,7 @@ class HAPNet(nn.Module):
         # self.d = embed_size
         channels = [1,32,64,128,256]
         strides = [2,2,2,2]
-        encoders = [get_encoder_block_2(channels[i],channels[i+1],stride=strides[i]) for i in range(encoder_depth)]
+        encoders = [get_encoder_block(channels[i],channels[i+1],stride=strides[i]) for i in range(encoder_depth)]
 
         # 图像的嵌入结构
         # 将整个batch整体输入
@@ -85,9 +86,10 @@ class HAPNet(nn.Module):
         # 将嵌入后的向量拼接成单通道矩阵后，有多少个支持集就为几个batch
         if k%2==0:
             warnings.warn("K=%d是偶数将会导致feature_attention中卷积核的宽度为偶数，因此部分将会发生一些变化")
-            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
+            attention_paddings = [(k // 2, 0), (k // 2, 0), (0, 0)]
+            # attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2 + 1), 0), (0, 0)]
         else:
-            attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
+            attention_paddings = [(k // 2, 0), (k // 2, 0), (0, 0)]
         attention_channels = [1,32,64,1]
         attention_strides = [(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]

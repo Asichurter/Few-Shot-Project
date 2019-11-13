@@ -34,7 +34,7 @@ from modules.utils.imageUtils import convert
 file_from_path = 'D:/peimages/PEs/virusshare_origin/'
 file_to_path = 'D:/peimages/PEs/virusshare/'
 
-threshold = 20
+threshold = 30
 
 for i,label in enumerate(os.listdir(file_from_path)):
     file_amount = len(os.listdir(file_from_path+label+'/'))

@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from torch.autograd import no_grad
 from torch.optim.lr_scheduler import StepLR
 import visdom
+import os
 
 import time
 
@@ -19,6 +20,7 @@ from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
 folder = 'cluster'
+BASE_PATH = "D:/peimages/New/%s/" % folder
 TRAIN_PATH = "D:/peimages/New/%s/train.npy" % folder
 TEST_PATH = "D:/peimages/New/%s/validate.npy"%folder
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%folder
@@ -27,19 +29,19 @@ DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
-qk = 15
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 2
+version = 3
 TEST_CYCLE = 100
-MAX_ITER = 60000
+MAX_ITER = 50000
 TEST_EPISODE = 100
 ASK_CYCLE = 100000
 ASK_THRESHOLD = 50000
@@ -47,8 +49,8 @@ CROP_SIZE = 224
 FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
-train_classes = 100#len(os.listdir(TRAIN_PATH))
-test_classes = 58#len(os.listdir(TEST_PATH))
+train_classes = len(os.listdir(BASE_PATH+'train/'))#100
+test_classes = len(os.listdir(BASE_PATH+'validate/'))#58#
 
 TRAIN_CLASSES = [i for i in range(train_classes)]
 TEST_CLASSES = [i for i in range(test_classes)]
@@ -65,7 +67,7 @@ loss_names = ["train loss", "validate loss"]
 train_dataset = FewShotFileDataset(TRAIN_PATH, N, train_classes, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotFileDataset(TEST_PATH, N, test_classes, rd_crop_size=CROP_SIZE)
 
-net = HAPNet(CROP_SIZE, k=k, n=n, qk=qk)
+net = HAPNet(k=k, n=n, qk=qk)
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,14)))
 net = net.cuda()
 

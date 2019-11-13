@@ -2,9 +2,9 @@ import os
 import shutil
 import numpy as np
 
-img_path = path = 'D:/peimages/New/test/train/'
+img_path = path = 'D:/peimages/New/test/test/'
 pe_src_path = 'D:/pe/'
-pe_dst_path = 'D:/peimages/PEs/test_2/train/'
+pe_dst_path = 'D:/peimages/PEs/test/test/'
 
 # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
 def mk_dirs():
@@ -13,7 +13,7 @@ def mk_dirs():
             os.mkdir(pe_dst_path+dir_+'/')
 
 def find_malware_path(img_name):
-    img_mal_name = '.'.join(img.split('.')[:-1])   # 去掉结尾的jpg就成了对应的病毒名称
+    img_mal_name = '.'.join(img_name.split('.')[:-1])   # 去掉结尾的jpg就成了对应的病毒名称
     print(img_mal_name)
     for mal_dir in os.listdir(pe_src_path):
         mals_in_dir = os.listdir(pe_src_path+mal_dir+'/')
@@ -34,5 +34,7 @@ for dir_ in os.listdir(pe_dst_path):
     items = os.listdir(pe_dst_path+dir_+'/')
     if len(items) != 20:
         print(dir_,':',len(items))
+
+# for i,cls in enumerate()
 
 

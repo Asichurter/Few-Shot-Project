@@ -3,7 +3,7 @@
 import torch as t
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.nn import NLLLoss
 import random as rd
 from torch.utils.data import DataLoader
@@ -18,7 +18,7 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'cluster'
+data_folder = 'virushare_20'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -26,13 +26,10 @@ TEST_FILE_PATH = PATH+'validate.npy'
 MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
-input_size = 256
-hidder_size = 8
-
 # 每个类多少个样本，即k-shot
 k = 10
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
 qk = 10
 # 一个类总共多少个样本
@@ -40,17 +37,15 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 25
+version = 30
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
-CROP_SIZE = 192
+CROP_SIZE = 224
 FRESH_CYCLE = 1000
-
-margin = 1
 
 # 训练和测试中类的总数
 train_classes = len(os.listdir(PATH+'train/'))
@@ -80,7 +75,7 @@ print('params:', num_of_params)
 net.apply(net_init)
 
 opt = Adam(net.parameters(), lr=lr, weight_decay=1e-4)
-# opt = SGD(net.parameters(), lr=lr, weight_decay=1e-4, momentum=0.9)
+# opt = SGD(net.parameters(), lr=lr, weight_decay=1e-3, momentum=0.9)
 scheduler = StepLR(opt, step_size=15000 , gamma=0.1)
 nll = NLLLoss().cuda()
 
@@ -157,8 +152,8 @@ for episode in range(MAX_ITER):
 
     if (episode + 1) % 5000 == 0:
         print("save!")
-        t.save(net.state_dict(),
-               MODEL_SAVE_PATH + "ChannelNet_%d_epoch_model_%dshot_%dway_v%d.0.h5" % (episode + 1, k, n, version))
+        # t.save(net.state_dict(),
+        #        MODEL_SAVE_PATH + "ChannelNet_%d_epoch_model_%dshot_%dway_v%d.0.h5" % (episode + 1, k, n, version))
 
     if episode % TEST_CYCLE == 0:
         # input("----- Time to test -----")
