@@ -12,14 +12,14 @@ import gc
 from modules.utils.extract import extract_infos
 
 # 注意：cluster数据集就是根据PE特征进行
-PATH = 'D:/peimages/PEs/virusshare_origin/'
+PATH = 'D:/peimages/PEs/virushare_20/'
 
 k = 5
-n = 5
-qk = 15
+n = 20
+qk = 10
 # N = 20
 
-iterations = 30
+iterations = 50
 
 all_classes_names = os.listdir(PATH)
 all_class_num = len(all_classes_names)
@@ -73,7 +73,7 @@ for i in range(iterations):
             else:
                 continue
 
-    knn = KNeighborsClassifier(n_neighbors=1)
+    knn = KNeighborsClassifier(n_neighbors=3)
 
     # 标准化各维度
     # 利用训练集计算出来的均值和方差来处理训练集和测试集的数据

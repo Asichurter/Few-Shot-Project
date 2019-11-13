@@ -10,14 +10,14 @@ from time import time
 import gc
 from PIL import Image
 
-PATH = 'D:/peimages/New/cluster/train/'
+PATH = 'D:/peimages/New/test/train/'
 
 k = 10
 n = 20
-qk = 10
+qk = 5
 N = 20
 
-iterations = 1000
+iterations = 500
 
 all_classes_names = os.listdir(PATH)
 all_class_num = len(all_classes_names)
@@ -70,7 +70,7 @@ for i in range(iterations):
             else:
                 continue
 
-    knn = KNeighborsClassifier(n_neighbors=1, metric='cosine')
+    knn = KNeighborsClassifier(n_neighbors=1)
 
     # 标准化各维度
     # 利用训练集计算出来的均值和方差来处理训练集和测试集的数据
