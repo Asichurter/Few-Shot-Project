@@ -14,12 +14,12 @@ from modules.utils.extract import extract_infos
 # 注意：cluster数据集就是根据PE特征进行
 PATH = 'D:/peimages/PEs/virushare_20/'
 
-k = 5
+k = 10
 n = 20
 qk = 10
 # N = 20
 
-iterations = 50
+iterations = 500
 
 all_classes_names = os.listdir(PATH)
 all_class_num = len(all_classes_names)
