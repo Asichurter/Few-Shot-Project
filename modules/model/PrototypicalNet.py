@@ -180,7 +180,7 @@ class ProtoNet(nn.Module):
         query = self.layer1(query)
         query = self.layer2(query)
         query = self.layer3(query)
-        query = self.layer4(query).squeeze()
+        query = self.layer4(query).squeeze().view(qk,-1)
         # query = self.Layers(query).squeeze()
 
         # support = self.Transformer(support.view(n, k, -1))

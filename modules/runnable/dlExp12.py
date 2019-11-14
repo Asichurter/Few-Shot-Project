@@ -24,7 +24,7 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 10
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
 qk = 10
 # 一个类总共多少个样本
@@ -35,8 +35,8 @@ lr = 1e-3
 CROP_SIZE = 256
 TEST_EPISODE = 500
 
-version = 30
-type = "ChannelNet"
+version = 51
+type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 

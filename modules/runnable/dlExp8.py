@@ -37,17 +37,17 @@ input_size = 256
 hidder_size = 8
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
-qk = 15
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 50
+version = 51
 
 TEST_CYCLE = 100
 MAX_ITER = 40000

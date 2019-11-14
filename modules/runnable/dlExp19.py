@@ -29,22 +29,22 @@ DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 # 每个类多少个样本，即k-shot
 k = 10
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
-qk = 10
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 30
+version = 31
 
 TEST_CYCLE = 100
 MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
-CROP_SIZE = 224
+CROP_SIZE = 192
 FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
