@@ -9,17 +9,17 @@ import warnings
 
 from modules.utils.nGram import FrqNGram, KNN
 
-path = 'D:/peimages/PEs/test/train/'
+path = 'D:/peimages/PEs/virushare_20/'
 
 k = 10
-n = 20
+n = 5
 N = 20
 qk = 10
 
 NG = 3
 L = 65536
 
-iterations = 25
+iterations = 50
 
 def debug():
     while True:

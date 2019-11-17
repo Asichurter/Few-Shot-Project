@@ -45,7 +45,8 @@ def Gist(imgs):
 
 
 def cal_gist_acc(iters, q, num):
-    path = 'D:/peimages/New/test/train/'
+    folder = 'virushare_20'
+    path = 'D:/peimages/New/%s/train/'%folder
 
     k = 10
     n = 20
