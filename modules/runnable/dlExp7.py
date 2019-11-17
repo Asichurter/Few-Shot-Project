@@ -18,7 +18,7 @@ from modules.model.RelationNet import RN
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'virusshare'
+data_folder = 'virushare_20'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -40,7 +40,7 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 20
+version = 23
 
 TEST_CYCLE = 100
 MAX_ITER = 40000

@@ -19,7 +19,7 @@ from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-folder = 'cluster'
+folder = 'virushare_20'
 BASE_PATH = "D:/peimages/New/%s/" % folder
 TRAIN_PATH = "D:/peimages/New/%s/train.npy" % folder
 TEST_PATH = "D:/peimages/New/%s/validate.npy"%folder
@@ -29,19 +29,19 @@ DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
-qk = 5
+qk = 10
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 3
+version = 7
 TEST_CYCLE = 100
-MAX_ITER = 50000
+MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 100000
 ASK_THRESHOLD = 50000

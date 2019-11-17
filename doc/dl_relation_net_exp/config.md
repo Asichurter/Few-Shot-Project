@@ -148,6 +148,37 @@
 
 1. 10-shot 20-way
 
+## 19
+
+1. virushare_20 数据集
+
+2. 5-shot 20-way
+
+## 20
+
+1. virushare_20 数据集
+
+2. 5-shot 20-way
+
+## 21
+
+1. virushare_20数据集
+
+2. 10-shot 5-way
+
+## 22
+
+1. virushare_20数据集
+
+2. 5-shot 5-way
+
+## 23
+
+1. virushare_20数据集
+
+2. 10-shot 20-way    
+
+
 ---
 
 ## 进一步的探索可能：

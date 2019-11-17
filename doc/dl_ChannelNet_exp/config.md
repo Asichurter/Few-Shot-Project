@@ -148,3 +148,9 @@
 
 2. 10-shot 5-way
 
+## 31 
+
+1. virushare_20数据集
+
+2. 10-shot 20-way
+

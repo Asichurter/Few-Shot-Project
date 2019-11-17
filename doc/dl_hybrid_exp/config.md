@@ -30,3 +30,33 @@
 1. cluster数据集
 
 2. 5-way 5-shot
+
+## 3
+
+1. cluster数据集
+
+2. 10-shot 20-way  
+
+## 4
+
+1. cluster数据集
+
+2. 5-shot 20-way
+
+## 5
+
+1. cluster数据集
+
+2. 10-shot 5-way
+
+## 6
+
+1. virushare_20数据集
+
+2. 5-shot 5-way
+
+## 7
+
+1. virushare_20数据集
+
+2. 5-shot 20-way

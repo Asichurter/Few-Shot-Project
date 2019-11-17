@@ -18,11 +18,12 @@ from modules.model.RelationNet import RN
 from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
+from modules.utils.dlUtils import cal_beliefe_interval
 
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
@@ -32,11 +33,11 @@ N = 20
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 256
-TEST_EPISODE = 500
+CROP_SIZE = 224
+TEST_EPISODE = 1000
 
-version = 51
-type = "ProtoNet"
+version = 7
+type = "HybridAttentionNet"
 draw_confusion_matrix = False
 conf_mat = []
 
@@ -46,14 +47,7 @@ VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
 if_finetuning = False
 
-# VALIDATE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/test/"
-# MODEL_LOAD_PATH = "D:/peimages/New/ProtoNet_5shot_5way_exp/"+"Residual_last_epoch_model_5shot_5way_v9.0.h5"
 MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
-# MODEL_LOAD_PATH = "D:/peimages/New/test/models/"+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n, version)
-# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Siamese_best_acc_model_5shot_5way_v2.0.h5"
-# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"ProtoNet_best_acc_model_5shot_5way_v11.0.h5"
-# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"RelationNet_best_acc_model_5shot_5way_v13.0.h5"
-# MODEL_LOAD_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"+"Residual_best_acc_model_5shot_5way_v27.0.h5"
 
 def freeze_weight_func(net):
     for name,par in net.named_parameters():
@@ -320,6 +314,7 @@ for episode in range(TEST_EPISODE):
 print("***********************************")
 print("average acc:", np.mean(acc_hist) if not if_finetuning else before_acc_total/TEST_EPISODE)
 print("average loss:", np.mean(loss_hist) if not if_finetuning else before_loss_total/TEST_EPISODE)
+print('acc\'s 95% belief interval: %.f' % cal_beliefe_interval(acc_hist))
 if if_finetuning:
     print("average acc after:", after_acc_total/TEST_EPISODE)
     print("average loss after:", after_loss_total/TEST_EPISODE)
