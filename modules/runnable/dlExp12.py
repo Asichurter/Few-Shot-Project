@@ -33,11 +33,11 @@ N = 20
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 224
+CROP_SIZE = 256
 TEST_EPISODE = 1000
 
-version = 7
-type = "HybridAttentionNet"
+version = 32
+type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
@@ -314,7 +314,7 @@ for episode in range(TEST_EPISODE):
 print("***********************************")
 print("average acc:", np.mean(acc_hist) if not if_finetuning else before_acc_total/TEST_EPISODE)
 print("average loss:", np.mean(loss_hist) if not if_finetuning else before_loss_total/TEST_EPISODE)
-print('acc\'s 95% belief interval: %.f' % cal_beliefe_interval(acc_hist))
+print('acc\'s 95%% belief interval: %f' % cal_beliefe_interval(acc_hist))
 if if_finetuning:
     print("average acc after:", after_acc_total/TEST_EPISODE)
     print("average loss after:", after_loss_total/TEST_EPISODE)

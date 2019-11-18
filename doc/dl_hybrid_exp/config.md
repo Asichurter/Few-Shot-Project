@@ -60,3 +60,14 @@
 1. virushare_20数据集
 
 2. 5-shot 20-way
+
+## 8 
+1. virushare_20数据集
+
+2. 10-shot 20-way
+
+## 9
+
+1. virushare_20数据集
+
+2. 10-shot 5-way
