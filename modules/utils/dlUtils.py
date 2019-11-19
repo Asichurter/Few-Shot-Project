@@ -119,20 +119,23 @@ def calculate_data_mean_std(base, split=True, excepts=['models']):
 
     return np.mean(data),np.std(data),data
 
-def cal_beliefe_interval(datas, split=10):
+def cal_beliefe_interval(datas, split=5):
     '''
-    计算数据95%的置信区间。数据将会被等分为若干部分，然后每一部分计算平均值
-    后，计算每一部分平均值的方差，然后利用2方差的高斯分布置信区间作为95%置信
-    区间的值
+    计算数据95%的置信区间。依据的是t分布的95%置信区间公式
     '''
-    assert len(datas)%split == 0, '数据不可被split等分。数据长度=%d  split=%d'%(len(datas, split))
-    if type(datas) == list:
-       datas = np.array(datas)
-    datas = datas.reshape(split,-1)
-    means = datas.mean(axis=1).reshape(-1)
-    std = np.std(means)
+    # assert len(datas)%split == 0, '数据不可被split等分。数据长度=%d  split=%d'%(len(datas, split))
 
-    return 2*std
+    # if type(datas) == list:
+    #    datas = np.array(datas)
+    # datas = datas.reshape(split,-1)
+    # means = datas.mean(axis=1).reshape(-1)
+    # std = np.std(means)
+
+    z = 1.95996
+    s = np.std(datas, ddof=1)
+    n = len(datas)
+
+    return z*s/np.sqrt(n)
 
 
 
