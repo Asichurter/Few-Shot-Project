@@ -12,6 +12,7 @@ from multiprocessing import Process, Queue
 import warnings
 
 from modules.utils.gist import getGists
+from modules.utils.dlUtils import cal_beliefe_interval
 
 def bar_frequency(data, title, bins=10, color="blue", bar_width=0.2, precision=2):
     bin_interval = 1/bins
@@ -49,7 +50,7 @@ def cal_gist_acc(iters, q, num):
     path = 'D:/peimages/New/%s/train/'%folder
 
     k = 10
-    n = 20
+    n = 5
     N = 20
     qk = N - k
 
@@ -130,6 +131,7 @@ def consume_acc(q, num, timeout=60):
         warnings.warn('取到足够数量的acc时，队列中还有')
 
     print('average acc:', np.mean(all_acc))
+    print('95%% belief interval: %f'%cal_beliefe_interval(all_acc))
     bar_frequency(all_acc, title='Gist+kNN Accuracy')
 
 
