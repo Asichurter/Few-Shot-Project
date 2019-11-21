@@ -27,17 +27,17 @@ MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
-qk = 5
+qk = 10
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 35
+version = 36
 
 TEST_CYCLE = 100
 MAX_ITER = 50000

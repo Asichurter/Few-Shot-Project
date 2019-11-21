@@ -23,21 +23,21 @@ from modules.utils.dlUtils import cal_beliefe_interval
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
-qk = 10
+qk = 15
 # 一个类总共多少个样本
 N = 20
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 256
+CROP_SIZE = 224
 TEST_EPISODE = 1000
 
-version = 35
-type = "ChannelNet"
+version = 24
+type = "RelationNet"
 draw_confusion_matrix = False
 conf_mat = []
 
