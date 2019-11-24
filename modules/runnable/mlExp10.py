@@ -4,17 +4,20 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
+from modules.utils.dlUtils import cal_beliefe_interval
+
 import random as rd
 import os
 from time import time
 import gc
 from PIL import Image
 
-PATH = 'D:/peimages/New/test/train/'
+folder = 'virushare_20'
+PATH = 'D:/peimages/New/%s/train/' % folder
 
 k = 10
-n = 20
-qk = 5
+n = 5
+qk = 10
 N = 20
 
 iterations = 500
@@ -89,6 +92,7 @@ for i in range(iterations):
     print(i, 'acc', acc)
 
 print('average acc', np.mean(acc_his))
+print('95%% belief interval: %f' % cal_beliefe_interval(acc_his))
 
 
 

@@ -11,7 +11,8 @@ from modules.utils.extract import extract_infos
 n = 20
 N = 20
 
-path = 'D:/peimages/PEs/virusshare/'
+folder = 'virushare_20'
+path = 'D:/peimages/PEs/virushare_20/'
 
 samples = []
 colors = []
