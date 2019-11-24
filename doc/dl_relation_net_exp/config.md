@@ -184,6 +184,23 @@
 
 2. 5-shot 5-way
 
+## 25
+
+1. test数据集
+
+2. 10-shot 20-way
+
+## 26
+
+1. test数据集
+
+2. 5-shot 20-way
+
+## 27
+
+1. test数据集
+
+2. 10-shot 5-way
 
 ---
 

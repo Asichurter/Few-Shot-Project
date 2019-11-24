@@ -273,3 +273,27 @@ softmax的输入，以该输出作为类别判定的概率分布
 1. 使用virushare_20数据集
 
 2. 10-shot 5-way
+
+## 53
+
+1. test数据集
+
+2. 5-shot 5-way
+
+## 54
+
+1. test数据集
+
+2. 10-shot 20-way
+
+## 55
+
+1. test数据集
+
+2. 10-shot 5-way
+
+## 56
+
+1. test数据集
+
+2. 5-shot 20-way
