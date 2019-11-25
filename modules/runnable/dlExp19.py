@@ -18,7 +18,7 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'cluster'
+data_folder = 'drebin_15'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -31,16 +31,16 @@ k = 5
 # 训练时多少个类参与，即n-way
 n = 5
 # 测试时每个类多少个样本
-qk = 15
+qk = 10
 # 一个类总共多少个样本
-N = 20
+N = 15
 # 学习率
 lr = 1e-3
 
-version = 37
+version = 38
 
 TEST_CYCLE = 100
-MAX_ITER = 50000
+MAX_ITER = 40000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000

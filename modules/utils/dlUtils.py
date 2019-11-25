@@ -141,7 +141,7 @@ def cal_beliefe_interval(datas, split=5):
 
 
 if __name__ == "__main__":
-    print(calculate_data_mean_std('D:/peimages/New/virushare_30/train/', split=False))
+    print(calculate_data_mean_std('D:/peimages/New/drebin_15/train/', split=False))
 
 
 

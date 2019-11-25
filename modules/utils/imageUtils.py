@@ -657,9 +657,9 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/virushare_30/train/",
-    #             dest="D:/peimages/New/virushare_30/test/",
-    #             ratio=50,
+    # split_datas(src="D:/peimages/New/drebin_15/train/",
+    #             dest="D:/peimages/New/drebin_15/test/",
+    #             ratio=6,
     #             mode="x",
     #             is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
@@ -669,9 +669,10 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_2/train/')
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
     #
-    integrate_images_to_datas('D:/peimages/New/virushare_30/test/',
-                              'D:/peimages/New/virushare_30/test.npy',
-                              T.Compose([T.ToTensor(),T.Normalize([0.40097952], [0.09387944])]))
+    # integrate_images_to_datas('D:/peimages/New/drebin_15/test/',
+    #                           'D:/peimages/New/drebin_15/test.npy',
+    #                           T.Compose([T.ToTensor(),T.Normalize([0.48149517], [0.028535217])]))
+                                # drebin_15: 0.48149517, 0.028535217
                                 # virushare_30 : 0.40097952, 0.09387944
                                 # virusshare_20: 0.39430222, 0.097527556
                                 # cluster_fix_width: 0.39177823, 0.11456729

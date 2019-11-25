@@ -25,23 +25,23 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
-qk = 10
+qk = 15
 # 一个类总共多少个样本
 N = 20
 # 学习率
 
 lr = 1e-3
 CROP_SIZE = 256
-TEST_EPISODE = 1000
+TEST_EPISODE = 100
 
-version = 56
-type = "ProtoNet"
+version = 38
+type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'test'
+folder = 'drebin_15'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'

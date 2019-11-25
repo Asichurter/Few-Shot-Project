@@ -19,7 +19,7 @@ from modules.model.HybridAttentionProtoNet import HAPNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-folder = 'virushare_20'
+folder = 'test'
 BASE_PATH = "D:/peimages/New/%s/" % folder
 TRAIN_PATH = "D:/peimages/New/%s/train.npy" % folder
 TEST_PATH = "D:/peimages/New/%s/validate.npy"%folder
@@ -39,12 +39,12 @@ N = 20
 # 学习率
 lr = 1e-3
 
-version = 10
+version = 11
 TEST_CYCLE = 100
-MAX_ITER = 40000
+MAX_ITER = 50000
 TEST_EPISODE = 100
 ASK_CYCLE = 100000
-ASK_THRESHOLD = 50000
+ASK_THRESHOLD = 100000
 CROP_SIZE = 224
 FRESH_CYCLE = 1000
 
