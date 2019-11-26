@@ -23,7 +23,7 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
 # DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
 
-data_folder = "test"
+data_folder = "drebin_15"
 
 PATH = 'D:/peimages/New/%s/'%data_folder
 TRAIN_PATH = PATH + "train.npy"
@@ -39,15 +39,15 @@ hidder_size = 8
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
-qk = 5
+qk = 10
 # 一个类总共多少个样本
-N = 20
+N = 15
 # 学习率
 lr = 1e-3
 
-version = 56
+version = 57
 
 TEST_CYCLE = 100
 MAX_ITER = 50000

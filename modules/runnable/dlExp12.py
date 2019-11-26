@@ -27,17 +27,17 @@ k = 5
 # 训练时多少个类参与，即n-way
 n = 5
 # 测试时每个类多少个样本
-qk = 15
+qk = 10
 # 一个类总共多少个样本
-N = 20
+N = 15
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 256
-TEST_EPISODE = 100
+CROP_SIZE = 224
+TEST_EPISODE = 1000
 
-version = 38
-type = "ChannelNet"
+version = 57
+type = "ProtoNet"
 draw_confusion_matrix = False
 conf_mat = []
 

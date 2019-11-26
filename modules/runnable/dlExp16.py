@@ -29,17 +29,17 @@ DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_hybrid_exp/"
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
 n = 20
 # 测试时每个类多少个样本
-qk = 10
+qk = 5
 # 一个类总共多少个样本
 N = 20
 # 学习率
 lr = 1e-3
 
-version = 11
+version = 12
 TEST_CYCLE = 100
 MAX_ITER = 50000
 TEST_EPISODE = 100
