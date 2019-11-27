@@ -192,3 +192,25 @@
 
 2. 5-shot 5-way
 
+## 38
+
+1. drebin15数据集
+
+2. 5-shot 5-way
+
+## 39
+
+1. drebin15数据集
+
+2. 5-shot 5-way
+
+3. 192crop， 20000episode
+
+## 40
+
+1. drebin15数据集
+
+2. 10-shot 5-way
+
+3. 192crop， 20000episode
+
