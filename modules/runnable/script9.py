@@ -31,8 +31,8 @@ dict_path = 'D:/peimages/drebin/labels.json'
 #             img.save(dst_path+l+'/'+item+'.jpg', 'JPEG')
 
 cnt = 0
-num = 15
-copy_path = 'D:/peimages/New/drebin_15/'
+num = 10
+copy_path = 'D:/peimages/New/drebin_10/'
 
 for dir_ in os.listdir(dst_path):
     files = os.listdir(dst_path+dir_+'/')

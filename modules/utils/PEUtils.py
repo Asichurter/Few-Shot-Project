@@ -2,9 +2,9 @@ import os
 import shutil
 import numpy as np
 
-img_path = path = 'D:/peimages/New/test/test/'
-pe_src_path = 'D:/pe/'
-pe_dst_path = 'D:/peimages/PEs/test/test/'
+img_path = 'D:/peimages/New/drebin_10/test/'
+pe_src_path = 'H:/DL/Drebin/'
+pe_dst_path = 'D:/peimages/PEs/drebin_10/test/'
 
 # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
 def mk_dirs():

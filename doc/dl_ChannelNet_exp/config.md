@@ -214,3 +214,11 @@
 
 3. 192crop， 20000episode
 
+## 41
+
+1. drebin_10数据集
+
+2. 5-shot 5-way
+
+3. 192crop， 20000episode
+

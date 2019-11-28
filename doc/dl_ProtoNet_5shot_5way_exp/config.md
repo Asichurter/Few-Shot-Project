@@ -297,3 +297,17 @@ softmax的输入，以该输出作为类别判定的概率分布
 1. test数据集
 
 2. 5-shot 20-way
+
+## 57
+
+1. drebin_15数据集
+
+2. 5-shot 5-way
+
+## 58
+
+1. drebin_10数据集
+
+2. 5-shot 5-way
+
+3. 20000 episode， 192 crop

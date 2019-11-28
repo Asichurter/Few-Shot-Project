@@ -23,25 +23,25 @@ from modules.utils.dlUtils import cal_beliefe_interval
 input_size = 256
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 10
 # 测试时每个类多少个样本
 qk = 5
 # 一个类总共多少个样本
-N = 15
+N = 10
 # 学习率
 
 lr = 1e-3
 CROP_SIZE = 256
-TEST_EPISODE = 100
+TEST_EPISODE = 500
 
-version = 40
+version = 42
 type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'drebin_15'
+folder = 'drebin_10'
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
 VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
