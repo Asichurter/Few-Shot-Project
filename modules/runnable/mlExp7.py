@@ -42,16 +42,13 @@ def Gist(imgs):
     # 8*8的分块，45°方向，3、5、7、9的卷积核尺寸
     return getGists(imgs, blocks=8, direction=4, scale=[3,5,7,9])
 
-
-
-
 def cal_gist_acc(iters, q, num):
-    folder = 'virushare_20'
+    folder = 'drebin_10'
     path = 'D:/peimages/New/%s/train/'%folder
 
-    k = 10
+    k = 5
     n = 5
-    N = 20
+    N = 10
     qk = N - k
 
     train_samples = []

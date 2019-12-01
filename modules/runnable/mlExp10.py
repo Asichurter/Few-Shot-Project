@@ -16,7 +16,7 @@ folder = 'virushare_20'
 PATH = 'D:/peimages/New/%s/train/' % folder
 
 k = 10
-n = 5
+n = 20
 qk = 10
 N = 20
 

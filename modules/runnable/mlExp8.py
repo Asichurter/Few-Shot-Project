@@ -8,13 +8,14 @@ import time
 import warnings
 
 from modules.utils.nGram import FrqNGram, KNN
+from modules.utils.dlUtils import cal_beliefe_interval
 
-path = 'D:/peimages/PEs/virushare_20/'
+path = 'D:/peimages/PEs/drebin_10/train/'
 
-k = 10
-n = 5
-N = 20
-qk = 10
+k = 5
+qk = 5
+n = 10
+N = 10
 
 NG = 3
 L = 65536
@@ -171,8 +172,7 @@ def main():
 
     print('average acc: ', np.mean(acc_his))
 
-if __name__ == '__main__':
-    main()
+main()
     # acc_his = [0.4666666667,
     #            0.3333333333,
     #            0.2666666666,
