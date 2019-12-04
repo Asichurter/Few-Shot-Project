@@ -68,7 +68,7 @@ class ConvertThread(threading.Thread):
         self.F(self.ID, **self.kwargs)
 
 if __name__ == '__main__':
-    thread_num = 1
+    thread_num = 2
     threads = []
 
     for i in range(thread_num):

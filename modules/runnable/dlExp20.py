@@ -1,4 +1,4 @@
-# 本实验用于测试Residual-Relation网络的微调
+# 交叉验证
 
 import torch as t
 import torch.nn as nn
@@ -27,27 +27,29 @@ k = 5
 # 训练时多少个类参与，即n-way
 n = 5
 # 测试时每个类多少个样本
-qk = 5
+qk = 15
 # 一个类总共多少个样本
-N = 10
+N = 20
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 224
+CROP_SIZE = 256
 TEST_EPISODE = 500
 
-version = 14
-type = "HybridAttentionNet"
+version = 22
+type = "ChannelNet"
 draw_confusion_matrix = False
 conf_mat = []
 
-folder = 'drebin_10'
-VALIDATE_PATH = "D:/peimages/New/%s/test.npy"%folder
-VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
+model_folder = 'cluster'
+data_folder = 'virushare_20'
+
+VALIDATE_PATH = "D:/peimages/New/%s/test.npy" % data_folder
+VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%data_folder
 mode = 'best_acc'
 if_finetuning = False
 
-MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
+MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%model_folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
 
 def freeze_weight_func(net):
     for name,par in net.named_parameters():

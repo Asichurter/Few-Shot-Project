@@ -669,9 +669,10 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_2/train/')
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
     #
-    # integrate_images_to_datas('D:/peimages/New/drebin_10/test/',
-    #                           'D:/peimages/New/drebin_10/test.npy',
-    #                           T.Compose([T.ToTensor(),T.Normalize([0.48104647], [0.030690413])]))
+    integrate_images_to_datas('D:/peimages/New/microsoft/test/',
+                              'D:/peimages/New/microsoft/test.npy',
+                              T.Compose([T.ToTensor(),T.Normalize([0.40991238], [0.08551609])]))
+                                # microsoft_40: 0.40991238, 0.08551609
                                 # drebin_10: 0.48104647, 0.030690413
                                 # drebin_15: 0.48149517, 0.028535217
                                 # virushare_30 : 0.40097952, 0.09387944
