@@ -229,3 +229,10 @@
 2. 5-shot 10-way
 
 3. 192crop， 20000episode
+
+## 43（重复34）
+
+1. test数据集
+
+2. 5-shot 20-way
+

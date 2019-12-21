@@ -96,4 +96,10 @@
 
 2. 10-shot 5-way
 
+## 14
+
+1. drebin10数据集
+
+2. 5-shot 5-way
+
 

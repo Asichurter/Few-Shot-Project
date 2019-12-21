@@ -233,7 +233,7 @@ class ProtoNet(nn.Module):
 
         return posterior
 
-    def embed_data(self, x):
+    def embed_data(self, x, return_mean=False):
         assert len(x.size()) == 4, "输入必须遵循(l,c,w,w)的格式！"
         l = x.size(0)
 
@@ -242,4 +242,9 @@ class ProtoNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        return x.view(l,-1)
+        x = x.view(l,-1)
+
+        if not return_mean:
+            return x
+        else:
+            return x.mean(dim=0)

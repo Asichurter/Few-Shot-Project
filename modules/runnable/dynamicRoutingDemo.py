@@ -9,6 +9,7 @@ def dynamic_routing(e, b):
     dim = e.size(2)
     k = e.size(1)
     d = t.softmax(b, dim=1).unsqueeze(dim=2).repeat((1,1,dim))
+    print('d:', t.softmax(b, dim=1).squeeze())
     c = (d*e).sum(dim=1)
     c_norm = c.norm(dim=1)
     coef = ((c_norm**2)/(1+c_norm**2)/c_norm).unsqueeze(dim=1).repeat((1,dim))
@@ -20,11 +21,11 @@ def dynamic_routing(e, b):
     delta_b = (c_expand*e).sum(dim=2)
 
     next_b = b + delta_b
-    normal_next_b = t.softmax(next_b, dim=1)
-    coupling_hist.append(normal_next_b[0].tolist())
-    print(normal_next_b[0].tolist())
+    normal_next_b = t.softmax(next_b, dim=1).squeeze()
+    coupling_hist.append(normal_next_b.tolist())
+    print('next b',next_b)
 
-    return b + delta_b, c
+    return next_b, c
 
 regions = [[-1,1],[1,1],[-1,-1],[1,-1],[-1,1],[1,1],[-1,-1],[1,-1]]
 outlier_region = [0,4]

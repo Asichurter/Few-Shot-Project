@@ -5,22 +5,25 @@ import random as rd
 import os
 from multiprocessing import Process, Queue, Value, Lock
 import time
+import json
 import warnings
 
 from modules.utils.nGram import FrqNGram, KNN
 from modules.utils.dlUtils import cal_beliefe_interval
 
-path = 'D:/peimages/PEs/drebin_10/train/'
+using_json = True
+folder = 'cluster%s'%('_json' if using_json else '')
+path = 'D:/peimages/PEs/%s/train/'%folder
 
 k = 5
 qk = 5
-n = 10
+n = 20
 N = 10
 
 NG = 3
 L = 65536
 
-iterations = 50
+iterations = 100
 
 def debug():
     while True:
@@ -79,49 +82,59 @@ def main():
 
             class_items = os.listdir(path + class_names[c_index_each] + '/')
 
-            process_pool = []
-            ngram_train_queue = Queue()  # []
-            ngram_test_queue = Queue()  # []
-            # train_lock = Lock()
-            # test_lock = Lock()
+            # 读取训练样本ngram的json文件
+            for ind in train_item_indexes:
+                with open(path + class_names[c_index_each] + '/' + class_items[ind], 'r') as f:
+                    ngram_dict = json.load(f)
+                    train_samples.append([FrqNGram(None, NG, L, ngram=ngram_dict), l])
 
-            # N个样本使用N个进程
-            for j in range(N):
-                # print(i, l, j, 'process')
-                if j in train_item_indexes:
-                    using_queue = ngram_train_queue
-                elif j in test_item_indexes:
-                    using_queue = ngram_test_queue
-                else:
-                    continue
-                try:
-                    p = Process(target=extract_ngram_multiprocess,
-                                args=(path + class_names[c_index_each] + '/' + class_items[j], NG, L, using_queue, j))
-                except IndexError:
-                    print('class names length',len(class_names),'index:',c_index_each)
-                    print('class items length',len(class_items),'index:',j)
-                    while True:
-                        command = input('command > ')
-                        if command != 'quit':
-                            print_template = 'print(%s)'
-                            exec(print_template%command)
-                        else:
-                            assert False
-                process_pool.append(p)
-                p.start()
+            # 读取测试样本ngram的json文件
+            for ind in test_item_indexes:
+                with open(path + class_names[c_index_each] + '/' + class_items[ind], 'r') as f:
+                    ngram_dict = json.load(f)
+                    test_samples.append([FrqNGram(None, NG, L, ngram=ngram_dict), l])
 
-            for c in range(k):
-                train_samples.append([ngram_train_queue.get(), l])
-            for c in range(qk):
-                test_samples.append([ngram_test_queue.get(), l])
-            for ii, p in enumerate(process_pool):
-                # print('waiting for',i)
-                p.join()
+            # process_pool = []
+            # ngram_train_queue = Queue()  # []
+            # ngram_test_queue = Queue()  # []
 
-        if len(train_samples) != n * k:
-            warnings.warn('训练样本数量不足！预期数量：%d 实际数量：%d' % (n * k, len(train_samples)))
-        if len(test_samples) != n * qk:
-            warnings.warn('测试样本数量不足！预期数量：%d 实际数量：%d' % (n * qk, len(test_samples)))
+        #     # N个样本使用N个进程
+        #     for j in range(N):
+        #         # print(i, l, j, 'process')
+        #         if j in train_item_indexes:
+        #             using_queue = ngram_train_queue
+        #         elif j in test_item_indexes:
+        #             using_queue = ngram_test_queue
+        #         else:
+        #             continue
+        #         try:
+        #             p = Process(target=extract_ngram_multiprocess,
+        #                         args=(path + class_names[c_index_each] + '/' + class_items[j], NG, L, using_queue, j))
+        #         except IndexError:
+        #             print('class names length',len(class_names),'index:',c_index_each)
+        #             print('class items length',len(class_items),'index:',j)
+        #             while True:
+        #                 command = input('command > ')
+        #                 if command != 'quit':
+        #                     print_template = 'print(%s)'
+        #                     exec(print_template%command)
+        #                 else:
+        #                     assert False
+        #         process_pool.append(p)
+        #         p.start()
+        #
+        #     for c in range(k):
+        #         train_samples.append([ngram_train_queue.get(), l])
+        #     for c in range(qk):
+        #         test_samples.append([ngram_test_queue.get(), l])
+        #     for ii, p in enumerate(process_pool):
+        #         # print('waiting for',i)
+        #         p.join()
+        #
+        # if len(train_samples) != n * k:
+        #     warnings.warn('训练样本数量不足！预期数量：%d 实际数量：%d' % (n * k, len(train_samples)))
+        # if len(test_samples) != n * qk:
+        #     warnings.warn('测试样本数量不足！预期数量：%d 实际数量：%d' % (n * qk, len(test_samples)))
 
         knn = KNN(train_samples, k=1)
         # while True:
@@ -171,8 +184,10 @@ def main():
         time_stamp = time.time()
 
     print('average acc: ', np.mean(acc_his))
+    print('95%% belief interval:', cal_beliefe_interval(acc_his))
 
-main()
+if __name__ == '__main__':
+    main()
     # acc_his = [0.4666666667,
     #            0.3333333333,
     #            0.2666666666,

@@ -12,13 +12,21 @@ def normalize(tensors):
 
     return tensors/norm
 
-def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
+def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1, relu=True):
+    # layers = [
+    #     nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+    #     nn.BatchNorm2d(out_feature),
+    #     nn.ReLU(inplace=True),
+    #     nn.MaxPool2d(2)
+    # ]
+    # if not relu:
+    #     layers.pop(2)
+    # return nn.Sequential(*layers)
     return nn.Sequential(
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
         nn.ReLU(inplace=True),
-        nn.MaxPool2d(2)
-    )
+        nn.MaxPool2d(2))
 
 def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1, nonlinear=True):
     layers = [
@@ -102,11 +110,13 @@ class ChannelNet(nn.Module):
         super(ChannelNet, self).__init__()
 
         self.ProtoNorm = None
+        self.K = k
         channels = [1,32,64,128,256]
         strides = [2,1,1,1]
         paddings = [1,1,1,1]
-        layers = [get_block_2(channels[i],channels[i+1],strides[i],padding=paddings[i],) for i in range(len(strides))]
-        # layers.append(nn.AdaptiveMaxPool2d((1,1)))
+        relus = [True, True, True, True]
+        layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],relu=relus[i]) for i in range(len(strides))]
+        layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
         self.Layers = nn.Sequential(*layers)
 
@@ -189,3 +199,21 @@ class ChannelNet(nn.Module):
         posterior = F.log_softmax(posterior, dim=1)
 
         return posterior
+
+    def embed_data(self, x, return_mean=False):
+        assert len(x.size()) == 4, "输入必须遵循(l,c,w,w)的格式！"
+        l = x.size(0)
+        assert l==self.K or not return_mean, "返回prototype时，类样本数必须是%d而不是%d"%(self.K, l)
+
+        x = self.Layers(x).view(l,-1)
+        d = x.size(1)
+
+        if return_mean:
+            mean = self.ProtoNet(x.view(1,1,l,d)).view(d)
+            return mean
+
+        else:
+            return x
+
+
+

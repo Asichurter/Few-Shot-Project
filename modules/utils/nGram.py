@@ -4,13 +4,14 @@ import warnings
 from multiprocessing import Process, Value
 
 class FrqNGram:
-    def __init__(self, path, N, L):
+    def __init__(self, path, N, L, ngram=None):
         self.N = N
         self.L = L
-        self.Counter = None
+        self.Counter = ngram
 
-        self.extract_NGram(path)
-        self.fetch_topL_frequent()
+        if ngram is None:
+            self.extract_NGram(path)
+            self.fetch_topL_frequent()
 
     def extract_NGram(self, path):
         n = self.N

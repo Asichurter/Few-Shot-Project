@@ -27,22 +27,22 @@ k = 5
 # 训练时多少个类参与，即n-way
 n = 5
 # 测试时每个类多少个样本
-qk = 15
+qk = 5
 # 一个类总共多少个样本
-N = 20
+N = 10
 # 学习率
 
 lr = 1e-3
 CROP_SIZE = 256
 TEST_EPISODE = 500
 
-version = 22
+best_acc_version = {'test':33, 'cluster':44, 'virushare_20':27, 'drebin_10':41}
 type = "ChannelNet"
 draw_confusion_matrix = False
-conf_mat = []
 
-model_folder = 'cluster'
-data_folder = 'virushare_20'
+model_folder = 'virushare_20'
+data_folder = 'drebin_10'
+version = best_acc_version[model_folder]
 
 VALIDATE_PATH = "D:/peimages/New/%s/test.npy" % data_folder
 VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%data_folder

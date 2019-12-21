@@ -31,7 +31,7 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 5
 # 训练时多少个类参与，即n-way
-n = 5
+n = 10
 # 测试时每个类多少个样本
 qk = 5
 # 一个类总共多少个样本
@@ -39,9 +39,9 @@ N = 10
 # 学习率
 lr = 1e-3
 
-version = 14
+version = 15
 TEST_CYCLE = 100
-MAX_ITER = 20000
+MAX_ITER = 30000
 TEST_EPISODE = 100
 ASK_CYCLE = 100000
 ASK_THRESHOLD = 100000
