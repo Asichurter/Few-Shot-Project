@@ -16,6 +16,7 @@ from modules.model.PrototypicalNet import ProtoNet
 from modules.model.ChannelNet import ChannelNet
 from modules.model.RelationNet import RN
 from modules.model.HybridAttentionProtoNet import HAPNet
+from modules.model.RoutingNet import RoutingNet
 from modules.utils.dlUtils import RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 from modules.utils.dlUtils import cal_beliefe_interval
@@ -25,7 +26,7 @@ input_size = 256
 # 每个类多少个样本，即k-shot
 k = 10
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
 qk = 10
 # 一个类总共多少个样本
@@ -33,12 +34,12 @@ N = 20
 # 学习率
 
 lr = 1e-3
-CROP_SIZE = 224
-TEST_EPISODE = 500
+CROP_SIZE = 192
+TEST_EPISODE = 1000
 
-version = 9
-type = "HybridAttentionNet"
-folder = 'virushare_20'
+version = 2
+type = "RoutingNet"
+folder = 'cluster'
 draw_confusion_matrix = False
 conf_mat = []
 
@@ -47,7 +48,8 @@ VALIDATE_LENGTH_PATH = "D:/peimages/New/%s/test/"%folder
 mode = 'best_acc'
 if_finetuning = False
 
-MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+"%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
+MODEL_LOAD_PATH = "D:/peimages/New/%s/models/"%folder+\
+                  "%s_%s_model_%dshot_%dway_v%d.0.h5"%(type,mode,k,n,version)
 
 def freeze_weight_func(net):
     for name,par in net.named_parameters():
@@ -191,6 +193,8 @@ elif type == 'RelationNet':
     net  = RN(linear_hidden_size=8)
 elif type == 'HybridAttentionNet':
     net = HAPNet(n=n, k=k, qk=qk)
+elif type == 'RoutingNet':
+    net = RoutingNet()
 else:
     assert False, "不支持的网络类型：%s"%type
 # net = ProtoNet(k=k, n=n, qk=qk)

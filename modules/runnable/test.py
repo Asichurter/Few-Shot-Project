@@ -209,9 +209,20 @@ from modules.utils.datasets import get_RN_sampler
 # if __name__ == '__main__':
 #     main()
 
+N = 20
+k = 32
+d = 64
 
-a = {'a':3, 'b':1, 'c':2}
-print(sorted(a, key=a.get, reverse=True))
+c = t.randn((1,d)).repeat((N,1))
+e = t.randn((N,d))
+b = nn.Bilinear(d, d, k, bias=False)
+layer = nn.Sequential(
+    nn.ReLU(inplace=True),
+    nn.Linear(k, 1, bias=True),
+    nn.Sigmoid()
+)
+
+r = layer(b(c,e))
 
 
 

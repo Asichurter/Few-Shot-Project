@@ -129,7 +129,7 @@ def consume_acc(q, num, timeout=60):
 
     print('average acc:', np.mean(all_acc))
     print('95%% belief interval: %f'%cal_beliefe_interval(all_acc))
-    bar_frequency(all_acc, title='Gist+kNN Accuracy')
+    # bar_frequency(all_acc, title='Gist+kNN Accuracy')
 
 
 if __name__ == '__main__':

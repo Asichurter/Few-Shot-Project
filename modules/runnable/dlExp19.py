@@ -18,7 +18,9 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-data_folder = 'cluster'
+folders = ['cluster','test','virushare_20','drebin_10']
+Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10}
+data_folder = 'virushare_20'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -27,24 +29,24 @@ MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
 # 每个类多少个样本，即k-shot
-k = 5
+k = 10
 # 训练时多少个类参与，即n-way
-n = 5
+n = 20
 # 测试时每个类多少个样本
-qk = 15
+qk = 10
 # 一个类总共多少个样本
-N = 20
+N = Ns[data_folder]
 # 学习率
 lr = 1e-3
 
-version = 44
+version = 47
 
 TEST_CYCLE = 100
 MAX_ITER = 50000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
-CROP_SIZE = 224
+CROP_SIZE = 192
 FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数

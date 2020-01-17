@@ -4,10 +4,12 @@ import numpy as np
 import json
 
 from modules.utils.nGram import FrqNGram
+from modules.utils.extract import extract_infos
 
-img_path = 'D:/peimages/New/drebin_10/test/'
-pe_src_path = 'H:/DL/Drebin/'
-pe_dst_path = 'D:/peimages/PEs/drebin_10/test/'
+img_path = 'D:/peimages/New/virushare_20/test/'
+pe_src_path = 'D:/peimages/PEs/virusshare_origin/'
+# pe_src_path = 'H:/DL/Drebin/'
+pe_dst_path = 'D:/peimages/PEs/virushare_20/test/'
 
 # d = np.load('D:/Few-Shot-Project/data/clusters_0.5eps_20minnum.npy', allow_pickle=True).item()
 def mk_dirs():
@@ -25,26 +27,45 @@ def find_malware_path(img_name):
 
     assert False, '%s 并没有在病毒的路径中被找到!'%img_name
 
-folders = ['virushare_20']
-# folders = ['cluster', 'test', 'virushare_20', 'drebin_10']
-
-path = 'D:/peimages/PEs/%s/train/'
-json_path = 'D:/peimages/PEs/%s/train/'
-N = 3
-L = 65535
-
-def make_ngram(path, dst_path):
+def find_invalid_pe_meta_class(path, N, ratio=0.5):
+    invalid_class_list = []
     for i,cls in enumerate(os.listdir(path)):
-        if not os.path.exists(dst_path+cls+'/'):
-            os.mkdir(dst_path+cls+'/')
-        for j,inst in enumerate(os.listdir(path+cls+'/')):
-            print(i,j)
-            ngram = FrqNGram(path+cls+'/'+inst,N, L, None)
-            with open(dst_path+cls+'/'+inst+'.json', 'w') as f:
-                json.dump(ngram.Counter, f)
+        print(i,cls, end=' ')
+        invalid_cnt = 0
+        for item in os.listdir(path+cls+'/'):
+            meta_data = extract_infos(path+cls+'/'+item, verbose=False)
+            if meta_data is None:
+                invalid_cnt += 1
 
-for p in folders:
-    make_ngram(path%p, json_path%(p+'_json'))
+        if invalid_cnt >= N*ratio:
+            invalid_class_list.append(cls)
+            print('invalid')
+        else:
+            print('valid')
+
+    return invalid_class_list
+
+
+# folders = ['drebin_10']
+# # folders = ['cluster', 'test', 'virushare_20', 'drebin_10']
+#
+# path = 'D:/peimages/PEs/%s/train/'
+# json_path = 'D:/peimages/PEs/%s/train/'
+# N = 3
+# L = 65535
+#
+# def make_ngram(path, dst_path):
+#     for i,cls in enumerate(os.listdir(path)):
+#         if not os.path.exists(dst_path+cls+'/'):
+#             os.mkdir(dst_path+cls+'/')
+#         for j,inst in enumerate(os.listdir(path+cls+'/')):
+#             print(i,j)
+#             ngram = FrqNGram(path+cls+'/'+inst,N, L, None)
+#             with open(dst_path+cls+'/'+inst+'.json', 'w') as f:
+#                 json.dump(ngram.Counter, f)
+#
+# for p in folders:
+#     make_ngram(path%p, json_path%(p+'_json'))
 
 # mk_dirs()
 # for i,dir_ in enumerate(os.listdir(img_path)):
@@ -59,6 +80,8 @@ for p in folders:
 #     if len(items) != 20:
 #         print(dir_,':',len(items))
 
-# for i,cls in enumerate()
+test_path = 'D:/peimages/PEs/virushare_20/train/'
+print(find_invalid_pe_meta_class(test_path, N=20, ratio=0.5))
+
 
 

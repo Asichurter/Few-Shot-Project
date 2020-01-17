@@ -85,7 +85,7 @@ class MultiLevelPooling(nn.Module):
 # 基于卷积神经网络的图像嵌入网络
 class ConvProtoNet(nn.Module):
     def __init__(self, k):
-        super(ConvProtoNetNet, self).__init__()
+        super(ConvProtoNet, self).__init__()
 
         self.ProtoNorm = None
         channels = [1,32,64,128,256]

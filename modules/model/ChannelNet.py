@@ -116,7 +116,7 @@ class ChannelNet(nn.Module):
         paddings = [1,1,1,1]
         relus = [True, True, True, True]
         layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],relu=relus[i]) for i in range(len(strides))]
-        layers.append(nn.AdaptiveMaxPool2d((1,1)))
+        # layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
         self.Layers = nn.Sequential(*layers)
 

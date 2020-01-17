@@ -12,12 +12,12 @@ from time import time
 import gc
 from PIL import Image
 
-folder = 'virushare_20'
+folder = 'cluster'
 PATH = 'D:/peimages/New/%s/train/' % folder
 
-k = 10
-n = 20
-qk = 10
+k = 5
+n = 5
+qk = 15
 N = 20
 
 iterations = 500

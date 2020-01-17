@@ -18,17 +18,21 @@ from sklearn.decomposition import PCA
 def cal_KL_div(fx, gx):
     return np.sum(np.exp(fx)*(fx-gx))
 
-k = 5
+k = 10
 n = 5
 N = 20
 
-version_dict = {'ChannelNet':22, 'ProtoNet':35}
+version_dict = {'cluster':{5:{'ChannelNet':22, 'ProtoNet':35}, 10:{'ChannelNet':25, 'ProtoNet':46}},
+                'test':{5:{'ChannelNet':33, 'ProtoNet':53}, 10:{'ChannelNet':36, 'ProtoNet': 55}},
+                'virushare_20':{5:{'ChannelNet':27,'ProtoNet':48}, 10:{'ChannelNet':30, 'ProtoNet':52}}}
 
-folder = 'cluster'
-cropSize = 224
+folder = 'virushare_20'
+cropSize = 256
 mode = 'best_acc'
 modelType = 'ChannelNet'
-version = version_dict[modelType]
+version = version_dict[folder][k][modelType]
+
+print('version',version)
 
 exp_epoches = 100
 mean_iterations = 1000
@@ -59,7 +63,7 @@ net.eval()
 kls = []
 
 for epoch in range(exp_epoches):
-    print('epoch',epoch)
+    print('epoch',epoch, end=' ')
     # -------------------- 数据嵌入原分布 ------------------------
     # print('geting original embeddings...')
     originalSampler = SingleClassSampler(clsIndex, N, N)
@@ -78,7 +82,7 @@ for epoch in range(exp_epoches):
     meanProtos = []
     for i in range(mean_iterations):
         # print('iter',i)
-        protoSampler = SingleClassSampler(clsIndex, N, n)
+        protoSampler = SingleClassSampler(clsIndex, N, k)
         protoLoader = DataLoader(dataset, batch_size=N, sampler=protoSampler)
 
         protoData,_l = protoLoader.__iter__().next()
@@ -110,9 +114,11 @@ for epoch in range(exp_epoches):
     protoP = protoKD.score_samples(x)
     kl_div = cal_KL_div(oriP, protoP)
     kls.append(kl_div)
+    print(kl_div)
 
     if plot:
-        plt.title('KL divergence:%.3f'%kl_div)
+        plt.figure(dpi=600)
+        # plt.title('KL divergence:%.3f'%kl_div)
         plt.plot(x,oriP, color='red', label='real embedded data')
         plt.plot(x,protoP, color='blue', label='mean prototype')
         plt.ylabel('log-probability')

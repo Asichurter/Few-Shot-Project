@@ -6,6 +6,7 @@ import PIL.Image as Image
 import torchvision.transforms as T
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from torch.nn.init import kaiming_normal_, xavier_normal_, constant_, normal_
+from torch import nn as nn
 
 def RN_labelize(support, query, k, n, type="float", expand=True):
     # support = torch.LongTensor([support[i].item() for i in range(0,len(support),k)])
@@ -18,7 +19,7 @@ def RN_labelize(support, query, k, n, type="float", expand=True):
     if not expand:
         label = torch.argmax((query==support).view(-1,n), dim=1)
     else:
-        label = (query==support).view(-1,k)
+        label = (query==support).view(-1,1)
     if type=="float":
         return label.float()
     else:
@@ -137,6 +138,45 @@ def cal_beliefe_interval(datas, split=5):
 
     return z*s/np.sqrt(n)
 
+def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
+    return nn.Sequential(
+        nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+        nn.BatchNorm2d(out_feature),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(2)
+    )
+
+def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1):
+    return nn.Sequential(
+        nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
+        nn.BatchNorm2d(out_feature),
+        nn.LeakyReLU(inplace=True),
+        nn.MaxPool2d(3,2,1)
+    )
+
+def labels_normalize(labels, n, batch_length):
+    labels_ = labels.numpy()
+    for i in range(0, len(labels), batch_length):
+        batch = labels_[i:i+batch_length]
+        batch_labels = np.unique(batch)
+        assert n == len(batch_labels), 'batch内，指定的类别数量%d与实际的类别数量%d不一致'%\
+                                       (n, len(batch_labels))
+        mapper = {i:l for i,l in zip(batch_labels, [j for j in range(n)])}
+
+        for ii,l in enumerate(batch):
+            labels_[i+ii] = mapper[l]
+
+    return torch.Tensor(labels_).long()
+
+def labels_one_hot(labels, n):
+    # 假定输入的标签已经在一个batch内被标准化
+    labels_ = labels.numpy()
+    one_hots = []
+    for l in labels_:
+        one_hot = [1 if j==l else 0 for j in range(n)]
+        one_hots.append(one_hot)
+
+    return torch.Tensor(one_hots).float()
 
 
 

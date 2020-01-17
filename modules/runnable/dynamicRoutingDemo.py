@@ -2,10 +2,13 @@ import torch as t
 import torch.nn as nn
 import numpy as np
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
 import random as rd
 
-def dynamic_routing(e, b):
+matplotlib.rcParams['backend'] = 'SVG'
+
+def dynamic_routing(e, b, squashing=True):
     dim = e.size(2)
     k = e.size(1)
     d = t.softmax(b, dim=1).unsqueeze(dim=2).repeat((1,1,dim))
@@ -13,7 +16,8 @@ def dynamic_routing(e, b):
     c = (d*e).sum(dim=1)
     c_norm = c.norm(dim=1)
     coef = ((c_norm**2)/(1+c_norm**2)/c_norm).unsqueeze(dim=1).repeat((1,dim))
-    c = c*coef
+    if squashing:
+        c = c*coef
 
     # c shape: [n,d]->[n,k,d]
     c_expand = c.unsqueeze(dim=1).repeat((1,k,1))
@@ -27,9 +31,15 @@ def dynamic_routing(e, b):
 
     return next_b, c
 
+# def static_dynamic_routing(e, b):
+#     dim = e.size(2)
+#     k = e.size(1)
+#     coeff = t.softmax(b, dim=1).unsqueeze(dim=2).repeat((1,1,dim))
+#     delta = (coeff * e).sum(dim=1).repeat((k,1,1)) * e
+
 regions = [[-1,1],[1,1],[-1,-1],[1,-1],[-1,1],[1,1],[-1,-1],[1,-1]]
 outlier_region = [0,4]
-all_region = regions.append(outlier_region)
+# all_region = regions.append(outlier_region)
 points = []
 for r in regions:
     x = rd.random()*2+r[0]
@@ -37,12 +47,13 @@ for r in regions:
     points.append([x,y])
 points = t.Tensor([points])
 
+
 iters = 5
 protos = []
 coupling_hist = []
 coupling = t.zeros_like(points).sum(dim=2)
 for i in range(iters):
-    coupling, proto = dynamic_routing(points, coupling)
+    coupling, proto = dynamic_routing(points, coupling, squashing=True)
     protos.append(proto.squeeze().tolist())
 
 
@@ -52,11 +63,12 @@ normal_mean = np.mean(points[:-1], axis=0)
 def_color = "blue"
 outlier_color = "red"
 colors = ['green',"orange",'red', "purple", "black"]
+plt.figure(dpi=600)
 plt.xlim(-2,4)
 plt.scatter([x[0] for x in points[:-1]], [x[1] for x in points[:-1]], marker='o', color=def_color, label="point")
-plt.scatter([points[-1][0]], [points[-1][1]], marker='o', color=outlier_color, label="outlier point")
+# plt.scatter([points[-1][0]], [points[-1][1]], marker='o', color=outlier_color, label="outlier point")
 plt.scatter([mean[0]],[mean[1]], marker='x', color=def_color, label="mean")
-plt.scatter([normal_mean[0]],[normal_mean[1]], marker='^', color=def_color, label="normal mean")
+# plt.scatter([normal_mean[0]],[normal_mean[1]], marker='^', color=def_color, label="mean")
 for i,p in enumerate(protos):
     plt.scatter([p[0]],[p[1]], marker='x', color=colors[i], label='%d th proto'%(i+1))
 plt.legend()
@@ -65,6 +77,7 @@ plt.show()
 colors = ['blue','orange','red','green','purple','brown','cyan','gray','olive']
 coupling_hist = np.array(coupling_hist)
 x = [i+1 for i in range(iters)]
+plt.figure(dpi=600)
 plt.xticks(x)
 plt.xlabel('routing epoch')
 plt.ylabel('couping coefficient')

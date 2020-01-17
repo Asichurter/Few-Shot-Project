@@ -123,13 +123,14 @@ def get_version_info(pe):
     return res
 
 
-def extract_infos(fpath, return_type='list'):
+def extract_infos(fpath, return_type='list', verbose=True):
     i = 0
     res = {}
     try:
         pe = pefile.PE(fpath)
     except pefile.PEFormatError as e:
-        print(e.value)
+        if verbose:
+            print(e.value)
         return None
     res[COLUMNS[i]] = pe.FILE_HEADER.Machine
     i += 1

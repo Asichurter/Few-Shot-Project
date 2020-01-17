@@ -12,12 +12,13 @@ from modules.utils.nGram import FrqNGram, KNN
 from modules.utils.dlUtils import cal_beliefe_interval
 
 using_json = True
-folder = 'cluster%s'%('_json' if using_json else '')
+dataset = 'drebin_10'
+folder = '%s%s'%(dataset,'_json' if using_json else '')
 path = 'D:/peimages/PEs/%s/train/'%folder
 
 k = 5
 qk = 5
-n = 20
+n = 10
 N = 10
 
 NG = 3

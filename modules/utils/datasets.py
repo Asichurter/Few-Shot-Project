@@ -10,6 +10,9 @@ import time
 
 magicNum = 7355608
 
+def get_seed():
+    return time.time()%magicNum
+
 # 文件夹数据集
 # 目录下有benign和malware两个文件夹
 class DirDataset(Dataset):
@@ -146,6 +149,7 @@ class FewShotFileDataset(Dataset):
         for i in range(class_num):
             self.Label += [i]*n
         assert len(self.Label)==len(self.Data), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),len(self.Data))
+
     def __getitem__(self, index):
         w = self.Width
         crop = self.CropSize
@@ -286,11 +290,58 @@ class SingleClassSampler(Sampler):
     def __len__(self):
         return 1
 
+class SNAIL_sampler(Sampler):
+    def __init__(self, k, n, total_class, num_per_class, batch_size):
+        self.num_per_class = num_per_class
+        self.batchSize = batch_size
+        self.instances = []
+
+        for i in range(batch_size):
+            instances_seeds = rd.sample([j for j in range(magicNum)], n)
+            classes = rd.sample([j for j in range(total_class)], n)
+            instances = dict.fromkeys(classes)
+            for cla, seed in zip(classes, instances_seeds):
+                rd.seed(seed)
+                instances[cla] = set(rd.sample([i for i in range(num_per_class)], k))
+
+            # rd.seed(get_seed())
+            # test_sample_label = rd.choice(classes)
+            # all_indexes = set([j for j in range(num_per_class)])
+            # candidate_indexes = all_indexes.difference(instances[test_sample_label])
+            # rd.seed(get_seed())
+            # test_sample_index = rd.choice(list(candidate_indexes))
+            # instances[test_sample_label].add(test_sample_index)
+            self.instances.append(instances)
+
+    def __iter__(self):
+        aggr_batch = []
+        for batch in self.instances:
+            minibatch = []
+
+            rd.seed(get_seed())
+            test_sample_label = rd.choice(list(batch.keys()))
+
+            all_indexes = set([i for i in range(self.num_per_class)])
+            test_sample_index = rd.sample(all_indexes.difference(batch[test_sample_label]), 1)[0]
+
+            for c,instances in batch.items():
+                for i in instances:
+                    minibatch.append(self.num_per_class*c+i)
+            rd.shuffle(minibatch)
+            aggr_batch += minibatch
+            aggr_batch.append(test_sample_label*self.num_per_class+test_sample_index)
+
+        return iter(aggr_batch)
+
+    def __len__(self):
+        return 1
+
+
 class RNSamlper(Sampler):
     def __init__(self, k, qk, instance_seeds, mode, classes, num_per_class, shuffle):
         '''
         用于组成训练时sample set/query set和测试时support set和test set的采样器\n
-        sample和query来自相同的类中，均为采样得到的
+        sample和query来自相同的类中，均为采样得到的\n
         :param classes: 选到的要采样的类
         :param num_per_class: 每个类的最大样本数量
         :param shuffle: 是否随机打乱顺序
@@ -353,6 +404,9 @@ class RNModifiedSamlper(Sampler):
 
     def __len__(self):
         return 1
+
+
+
 
 def get_RN_sampler(classes, train_num, test_num, num_per_class, seed=None):
     if seed is None:

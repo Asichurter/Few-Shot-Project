@@ -236,3 +236,8 @@
 
 2. 5-shot 20-way
 
+## 45（重复31）
+
+1. virushare20数据集
+
+2. 5-shot 20-way
