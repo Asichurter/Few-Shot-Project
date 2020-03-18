@@ -70,11 +70,12 @@ class MultiLevelPooling(nn.Module):
 
 # 基于卷积神经网络的图像嵌入网络
 class ProtoNet(nn.Module):
-    def __init__(self, metric="SqEuc", **kwargs):
+    def __init__(self, in_channels=1, metric="SqEuc", **kwargs):
         super(ProtoNet, self).__init__()
 
         self.metric = metric
         self.ProtoNorm = None
+        self.inChanel = in_channels
         # channels = [1,32,64,128,256]
         # strides = [2,1,1,1]
         # layers = [get_block_2(channels[i],channels[i+1],strides[i]) for i in range(len(strides))]
@@ -83,8 +84,10 @@ class ProtoNet(nn.Module):
 
         # 第一层是一个1输入，64x3x3过滤器，批正则化，relu激活函数，2x2的maxpool的卷积层
         # 经过这层以后，尺寸除以4
+
+        # TODO: stride已修改
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.Conv2d(in_channels, 32, kernel_size=3, padding=1, stride=1, bias=False),
             nn.BatchNorm2d(32, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
@@ -92,14 +95,14 @@ class ProtoNet(nn.Module):
         # 卷积核的宽度为3,13变为10，再经过宽度为2的pool变为5
         # 经过这层以后，尺寸除以4
         self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=1, bias=False),
             nn.BatchNorm2d(64, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
         # 第三层是一个64输入，64x3x3过滤器，周围补0，批正则化，relu激活函数,的卷积层
         # 经过这层以后，尺寸除以2
         self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1, stride=1, bias=False),
             nn.BatchNorm2d(128, affine=True),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2))
@@ -121,8 +124,8 @@ class ProtoNet(nn.Module):
         n = support.size(0)
         w = support.size(3)
 
-        support = support.view(n*k, 1, w, w)
-        query = query.view(qk, 1, w, w)
+        support = support.view(n*k, self.inChanel, w, w)
+        query = query.view(qk, self.inChanel, w, w)
 
         self.forward_inner_var = None
         self.forward_outer_var = None

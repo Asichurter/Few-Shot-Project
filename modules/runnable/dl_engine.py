@@ -18,32 +18,37 @@ import time
 
 from modules.model.ChannelNet import ChannelNet
 from modules.model.RoutingNet import RoutingNet
+from modules.model.PrototypicalNet import ProtoNet
+from modules.model.ResChannelNet import ResChannelNet
+from modules.model.ReMalAttNet import ReMalAttNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-folders = ['cluster','test','virushare_20','drebin_10']
-Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10}
+folders = ['cluster','test','virushare_20','drebin_10', 'miniImageNet']
+Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10, 'miniImageNet':600}
+in_channels = {'cluster':1, 'test':1, 'virushare_20':1, 'drebin_10':1, 'miniImageNet':3}
 loss_func_dict = {'nll':NLLLoss(), 'mse':MSELoss()}
 
 #-----------------------------------------------------------------
-model = 'RoutingNet'
-data_folder = 'cluster'
+model = 'ReMalAttNet'
+data_folder = 'virushare_20'
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
-qk = 5
+qk = 2
 # 一个类总共多少个样本
 N = Ns[data_folder]
 # 学习率
 lr = 1e-3
 
-version = 2
-CROP_SIZE = 192
+version = 1
+CROP_SIZE = 256
 MAX_ITER = 50000
 loss_func = 'nll'
 optimizer = 'adam'
+initilized = False
 #-----------------------------------------------------------------
 
 PATH = "D:/peimages/New/%s/"%data_folder
@@ -79,6 +84,14 @@ test_dataset = FewShotFileDataset(TEST_FILE_PATH, N, class_num=test_classes, rd_
 #-----------------------------------------------------------------
 if model == 'RoutingNet':
     net = RoutingNet(iters=3)
+elif model == 'ProtoNet':
+    net = ProtoNet(in_channels=in_channels[data_folder])
+elif model == 'ResChannelNet':
+    net = ResChannelNet(k=k, in_channel=in_channels[data_folder])
+elif model == 'ReMalAttNet':
+    net = ReMalAttNet(in_channel=in_channels[data_folder],
+                      in_size=CROP_SIZE,
+                      hidden_size=128)
 # net = ChannelNet(k=k)
 #-----------------------------------------------------------------
 
@@ -90,7 +103,8 @@ for par in net.parameters():
     num_of_params += par.numel()
 print('params:', num_of_params)
 
-net.apply(net_init)
+if initilized:
+    net.apply(net_init)
 
 #-----------------------------------------------------------------
 if optimizer == 'adam':
@@ -106,10 +120,10 @@ scheduler = StepLR(opt, step_size=lr_decay_iterations, gamma=0.1)
 
 nll = loss_func_dict[loss_func].cuda()
 
-train_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc_train.npy"%version).tolist()
-train_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss_train.npy"%version).tolist()
-test_acc_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_acc.npy"%version).tolist()
-test_loss_his = [] if not IF_LOAD_MODEL else np.load(DOC_SAVE_PATH+"%d_loss.npy"%version).tolist()
+train_acc_his = []
+train_loss_his = []
+test_acc_his = []
+test_loss_his = []
 proto_norms = []
 time_consuming = []
 
@@ -150,7 +164,8 @@ for episode in range(MAX_ITER):
                             type="long" if loss_func=='nll' else 'float',
                             expand=(loss_func=='mse'))
 
-    outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), queries.view(n*qk,1,CROP_SIZE,CROP_SIZE))
+    outs = net(samples.view(n,k,in_channels[data_folder],CROP_SIZE,CROP_SIZE),
+               queries.view(n*qk,in_channels[data_folder],CROP_SIZE,CROP_SIZE))
 
     loss = nll(outs, labels)
 
@@ -168,7 +183,7 @@ for episode in range(MAX_ITER):
 
     print("train acc: ", acc)
     print("train loss: ", loss_val)
-    print('----------------------------------------------')
+    # print('----------------------------------------------')
 
     train_acc_his.append(acc)
     train_loss_his.append(loss_val)
@@ -188,7 +203,7 @@ for episode in range(MAX_ITER):
             test_outer = 0.
             test_nll = 0.
             for j in range(TEST_EPISODE):
-                print("episode %d: test %d"%(j,episode))
+                # print("episode %d: test %d"%(j,episode))
                 # 每一轮开始的时候先抽取n个实验类
                 support_classes = rd.sample(TEST_CLASSES, n)
                 # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
@@ -210,12 +225,10 @@ for episode in range(MAX_ITER):
                 test_labels = RN_labelize(support_labels, test_labels, k, n,
                                           type="long" if loss_func=='nll' else 'float',
                                           expand=(loss_func=='mse'))
-                test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(n*qk,1,CROP_SIZE,CROP_SIZE))
+                test_relations = net(supports.view(n,k,in_channels[data_folder],CROP_SIZE,CROP_SIZE),
+                                     tests.view(n*qk,in_channels[data_folder],CROP_SIZE,CROP_SIZE))
 
                 val_nll_loss = nll(test_relations, test_labels)
-                # val_inner_var_loss = inner_var_alpha * net.forward_inner_var
-                # val_outer_var_loss = -outer_var_alpha * net.forward_outer_var
-                # val_total_loss = val_inner_var_loss + val_outer_var_loss + margin
 
                 test_loss += val_nll_loss.item()
 
@@ -229,12 +242,12 @@ for episode in range(MAX_ITER):
 
             test_acc_his.append(test_acc/TEST_EPISODE)
             test_loss_his.append(test_loss/TEST_EPISODE)
-            proto_norms.append(net.ProtoNorm)
+            # proto_norms.append(net.ProtoNorm)
 
             current_length = TEST_CYCLE if len(train_acc_his) >= TEST_CYCLE else 1
             current_train_acc = np.mean(train_acc_his[-1*current_length:])
             current_train_loss = np.mean(train_loss_his[-1*current_length:])
-            current_norm = np.mean(proto_norms[-1*current_length:])
+            # current_norm = np.mean(proto_norms[-1*current_length:])
 
             plot_x = np.ones((1,2))*global_step
             plot_acc = np.array([current_train_acc, test_acc/TEST_EPISODE]).reshape((1,2))
@@ -259,18 +272,18 @@ for episode in range(MAX_ITER):
                                     ylabel="Loss"
                                 ),
                                 update=None if episode==0 else "append")
-            plot_norm = np.array([current_norm])
-            plot_norm_x = np.array([1]) * episode
-            norm_line = vis.line(X=plot_norm_x,
-                                 Y=plot_norm,
-                                 win="Proto Norm",
-                                 opts=dict(
-                                     title="ProtoNorm",
-                                     xlabel="Iterations",
-                                     ylabel="Norm"
-                                 ),
-                                 # update=None if episode == 0 else "append")
-                                 update=None if episode == 0 else "append")
+            # plot_norm = np.array([current_norm])
+            # plot_norm_x = np.array([1]) * episode
+            # norm_line = vis.line(X=plot_norm_x,
+            #                      Y=plot_norm,
+            #                      win="Proto Norm",
+            #                      opts=dict(
+            #                          title="ProtoNorm",
+            #                          xlabel="Iterations",
+            #                          ylabel="Norm"
+            #                      ),
+            #                      # update=None if episode == 0 else "append")
+            #                      update=None if episode == 0 else "append")
             now_stamp = time.time()
             time_consuming.append(now_stamp - previous_stamp)
             plot_time = np.array([time_consuming[-1]])
@@ -295,6 +308,7 @@ for episode in range(MAX_ITER):
             print(TEST_CYCLE,"episode time consume:",now_stamp-previous_stamp)
             print("****************************************")
             previous_stamp = now_stamp
+            print('%d -> %d epoches...'%(episode, episode+TEST_CYCLE))
 
 # 根据历史值画出准确率和损失值曲线
 train_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]

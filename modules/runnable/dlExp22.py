@@ -20,7 +20,7 @@ from modules.utils.datasets import FewShotFileDataset, SNAIL_sampler, get_RN_sam
 
 folders = ['cluster','test','virushare_20','drebin_10']
 Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10}
-data_folder = 'cluster'
+data_folder = 'drebin_10'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -32,7 +32,7 @@ DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_SNAIL_exp/"
 k = 5
 # 训练时多少个类参与，即n-way
 n = 5
-qk = 15
+qk = 5
 batch_size = 16
 
 # 一个类总共多少个样本
@@ -40,7 +40,7 @@ N = Ns[data_folder]
 # 学习率
 lr = 1e-3
 
-version = 2
+version = 9
 
 TEST_CYCLE = 100
 MAX_ITER = 50000
@@ -67,7 +67,7 @@ train_dataset = FewShotFileDataset(TRAIN_FILE_PATH, N, class_num=train_classes, 
 test_dataset = FewShotFileDataset(TEST_FILE_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
 net = SNAIL(N=n, K=k)
-# net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
+# net.load_state_dict(t.load(MODEL_SAVE_PATH+"SNAIL_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,2)))
 net = net.cuda()
 
 num_of_params = 0
@@ -103,7 +103,7 @@ for episode in range(MAX_ITER):
             break
     net.train()
     net.zero_grad()
-    print("%d th episode"%episode)
+    # print("%d th episode"%episode)
 
     # train_sampler = SNAIL_sampler(k, n, train_classes, N, batch_size)
     # train_dataloader = DataLoader(train_dataset, batch_size=batch_size*(k*n+1), sampler=train_sampler)
@@ -130,7 +130,7 @@ for episode in range(MAX_ITER):
 
     labels = RN_labelize(sample_labels, query_labels, k, n, type="long",expand=False).cuda()
 
-    sample_labels = labels_normalize(sample_labels, n, batch_length=k*n)
+    sample_labels = labels_normalize(sample_labels, k, n, batch_length=k*n)
     sample_labels = labels_one_hot(sample_labels, n=n)
 
     samples = samples.cuda()
@@ -148,11 +148,11 @@ for episode in range(MAX_ITER):
     acc = (t.argmax(outs, dim=1)==labels).sum().item()/labels.size(0)
     loss_val = loss.item()
 
-    print("train acc: ", acc)
-    print("train loss: ", loss_val)
-    # print("loss component:、\nnll: %f\ninner:%f\nouter:%f"%
-    #       (loss.item(), inner_var_loss.item(),outer_var_loss.item()))
-    print('----------------------------------------------')
+    # print("train acc: ", acc)
+    # print("train loss: ", loss_val)
+    # # print("loss component:、\nnll: %f\ninner:%f\nouter:%f"%
+    # #       (loss.item(), inner_var_loss.item(),outer_var_loss.item()))
+    # print('----------------------------------------------')
 
     train_acc_his.append(acc)
     train_loss_his.append(loss_val)
@@ -170,7 +170,7 @@ for episode in range(MAX_ITER):
             test_outer = 0.
             test_nll = 0.
             for j in range(TEST_EPISODE):
-                print("episode %d: test %d"%(j,episode))
+                # print("episode %d: test %d"%(j,episode))
                 # 每一轮开始的时候先抽取n个实验类
                 support_classes = rd.sample(TEST_CLASSES, n)
                 # 训练的时候使用固定的采样方式，但是在测试的时候采用固定的采样方式
@@ -185,7 +185,7 @@ for episode in range(MAX_ITER):
                 tests, test_labels = test_test_dataloader.__iter__().next()
 
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-                support_labels = labels_normalize(support_labels, n, batch_length= k * n)
+                support_labels = labels_normalize(support_labels, k, n, batch_length= k * n)
                 support_labels = labels_one_hot(support_labels, n=n)
 
                 supports = supports.cuda()
@@ -261,6 +261,7 @@ for episode in range(MAX_ITER):
             print("****************************************")
             previous_stamp = now_stamp
             # input("----- Test Complete ! -----")
+            print('%d -> %d epoches...' % (episode, episode + TEST_CYCLE))
 
 # 根据历史值画出准确率和损失值曲线
 train_x = [i*TEST_EPISODE for i in range(len(test_acc_his))]

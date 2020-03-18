@@ -74,31 +74,34 @@ class ResNet(t.nn.Module):
         self.Layer2 = ResLayer(2, channels[1], channels[2], stride=2, dropout=dropout)
         self.Layer3 = ResLayer(2, channels[2], channels[3], stride=2, dropout=dropout)
         self.Layer4 = ResLayer(2, channels[3], channels[4], stride=2, dropout=dropout)
-        self.Dense = Linear(512, out)
+        if out is not None:
+            self.Dense = Linear(512, out)
+        else:
+            self.Dense = None
         self.Dropout = Dropout('dropout1', dropout) if dropout is not None else None
         self.initialize()
 
     def forward(self, x):
-        print("x: ", x.size())
+        # print("x: ", x.size())
         x = self.Ahead(x)
-        print("Ahead out: ", x.size())
+        # print("Ahead out: ", x.size())
         x = self.Layer1(x)
-        print("layer1 out: ", x.size())
+        # print("layer1 out: ", x.size())
         x = self.Layer2(x)
-        print("layer2 out: ", x.size())
+        # print("layer2 out: ", x.size())
         x = self.Layer3(x)
-        print("layer3 out: ", x.size())
+        # print("layer3 out: ", x.size())
         x = self.Layer4(x)
-        print("layer4 out: ", x.size())
+        # print("layer4 out: ", x.size())
         # 256/4/2/2/2=8,变成1的话需要长度为8的平均池化
-        x = F.avg_pool2d(x, 8)
+        x = F.adaptive_avg_pool2d(x, 1)   #avg_pool2d(x, 8)
         # 将样本整理为(批大小，1)的形状
         x = x.view(x.shape[0], -1)
         # assert x.shape[1]==1, '在输入到全连接层之前，数据维度不为1维！维度:%d'%x.shape[1]
-        x = self.Dense(x)
+        x = self.Dense(x) if self.Dense is not None else x
         if self.Dropout is not None:
             x = self.Dropout(x)
-        return F.softmax(x, dim=1)
+        return F.softmax(x, dim=1) if self.Dense is not None else x
 
     def initialize(self):
         for name, par in self.named_parameters():

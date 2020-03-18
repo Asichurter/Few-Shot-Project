@@ -145,7 +145,7 @@ def convert_to_images(base, destination, mode='file', method='normal',
 
 
 #
-def convert(path, method, padding=False, fuzzy=None):
+def convert(path, method, padding=False, fuzzy=None, rowTimes=None):
     '''
     单个图像的转换函数，返回Image对象\n
     path:文件的路径\n
@@ -156,13 +156,20 @@ def convert(path, method, padding=False, fuzzy=None):
     image = np.fromfile(file, dtype=np.byte)
     im = None
     # 固定宽度
-    if method == 'plain':
+    if method == 'fixWidth':
         # 将不足宽度大小的剩余长度的像素点都过滤掉
         if image.shape[0] % WIDTH != 0:
             image = image[:-(image.shape[0] % WIDTH)]
         # print(image.shape)
         image = image.reshape((-1, WIDTH))
         image = np.uint8(image)
+        img_height = image.shape[0]
+        if rowTimes is not None and \
+                img_height % rowTimes != 0 and img_height > rowTimes:
+            # 将行中不足 rowTimes 的部分丢弃
+            image = image[:-(img_height % rowTimes),:]
+            # image = np.vstack((image,
+            #                    np.zeros((WIDTH-(img_height % WIDTH)), dtype=np.uint8)))
         im = Image.fromarray(image)
     # 固定尺寸的正方形
     elif method=='normal':
@@ -491,7 +498,7 @@ def convert_microsoft_dataset(s_path, d_path, verbose=True):
         img = convert(s_path+item, method='normal')
         img.save(d_path+f_name+'.jpg', 'JPEG')
 
-def convert_class_dataset(src, dst, expect_num=20):
+def convert_class_dataset(src, dst, expect_num=20, method='normal', **kwargs):
     '''
     用于将一个已经按文件夹分类好的PE数据集转化为jpg图像数据集
     :param expect_num: 预期的每个类文件夹中的文件数量，默认为20
@@ -502,9 +509,10 @@ def convert_class_dataset(src, dst, expect_num=20):
         if not os.path.exists(dst+cls+'/'):
             os.mkdir(dst+cls+'/')
         for item in os.listdir(src+cls+'/'):
-            f_name = item.split('.')[0]
-            img = convert(src+cls+'/'+item, method='normal')
-            img.save(dst+cls+'/'+f_name+'.jpg', 'JPEG')
+            # f_name = item.split('.')[0]
+            # print(item)
+            img = convert(src+cls+'/'+item, method=method, **kwargs)
+            img.save(dst+cls+'/'+item+'.jpg', 'JPEG')
 
     # self-check
     for cls in os.listdir(dst):
@@ -657,11 +665,11 @@ if __name__ == "__main__":
     # create_malware_images(dest="D:/peimages/New/RN_5shot_5way_exp/train/query/0/",
     #                       num_per_class=30,
     #                       using=["backdoor1"])
-    # split_datas(src="D:/peimages/New/drebin_10/train/",
-    #             dest="D:/peimages/New/drebin_10/test/",
-    #             ratio=10,
-    #             mode="x",
-    #             is_dir=True)
+    split_datas(src="D:/peimages/New/drebin_10/train/",
+                dest="D:/peimages/New/drebin_10/test/",
+                ratio=10,
+                mode="x",
+                is_dir=True)
     # make_noise_image(path="D:/peimages/New/class_default_noisebenign_exp/backdoor_default/train/benign/",
     #                  num=450, prefix="gauss_noise_", mode="gauss")
     # make_few_shot_datas(20, "D:/peimages/New/fuzzy/train/", fuzzy=128)
@@ -669,9 +677,11 @@ if __name__ == "__main__":
     # make_few_shot_data_by_cluster(d, 'D:/peimages/New/cluster_2/train/')
     # check_data_is_valid("D:/peimages/New/cluster_fix_width/train/", 20)
     #
-    integrate_images_to_datas('D:/peimages/New/microsoft/test/',
-                              'D:/peimages/New/microsoft/test.npy',
-                              T.Compose([T.ToTensor(),T.Normalize([0.40991238], [0.08551609])]))
+    # integrate_images_to_datas('D:/peimages/New/miniImageNet/test/',
+    #                           'D:/peimages/New/miniImageNet/test.npy',
+    #                           T.Compose([T.ToTensor(),T.Normalize([0.47103423, 0.44983818, 0.4035337],
+    #                                                               [0.15379132, 0.14340202, 0.16627942])]))
+                                # miniImageNet:[0.47103423, 0.44983818, 0.4035337],[0.15379132, 0.14340202, 0.16627942]
                                 # microsoft_40: 0.40991238, 0.08551609
                                 # drebin_10: 0.48104647, 0.030690413
                                 # drebin_15: 0.48149517, 0.028535217
@@ -686,6 +696,8 @@ if __name__ == "__main__":
     # convert_microsoft_dataset(s_path='D:/MicrosoftDataset/MalwareCla/microsoftPE/train/',
     #                           d_path='D:/peimages/New/ms/train/',
     #                           verbose=True)
-    # convert_class_dataset(src='D:/peimages/PEs/virusshare/',
-    #                       dst='D:/peimages/New/virushare_30/train/',
-    #                       expect_num=30)
+    # convert_class_dataset(src='D:/peimages/PEs/cluster/train/',
+    #                       dst='D:/peimages/New/cluster_var/',
+    #                       expect_num=20,
+    #                       method='fixWidth',
+    #                       rowTimes=32)

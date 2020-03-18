@@ -114,11 +114,11 @@ def calculate_data_mean_std(base, split=True, excepts=['models']):
             inner_path = path + c_i + "/"
             for image in os.listdir(inner_path):
                 image = Image.open(inner_path+image)
-                image = transformer(image).squeeze()
+                image = transformer(image)
                 size = image.size
-                data.append(image.sum()/(size(0)*size(1)))
+                data.append((image.sum(dim=2).sum(dim=1)/(size(1)*size(2))).tolist())
 
-    return np.mean(data),np.std(data),data
+    return np.mean(data, axis=0), np.std(data, axis=0)#,data
 
 def cal_beliefe_interval(datas, split=5):
     '''
@@ -138,7 +138,7 @@ def cal_beliefe_interval(datas, split=5):
 
     return z*s/np.sqrt(n)
 
-def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1):
+def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1, **kwargs):
     return nn.Sequential(
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
@@ -154,11 +154,30 @@ def get_block_2(in_feature, out_feature, stride=1, kernel=3, padding=1):
         nn.MaxPool2d(3,2,1)
     )
 
-def labels_normalize(labels, n, batch_length):
+def get_attention_block(in_channel, out_channel, kernel_size, stride=1, padding=1, relu=True, drop=None, bn=True):
+    block = nn.Sequential(
+        nn.Conv2d(in_channel,
+                  out_channel,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=padding)#,
+        # nn.ReLU(inplace=True)
+    )
+    if bn:
+        block.add_module('bn', nn.BatchNorm2d(out_channel))
+    if relu:
+        block.add_module('relu', nn.ReLU(inplace=True))
+    if drop is not None:
+        block.add_module('drop', nn.Dropout2d(drop))
+        # block.add_module('drop', nn.Dropout())
+    return block
+
+def labels_normalize_(labels, n, batch_length):
     labels_ = labels.numpy()
     for i in range(0, len(labels), batch_length):
         batch = labels_[i:i+batch_length]
         batch_labels = np.unique(batch)
+        # batch_labels = batch[::k]
         assert n == len(batch_labels), 'batch内，指定的类别数量%d与实际的类别数量%d不一致'%\
                                        (n, len(batch_labels))
         mapper = {i:l for i,l in zip(batch_labels, [j for j in range(n)])}
@@ -167,6 +186,37 @@ def labels_normalize(labels, n, batch_length):
             labels_[i+ii] = mapper[l]
 
     return torch.Tensor(labels_).long()
+
+def labels_normalize(labels, k, n, batch_length):
+    labels_ = labels.numpy()
+    for i in range(0, len(labels), batch_length):
+        batch = labels_[i:i+batch_length]
+        # batch_labels = np.unique(batch)
+        batch_labels = batch[::k]
+        assert n == len(batch_labels), 'batch内，指定的类别数量%d与实际的类别数量%d不一致'%\
+                                       (n, len(batch_labels))
+        mapper = {i:l for i,l in zip(batch_labels, [j for j in range(n)])}
+
+        for ii,l in enumerate(batch):
+            labels_[i+ii] = mapper[l]
+
+    return torch.Tensor(labels_).long()
+
+def labels_normalize__(s_labels, q_labels, n):
+    label_space = np.unique(s_labels.numpy())
+    assert n == len(label_space), 'batch内，指定的类别数量%d与实际的类别数量%d不一致' % \
+                                   (n, len(label_space))
+    mapper = {i: l for i, l in zip(label_space, [j for j in range(n)])}
+
+    support_labels = s_labels.numpy()
+    query_labels = q_labels.numpy()
+    for i in range(len(support_labels)):
+        support_labels[i] = mapper[support_labels[i]]
+    for i in range(len(query_labels)):
+        query_labels[i] = mapper[query_labels[i]]
+
+    return torch.Tensor(support_labels).long(),\
+           torch.Tensor(query_labels).long()
 
 def labels_one_hot(labels, n):
     # 假定输入的标签已经在一个batch内被标准化
@@ -181,7 +231,7 @@ def labels_one_hot(labels, n):
 
 
 if __name__ == "__main__":
-    print(calculate_data_mean_std('D:/peimages/New/microsoft/train/', split=False))
+    print(calculate_data_mean_std('D:/peimages/New/miniImageNet/train/', split=False))
 
 
 

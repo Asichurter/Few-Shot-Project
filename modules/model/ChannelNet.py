@@ -13,15 +13,6 @@ def normalize(tensors):
     return tensors/norm
 
 def get_block_1(in_feature, out_feature, stride=1, kernel=3, padding=1, relu=True):
-    # layers = [
-    #     nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
-    #     nn.BatchNorm2d(out_feature),
-    #     nn.ReLU(inplace=True),
-    #     nn.MaxPool2d(2)
-    # ]
-    # if not relu:
-    #     layers.pop(2)
-    # return nn.Sequential(*layers)
     return nn.Sequential(
         nn.Conv2d(in_feature, out_feature, kernel_size=kernel, padding=padding, stride=stride, bias=False),
         nn.BatchNorm2d(out_feature),
@@ -106,18 +97,21 @@ class MultiLevelPooling(nn.Module):
 
 # 基于卷积神经网络的图像嵌入网络
 class ChannelNet(nn.Module):
-    def __init__(self, k):
+    def __init__(self, k, in_channels=1):
         super(ChannelNet, self).__init__()
 
         self.ProtoNorm = None
         self.K = k
-        channels = [1,32,64,128,256]
+
+        channels = [in_channels,32,64,128,256]
         strides = [2,1,1,1]
         paddings = [1,1,1,1]
         relus = [True, True, True, True]
-        layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],relu=relus[i]) for i in range(len(strides))]
-        # layers.append(nn.AdaptiveMaxPool2d((1,1)))
+        layers = [get_block_1(channels[i],channels[i+1],strides[i],padding=paddings[i],relu=relus[i])
+                  for i in range(len(strides))]
+        layers.append(nn.AdaptiveMaxPool2d((1,1)))
         # layers.append(SppPooling(levels=[1,2,4]))
+
         self.Layers = nn.Sequential(*layers)
 
         if k%2==0:
@@ -127,15 +121,10 @@ class ChannelNet(nn.Module):
         else:
             attention_paddings = [(int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (int((k - 1) / 2), 0), (0, 0)]
         attention_channels = [1,32,64,1]
-        # attention_channels = [1,16,32,64,1]
         attention_strides = [(1,1),(1,1),(k,1)]
-        # attention_strides = [(1,1),(1,1),(1,1),(k,1)]
         attention_kernels = [(k,1),(k,1),(k,1)]
-        # attention_kernels = [(k,1),(k,1),(k,1),(k,1)]
         attention_relus = [True,True,False]
-        # attention_relus = [True,True,True,False]
         attention_drops = [False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
-        # attention_drops = [False, False, False, False]     # 仿照HAPP中的实现，在最终Conv之前施加一个Dropout
         attention_bns = [False, False, False]
 
         self.ProtoNet = nn.Sequential(
@@ -149,6 +138,8 @@ class ChannelNet(nn.Module):
                                   bn=attention_bns[i])
               for i in range(len(attention_channels)-1)])
 
+        self.channels = channels
+
     def forward(self, support, query, save_embed=False, save_proto=False):
         assert len(support.size()) == 5 and len(query.size()) == 4, \
             "support必须遵循(n,k,c,w,w)的格式，query必须遵循(l,c,w,w)的格式！"
@@ -157,8 +148,8 @@ class ChannelNet(nn.Module):
         n = support.size(0)
         w = support.size(3)
 
-        support = support.view(n*k, 1, w, w)
-        query = query.view(qk, 1, w, w)
+        support = support.view(n*k, self.channels[0], w, w)
+        query = query.view(qk, self.channels[0], w, w)
 
 
         # 每一层都是以上一层的输出为输入，得到新的输出、

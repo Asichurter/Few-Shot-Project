@@ -241,3 +241,22 @@
 1. virushare20数据集
 
 2. 5-shot 20-way
+
+## 48
+
+1. 使用miniImageNet数据集
+
+2. 5-shot，5-way，84crop
+
+3. 使用Channel Pooling
+
+
+## 49
+
+1. 使用miniImageNet数据集
+
+2. 5-shot，5-way，84crop
+
+3. 不使用Channel Pooling
+
+

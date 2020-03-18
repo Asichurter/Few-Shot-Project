@@ -18,9 +18,10 @@ from modules.model.ChannelNet import ChannelNet
 from modules.utils.dlUtils import net_init, RN_labelize
 from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 
-folders = ['cluster','test','virushare_20','drebin_10']
-Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10}
-data_folder = 'virushare_20'
+folders = ['cluster','test','virushare_20','drebin_10', 'miniImageNet']
+Ns = {'cluster':20, 'test':20, 'virushare_20':20, 'drebin_10':10, 'miniImageNet':600}
+in_channels = {'cluster':1, 'test':1, 'virushare_20':1, 'drebin_10':1, 'miniImageNet':3}
+data_folder = 'miniImageNet'
 
 PATH = "D:/peimages/New/%s/"%data_folder
 TRAIN_FILE_PATH =  PATH+'train.npy'
@@ -29,24 +30,24 @@ MODEL_SAVE_PATH = "D:/peimages/New/%s/models/"%data_folder
 DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ChannelNet_exp/"
 
 # 每个类多少个样本，即k-shot
-k = 10
+k = 5
 # 训练时多少个类参与，即n-way
-n = 20
+n = 5
 # 测试时每个类多少个样本
-qk = 10
+qk = 15
 # 一个类总共多少个样本
 N = Ns[data_folder]
 # 学习率
 lr = 1e-3
 
-version = 47
+version = 49
 
 TEST_CYCLE = 100
 MAX_ITER = 50000
 TEST_EPISODE = 100
 ASK_CYCLE = 60000
 ASK_THRESHOLD = 20000
-CROP_SIZE = 192
+CROP_SIZE = 84
 FRESH_CYCLE = 1000
 
 # 训练和测试中类的总数
@@ -65,7 +66,7 @@ loss_names = ["train loss", "validate loss"]
 train_dataset = FewShotFileDataset(TRAIN_FILE_PATH, N, class_num=train_classes, rd_crop_size=CROP_SIZE)
 test_dataset = FewShotFileDataset(TEST_FILE_PATH, N, class_num=test_classes, rd_crop_size=CROP_SIZE)
 
-net = ChannelNet(k=k)
+net = ChannelNet(k=k, in_channels=in_channels[data_folder])
 # net.load_state_dict(t.load(MODEL_SAVE_PATH+"ProtoNet_best_acc_model_%dshot_%dway_v%d.0.h5"%(k,n,26)))
 net = net.cuda()
 
@@ -124,7 +125,8 @@ for episode in range(MAX_ITER):
 
     labels = RN_labelize(sample_labels, query_labels, k, n, type="long", expand=False)
 
-    outs = net(samples.view(n,k,1,CROP_SIZE,CROP_SIZE), queries.view(n*qk,1,CROP_SIZE,CROP_SIZE))
+    outs = net(samples.view(n,k,in_channels[data_folder],CROP_SIZE,CROP_SIZE),
+               queries.view(n*qk,in_channels[data_folder],CROP_SIZE,CROP_SIZE))
 
     loss = nll(outs, labels)
     # inner_var_loss = inner_var_alpha*net.forward_inner_var
@@ -188,7 +190,8 @@ for episode in range(MAX_ITER):
                 test_labels = test_labels.cuda()
 
                 test_labels = RN_labelize(support_labels, test_labels, k, n, type="long", expand=False)
-                test_relations = net(supports.view(n,k,1,CROP_SIZE,CROP_SIZE), tests.view(n*qk,1,CROP_SIZE,CROP_SIZE))
+                test_relations = net(supports.view(n,k,in_channels[data_folder],CROP_SIZE,CROP_SIZE),
+                                     tests.view(n*qk,in_channels[data_folder],CROP_SIZE,CROP_SIZE))
 
                 val_nll_loss = nll(test_relations, test_labels)
                 # val_inner_var_loss = inner_var_alpha * net.forward_inner_var

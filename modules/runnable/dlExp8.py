@@ -21,7 +21,7 @@ from modules.utils.datasets import FewShotFileDataset, get_RN_sampler
 # TRAIN_PATH = "D:/peimages/New/Residual_5shot_5way_exp/train/"
 # TEST_PATH = "D:/peimages/New/Residual_5shot_5way_exp/validate/"
 # MODEL_SAVE_PATH = "D:/peimages/New/Residual_5shot_5way_exp/models/"
-# DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+# DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_exp/"
 
 data_folder = "drebin_10"
 
@@ -29,7 +29,7 @@ PATH = 'D:/peimages/New/%s/'%data_folder
 TRAIN_PATH = PATH + "train.npy"
 TEST_PATH = PATH + "validate.npy"
 MODEL_SAVE_PATH = PATH + "models/"
-DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_5shot_5way_exp/"
+DOC_SAVE_PATH = "D:/Few-Shot-Project/doc/dl_ProtoNet_exp/"
 
 LOG_PATH = "C:/Users/Asichurter/Desktop/log/"
 

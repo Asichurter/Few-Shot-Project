@@ -199,50 +199,29 @@ class FewShotFileUnbalanceDataset(Dataset):
 
         return img,label
 
-
-
-class FewShotPreloadDataset(Dataset):
-    # 直接指向support set或者query set路径下
-    def __init__(self, base, rd_crop_size=None, rotate=True, square=False,
-                 transform=T.Compose([T.ToTensor(),T.Normalize([0.3934904], [0.10155067])])):
-        self.Data = []
-        self.Label = []
-        class_index = 0
-        # 预加载
-        for c in os.listdir(base):
-            print(c)
-            class_path = base + c
-            for item in os.listdir(class_path):
-                img = Image.open(class_path + '/' + item)
-                img = transform(img)
-                self.Data.append(img)
-            self.Label += [class_index] * len(os.listdir(class_path))
-            class_index += 1
-        self.CropSize = rd_crop_size
-        self.Rotate = rotate
-        self.Width = self.Data.shape[2] if square else None
-        assert len(self.Label)==len(self.Data), "数据和标签长度不一致!(%d,%d)"%(len(self.Label),len(self.Data))
+class ImagePatchDataset(Dataset):
+    def __init__(self, path, num_per_class, width=32):
+        self.BasePath = path
+        self.ClassNames = os.listdir(path)
+        self.ItemNames = [os.listdir(path+c+'/') for c in self.ClassNames]
+        self.N = num_per_class
+        self.ImgWidth = 16
 
     def __getitem__(self, index):
-        w = self.Width
-        crop = self.CropSize
-        img = self.Data[index]
-        if crop is not None:
-            assert self.Width is not None and self.Data.shape[2]==self.Data.shape[3], "crop不能作用在非正方形图像上!"
-            bound_width = w-crop
-            x_rd,y_rd = rd.randint(0,bound_width),rd.randint(0,bound_width)
-            img = img[:, x_rd:x_rd+crop, y_rd:y_rd+crop]
-        # 依照论文代码中的实现，为了增加泛化能力，使用随机旋转
-        # 对于非正方形图像使用翻转会导致混乱
-        if self.Width is not None and self.Rotate:
-            rotation = rd.choice([0,1,2,3])
-            img = t.rot90(img, k=rotation, dims=(1,2))
-        label = self.Label[index]
+        cls_index = index // self.N
+        item_index = index % self.N
 
-        return img,label
+        img = Image.open(self.BasePath+
+                         self.ClassNames[cls_index]+'/'+
+                         self.ItemNames[cls_index][item_index])
+        img = T.ToTensor()(img)
+
+        # 返回图片序列：序列长度, 通道数, 图像长 / 宽
+        return img.view(-1, 1, self.ImgWidth, self.ImgWidth)
 
     def __len__(self):
-        return len(self.Data)
+        return len(self.N * len(self.ClassNames))
+
 
 
 class ClassSampler(Sampler):
@@ -446,6 +425,8 @@ def get_class_sampler(dataset, class_num, n, k, qk, num_per_class):
 
 
 if __name__ == '__main__':
-    pass
+    a = ImagePatchDataset(path='D:/peimages/New/cluster/train/',
+                          num_per_class=20)
+    p = a.__getitem__(123)
     # dataset = CNNTestDataset()
     # dataset = PretrainedResnetDataset(r'D:/peimages/validate/')
